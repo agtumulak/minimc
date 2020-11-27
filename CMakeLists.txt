@@ -3,8 +3,10 @@ project(minimc VERSION 0.1)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 17)
 
-# add xerces as an external project and create a static library
 include(ExternalProject)
+include(CTest)
+
+# add xerces as an external project and create a static library
 set(XERCES_PREFIX ${CMAKE_BINARY_DIR}/xerces)
 set(XERCES_BINARY_DIR ${XERCES_PREFIX}/build)
 set(XERCES_INSTALL_DIR ${XERCES_PREFIX}/install)
@@ -21,7 +23,7 @@ if (UNIX)
   set(UNIX_XERCES_CMAKE_ARGS -DCMAKE_CXX_FLAGS="-w")
 endif()
 ExternalProject_Add(
-  xerces
+  xerces_download
   PREFIX ${XERCES_PREFIX}
   SOURCE_DIR ${XERCES_PREFIX}/src
   TMP_DIR ${XERCES_BINARY_DIR}
@@ -38,14 +40,15 @@ ExternalProject_Add(
     ${UNIX_XERCES_CMAKE_ARGS}
   BUILD_BYPRODUCTS ${XERCES_LIB}
   )
-add_library(xerceslib STATIC IMPORTED)
+add_library(xerces STATIC IMPORTED)
 set(XERCES_INCLUDE_DIR ${XERCES_INSTALL_DIR}/include)
 file(MAKE_DIRECTORY ${XERCES_INCLUDE_DIR})
-set_target_properties(xerceslib PROPERTIES
+set_target_properties(xerces PROPERTIES
   IMPORTED_LOCATION ${XERCES_LIB}
   INTERFACE_INCLUDE_DIRECTORIES ${XERCES_INCLUDE_DIR})
 if (APPLE)
-  target_link_options(xerceslib INTERFACE -framework CoreServices -lcurl)
+  target_link_options(xerces INTERFACE -framework CoreServices -lcurl)
 endif()
 
 add_subdirectory(src)
+add_subdirectory(test)
