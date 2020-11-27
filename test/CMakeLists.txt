@@ -2,7 +2,7 @@
 Include(FetchContent)
 FetchContent_Declare(
   catch_download
-  GIT_REPOSITORY git@github.com:catchorg/Catch2.git
+  GIT_REPOSITORY https://github.com/catchorg/Catch2.git
   GIT_TAG v2.13.3
   )
 FetchContent_MakeAvailable(catch_download)
