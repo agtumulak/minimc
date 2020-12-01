@@ -35,3 +35,6 @@ compile_commands.json
 *.exe
 *.out
 *.app
+
+# misc
+build/
