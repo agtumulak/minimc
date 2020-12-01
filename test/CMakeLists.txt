@@ -9,7 +9,6 @@ FetchContent_MakeAvailable(catch_download)
 
 # Add new unit test source files here
 set(UNIT_TEST_SOURCES
-  test_hello_world.cpp
   test_xml_validator.cpp
   )
 # https://github.com/catchorg/Catch2/blob/devel/docs/slow-compiles.md
