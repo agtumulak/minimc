@@ -3,10 +3,8 @@ project(minimc VERSION 0.1)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 17)
 
-include(ExternalProject)
-include(CTest)
-
 # add xerces as an external project and create a static library
+include(ExternalProject)
 set(XERCES_PREFIX ${CMAKE_BINARY_DIR}/xerces)
 set(XERCES_BINARY_DIR ${XERCES_PREFIX}/build)
 set(XERCES_INSTALL_DIR ${XERCES_PREFIX}/install)

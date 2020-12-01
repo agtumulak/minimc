@@ -15,9 +15,6 @@ set(UNIT_TEST_SOURCES
 # https://github.com/catchorg/Catch2/blob/devel/docs/slow-compiles.md
 add_executable(all_tests catch_main.cpp ${UNIT_TEST_SOURCES})
 target_link_libraries(all_tests Catch2::Catch2 minimc)
-list(APPEND CMAKE_MODULE_PATH ${catch_download_SOURCE_DIR}/contrib)
-include(ParseAndAddCatchTests)
-ParseAndAddCatchTests(all_tests)
 
 # Add new unit test input files here
 set(UNIT_TEST_INPUTS
