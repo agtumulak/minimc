@@ -1,78 +1,77 @@
 #include "xml_validator.hpp"
 
+#include "xercesc/parsers/XercesDOMParser.hpp"
+#include "xercesc/sax/ErrorHandler.hpp"
+#include "xercesc/sax/SAXParseException.hpp"
 #include "xercesc/util/PlatformUtils.hpp"
 #include "xercesc/util/XMLString.hpp"
 
-#include <iostream>
+#include <stdexcept>
+#include <string>
 
-using util::XMLValidator;
-
-// XercesErrorHandler
-
-void XMLValidator::XercesErrorHandler::warning(
-    const xercesc::SAXParseException& exc) noexcept {
-  std::cerr << "Warning: ";
-  HandleException(exc);
-};
-
-void XMLValidator::XercesErrorHandler::error(
-    const xercesc::SAXParseException& exc) noexcept {
-  std::cerr << "Error: ";
-  HandleException(exc);
-};
-
-void XMLValidator::XercesErrorHandler::fatalError(
-    const xercesc::SAXParseException& exc) noexcept {
-  std::cerr << "Fatal Error: ";
-  HandleException(exc);
-};
-
-void XMLValidator::XercesErrorHandler::resetErrors() noexcept {};
-
-void XMLValidator::XercesErrorHandler::HandleException(
-    const xercesc::SAXParseException& exc) const noexcept {
-  auto filename = toCharString(exc.getSystemId());
-  auto line_number = exc.getLineNumber();
-  auto column_number = exc.getColumnNumber();
-  auto have_file_location =
-      !filename.empty() && line_number != 0 && column_number != 0;
-  if (have_file_location) {
-    std::cerr << filename << ": line " << line_number << ": column "
-              << column_number << std::endl;
-  }
-  std::cerr << toCharString(exc.getMessage()) << std::endl;
-}
-
-// XMLValidator
-
-XMLValidator::XMLValidator(const std::filesystem::path& xml_filepath) noexcept
-    : parser(CreateXercesDOMParser(xml_filepath, &error_handler)) {}
-
-std::unique_ptr<const xercesc::XercesDOMParser>
-XMLValidator::CreateXercesDOMParser(
-    const std::filesystem::path& xml_filepath,
-    xercesc::ErrorHandler* const error_handler) noexcept {
-  auto parser = std::make_unique<xercesc::XercesDOMParser>();
-  parser->setValidationScheme(xercesc::XercesDOMParser::Val_Always);
-  parser->setDoSchema(true);
-  parser->setDoNamespaces(true);
-  parser->setErrorHandler(error_handler);
-  parser->parse(xml_filepath.c_str());
-  return parser;
-};
-
-std::string XMLValidator::toCharString(const XMLCh* const str) {
+// Convert from XMLCh array to std::string
+std::string toCharString(const XMLCh* const str) {
   // unique_ptr is here because transcode gives us ownership of a char array
   std::unique_ptr<const char[]> p{xercesc::XMLString::transcode(str)};
   return std::string{p.get()};
 }
 
-// XercesInitializer
+// RAII wrapper for initializing and terminating the Xerces system.
+class XercesInitializer {
+public:
+  // Default constructor. Initializes Xerces.
+  XercesInitializer() noexcept { xercesc::XMLPlatformUtils::Initialize(); }
+  // Default destructor. Terminates Xerces.
+  ~XercesInitializer() noexcept { xercesc::XMLPlatformUtils::Terminate(); }
+  // Disallow copy/move constructor:
+  // https://www.stroustrup.com/C++11FAQ.html#default2
+  XercesInitializer(const XercesInitializer&) = delete;
+  // Disallow copy/move assignment operator:
+  // https://www.stroustrup.com/C++11FAQ.html#default2
+  XercesInitializer& operator=(const XercesInitializer&) = delete;
+};
 
-XMLValidator::XercesInitializer::XercesInitializer() noexcept {
-  xercesc::XMLPlatformUtils::Initialize();
-}
+/// Error handler registered to xercesc::XercesDOMParser
+class XercesErrorHandler : public xercesc::ErrorHandler {
+public:
+  // Handles warnings encountered during XML parsing
+  void warning(const xercesc::SAXParseException& exc) final {
+    HandleException(exc);
+  }
+  // Handles recoverable errors encountered during XML parsing
+  void error(const xercesc::SAXParseException& exc) final {
+    HandleException(exc);
+  }
+  // Handles non-recovereable errors encountered during XML parsing
+  void fatalError(const xercesc::SAXParseException& exc) final {
+    HandleException(exc);
+  }
+  // Reset this handler object after use
+  void resetErrors() noexcept final {}
+  // Write a warning or error message to stderr.
+  void HandleException(const xercesc::SAXParseException& exc) const {
+    std::string error_message;
+    auto filename = toCharString(exc.getSystemId());
+    auto line_number = exc.getLineNumber();
+    auto column_number = exc.getColumnNumber();
+    auto have_file_location =
+        !filename.empty() && line_number != 0 && column_number != 0;
+    if (have_file_location) {
+      error_message += filename + ": line " + std::to_string(line_number) +
+                       ": column " + std::to_string(column_number) + "\n";
+    }
+    error_message += toCharString(exc.getMessage()) + "\n";
+    throw std::runtime_error(error_message);
+  }
+};
 
-XMLValidator::XercesInitializer::~XercesInitializer() noexcept {
-  xercesc::XMLPlatformUtils::Terminate();
+void ValidateXML(const std::filesystem::path& xml_filepath) {
+  XercesInitializer init;
+  XercesErrorHandler error_handler;
+  xercesc::XercesDOMParser parser;
+  parser.setValidationScheme(xercesc::XercesDOMParser::Val_Always);
+  parser.setDoSchema(true);
+  parser.setDoNamespaces(true);
+  parser.setErrorHandler(&error_handler);
+  parser.parse(xml_filepath.c_str());
 }

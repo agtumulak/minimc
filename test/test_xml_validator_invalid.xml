@@ -1,7 +1,5 @@
 <minimc
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:noNamespaceSchemaLocation="minimc_schema.xsd">
-  <required_a/>
-  <not_allowed/>
-  <required_b/>
+  <unexpected_node/>
 </minimc>

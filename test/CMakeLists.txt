@@ -22,7 +22,8 @@ ParseAndAddCatchTests(all_tests)
 # Add new unit test input files here
 set(UNIT_TEST_INPUTS
   minimc_schema.xsd
-  test_xml_validator.xml
+  test_xml_validator_valid.xml
+  test_xml_validator_invalid.xml
   )
 list(TRANSFORM UNIT_TEST_INPUTS PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/)
 add_custom_target(

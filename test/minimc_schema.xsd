@@ -8,8 +8,7 @@
 <xs:element name="minimc">
   <xs:complexType>
     <xs:all>
-      <xs:element name="required_a"/>
-      <xs:element name="required_b"/>
+      <xs:element name="expected_node"/>
     </xs:all>
   </xs:complexType>
 </xs:element>
