@@ -26,3 +26,9 @@ add_custom_target(
   copy_xml_inputs ALL
   COMMAND ${CMAKE_COMMAND} -E copy_if_different ${UNIT_TEST_INPUTS} ${CMAKE_CURRENT_BINARY_DIR}
   )
+
+# Replace CTest with Catch2
+add_custom_target(test
+  COMMAND all_tests
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+  COMMENT "Run Catch2 instead of CTest")
