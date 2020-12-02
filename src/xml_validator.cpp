@@ -73,5 +73,5 @@ void ValidateXML(const std::filesystem::path& xml_filepath) {
   parser.setDoSchema(true);
   parser.setDoNamespaces(true);
   parser.setErrorHandler(&error_handler);
-  parser.parse(xml_filepath.c_str());
+  parser.parse(xml_filepath.string().c_str());
 }
