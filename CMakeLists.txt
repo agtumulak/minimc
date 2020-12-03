@@ -3,17 +3,34 @@ project(minimc VERSION 0.1)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 17)
 
-# add xerces as an external project and create a static library
+# Set a default build type if none was specified
+# https://blog.kitware.com/cmake-and-the-default-build-type/
+set(DEFAULT_BUILD_TYPE "Release")
+if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
+  set(DEFAULT_BUILD_TYPE "Debug")
+endif()
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  message(STATUS "No build type specified. Defaulting to ${DEFAULT_BUILD_TYPE}")
+  set(CMAKE_BUILD_TYPE "${DEFAULT_BUILD_TYPE}" CACHE
+    STRING "Choose the type of build." FORCE)
+  # Set the possible values of build type for cmake-gui
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release")
+endif()
+
+# platform-dependent setup
+if (MSVC AND (CMAKE_BUILD_TYPE MATCHES "Debug"))
+  set(CMAKE_DEBUG_POSTFIX "D")
+endif()
+
 include(ExternalProject)
+
+# # add xerces as an external project and create a static library
 set(XERCES_PREFIX ${CMAKE_BINARY_DIR}/xerces)
 set(XERCES_BINARY_DIR ${XERCES_PREFIX}/build)
 set(XERCES_INSTALL_DIR ${XERCES_PREFIX}/install)
 # logic to determine where static library will be found
-if (WIN32)
-  set(XERCES_SUFFIX "_3")
-  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(XERCES_SUFFIX "${XERCES_SUFFIX}D")
-  endif()
+if (MSVC)
+  set(XERCES_SUFFIX "_3${CMAKE_DEBUG_POSTFIX}")
 endif()
 set(XERCES_LIB ${XERCES_INSTALL_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}xerces-c${XERCES_SUFFIX}${CMAKE_STATIC_LIBRARY_SUFFIX})
 if (UNIX)
