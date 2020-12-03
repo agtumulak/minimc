@@ -1,4 +1,4 @@
-#include "xml_validator.hpp"
+#include "ValidateXML.hpp"
 
 #include "xercesc/parsers/XercesDOMParser.hpp"
 #include "xercesc/sax/ErrorHandler.hpp"

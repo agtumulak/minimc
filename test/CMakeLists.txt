@@ -9,7 +9,7 @@ FetchContent_MakeAvailable(catch_download)
 
 # Add new unit test source files here
 set(UNIT_TEST_SOURCES
-  test_xml_validator.cpp
+  test_ValidateXML.cpp
   )
 # https://github.com/catchorg/Catch2/blob/devel/docs/slow-compiles.md
 add_executable(all_tests catch_main.cpp ${UNIT_TEST_SOURCES})
@@ -18,8 +18,8 @@ target_link_libraries(all_tests Catch2::Catch2 minimc)
 # Add new unit test input files here
 set(UNIT_TEST_INPUTS
   minimc_schema.xsd
-  test_xml_validator_valid.xml
-  test_xml_validator_invalid.xml
+  test_ValidateXML_valid.xml
+  test_ValidateXML_invalid.xml
   )
 list(TRANSFORM UNIT_TEST_INPUTS PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/)
 add_custom_target(

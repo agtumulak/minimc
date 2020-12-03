@@ -1,6 +1,6 @@
 # Add new source files here
 set(MINIMC_SOURCES
-  xml_validator.cpp
+  ValidateXML.cpp
   )
 
 add_library(minimc ${MINIMC_SOURCES})
