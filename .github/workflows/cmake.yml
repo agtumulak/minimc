@@ -1,0 +1,32 @@
+name: CMake
+on: [push]
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            cc_compiler: gcc-9
+            cxx_compiler: g++-9
+          - os: windows-latest
+    runs-on: ${{matrix.os}}
+    steps:
+    - uses: actions/checkout@v2
+    - name: Create Build Environment
+      run: cmake -E make_directory ${{runner.workspace}}/build
+    - name: Configure CMake
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      env:
+        CC: ${{matrix.cc_compiler}}
+        CXX: ${{matrix.cxx_compiler}}
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Debug
+    - name: Build
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: cmake --build . --parallel 2
+    - name: Test
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: cmake --build . --target test
