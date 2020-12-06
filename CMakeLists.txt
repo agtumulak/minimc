@@ -24,7 +24,7 @@ endif()
 
 include(ExternalProject)
 
-# # add xerces as an external project and create a static library
+# add xerces as an external project and create a static library
 set(XERCES_PREFIX ${CMAKE_BINARY_DIR}/xerces)
 set(XERCES_BINARY_DIR ${XERCES_PREFIX}/build)
 set(XERCES_INSTALL_DIR ${XERCES_PREFIX}/install)

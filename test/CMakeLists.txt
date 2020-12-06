@@ -7,7 +7,7 @@ FetchContent_Declare(
   )
 FetchContent_MakeAvailable(catch_download)
 
-# Add new unit test source files here
+# add new unit test source files here
 set(UNIT_TEST_SOURCES
   test_ValidateXML.cpp
   )
@@ -15,7 +15,7 @@ set(UNIT_TEST_SOURCES
 add_executable(all_tests catch_main.cpp ${UNIT_TEST_SOURCES})
 target_link_libraries(all_tests Catch2::Catch2 minimc)
 
-# Add new unit test input files here
+# add new unit test input files here
 set(UNIT_TEST_INPUTS
   minimc_schema.xsd
   test_ValidateXML_valid.xml
@@ -27,7 +27,7 @@ add_custom_target(
   COMMAND ${CMAKE_COMMAND} -E copy_if_different ${UNIT_TEST_INPUTS} ${CMAKE_CURRENT_BINARY_DIR}
   )
 
-# Replace CTest with Catch2
+# replace CTest with Catch2
 add_custom_target(test
   COMMAND all_tests
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
