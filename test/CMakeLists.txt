@@ -33,3 +33,15 @@ add_custom_target(test
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
   COMMENT "Run Catch2 instead of CTest")
 add_dependencies(test all_tests)
+
+# code coverage with llvm
+if (CMAKE_BUILD_TYPE MATCHES "Debug")
+  add_custom_target(coverage
+    COMMAND make test
+    COMMAND xcrun llvm-profdata merge -sparse default.profraw -o default.profdata
+    COMMAND xcrun llvm-cov show -instr-profile default.profdata all_tests -format=html -o report
+    COMMAND open report/index.html
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMENT "Create coverage report on macOS")
+  add_dependencies(coverage all_tests)
+endif()
