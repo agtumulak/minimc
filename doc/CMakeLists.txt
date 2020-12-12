@@ -2,6 +2,7 @@ find_package(Doxygen)
 if(Doxygen_FOUND)
   set(DOXYGEN_SOURCES
     mainpage.dox
+    style_guide.dox
     )
   file(GLOB_RECURSE MD_FILES "${PROJECT_SOURCE_DIR}/*.md")
   set(DOXYGEN_USE_MATHJAX YES)

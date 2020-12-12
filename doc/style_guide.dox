@@ -1,0 +1,20 @@
+/**
+
+@page style_guide Style Guide
+
+@tableofcontents
+
+@section style_guide_intro Introduction
+
+MiniMC primarily adheres to the
+<a href="https://google.github.io/styleguide/cppguide.html">Google C++ Style
+Guide</a> for source code style. Cases which are not addressed in the Google
+C++ Style Guide are addressed individually here.
+
+@section style_guide_friend_declaration Friend Declarations
+
+<code>friend</code> declarations occur at the very beginning of a class
+declaration, before any access specifiers such as <code>private</code>, <code>
+public</code>, or <code>protected</code>.
+
+*/

@@ -8,8 +8,8 @@
 
 Welcome to MiniMC
 
-@section about About
+@section about Development
 
-This is about MiniMC
+- @ref style_guide
 
 */
