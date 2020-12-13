@@ -1,4 +1,4 @@
-#include "ValidateXML.hpp"
+#include "XMLDocument.hpp"
 
 #include "xercesc/parsers/XercesDOMParser.hpp"
 #include "xercesc/sax/ErrorHandler.hpp"
@@ -8,6 +8,16 @@
 
 #include <stdexcept>
 #include <string>
+
+XMLDocument::XMLDocument(const std::filesystem::path& xml_filepath) {
+  // Valideate with Xerces-C++
+  ValidateXML(xml_filepath);
+  // Load with pugixml
+  if (auto result = doc.load_file(xml_filepath.c_str()); !result) {
+    throw std::runtime_error(result.description());
+  }
+  root = doc.root();
+}
 
 // Convert from XMLCh array to std::string
 std::string toCharString(const XMLCh* const str) {
@@ -65,7 +75,7 @@ public:
   }
 };
 
-void ValidateXML(const std::filesystem::path& xml_filepath) {
+void XMLDocument::ValidateXML(const std::filesystem::path& xml_filepath) {
   XercesInitializer init;
   XercesErrorHandler error_handler;
   xercesc::XercesDOMParser parser;
