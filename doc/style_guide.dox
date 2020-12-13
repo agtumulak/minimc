@@ -11,7 +11,20 @@ MiniMC primarily adheres to the
 Guide</a> for source code style. Cases which are not addressed in the Google
 C++ Style Guide are addressed individually here.
 
-@section style_guide_friend_declaration Friend Declarations
+@section style_guide_declaration_order Declaration Order
+
+<a href="https://google.github.io/styleguide/cppguide.html#Declaration_Order">
+The declaration order provided in the Google C++ Style Guide</a> is
+recommended. This section clarifies cases which are not explicitly mentioned
+therein.
+
+@subsection style_guide_declaration_order_static Static Functions
+
+Static functions (such as helper functions which do not access instance member
+variables) should be declared after class constants, followed by factory
+functions and class constructors.
+
+@subsection style_guide_declaration_order_friend Friends
 
 <code>friend</code> declarations occur at the very beginning of a class
 declaration, before any access specifiers such as <code>private</code>, <code>
