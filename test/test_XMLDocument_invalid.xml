@@ -1,5 +1,5 @@
 <minimc
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:noNamespaceSchemaLocation="minimc_schema.xsd">
+  xsi:noNamespaceSchemaLocation="test_XMLDocument.xsd">
   <unexpected_node/>
 </minimc>

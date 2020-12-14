@@ -17,7 +17,7 @@ target_link_libraries(all_tests Catch2::Catch2 minimc)
 
 # add new unit test input files here
 set(UNIT_TEST_INPUTS
-  minimc_schema.xsd
+  test_XMLDocument.xsd
   test_XMLDocument_valid.xml
   test_XMLDocument_invalid.xml
   )
