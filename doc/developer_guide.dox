@@ -1,0 +1,65 @@
+/**
+
+@page developer_guide Developer Guide
+
+@tableofcontents
+
+@section developer_guide_intro Introduction
+
+This guide is an overview of software design principles that MiniMC developers
+should adhere to.
+
+@section developer_guide_input_parsing Input Parsing
+
+MiniMC users create XML input files to specify problem geometry, materials, and
+other settings. MiniMC uses two XML libraries:
+<a href="http://xerces.apache.org/xerces-c/">Xerces-C++</a> for XML validation
+and <a href="https://pugixml.org">pugixml</a> for object construction.
+Xerces-C++ was selected since it supports
+<a href="https://www.w3.org/TR/xmlschema-1/">XSD 1.0</a> validation. For
+object construction, pugixml was selected since it is overwhelmingly easier
+for developers to use.
+
+MiniMC expects XML input files to follow a particular format. Malformed input
+files should be reported back to the user. There are two main places where
+developers can catch malformed input files: <em>XML validation</em> and
+<em>object creation</em>.
+
+@subsection developer_guide_input_parsing_validation XML Validation
+
+The input file first undergoes XML validation when it is loaded by XMLDocument.
+Input files can link to an external schema file in the top-level node:
+@code{.xml}
+<minimc
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="minimc.xsd">
+  ...
+</minimc>
+@endcode
+
+Ideally, developers will catch input file errors during XML validation. This
+allows errors to be caught before they can propagate downstream. Downstream
+code can also be guaranteed that the XML input file validates against a schema
+so certain checks (such as the existence of particular child nodes for a
+particular parent node) can be skipped entirely.
+
+@subsection developer_guide_input_parsing_object_construction Object Construction
+
+In some cases, the schema is not expressive enough to capture input files which
+are malformed. For instance, the following input file may pass validation
+but is still incorrect since the cell `badcell` refers to `nonexistent`, a
+`surface` which does not exist:
+@code{.xml}
+<surfaces>
+  <sphere name="exists" x="0." y="0." z="0." r="1."/>
+</surfaces>
+<cells>
+  <cell name="badcell">
+    <surface name="nonexistent" sense="-1"/>
+  </cell>
+</cells>
+@endcode
+
+In this case, such an error should be caught during the construction of Cell.
+
+*/

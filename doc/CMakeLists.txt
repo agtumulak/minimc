@@ -2,6 +2,7 @@ find_package(Doxygen)
 if(Doxygen_FOUND)
   set(DOXYGEN_SOURCES
     mainpage.dox
+    developer_guide.dox
     style_guide.dox
     )
   file(GLOB_RECURSE MD_FILES "${PROJECT_SOURCE_DIR}/*.md")
