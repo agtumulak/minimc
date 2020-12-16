@@ -32,7 +32,7 @@ add_custom_target(test
   COMMAND all_tests
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
   COMMENT "Run Catch2 instead of CTest")
-add_dependencies(test all_tests)
+add_dependencies(test all_tests copy_xml_inputs)
 
 # code coverage with llvm
 if (CMAKE_BUILD_TYPE MATCHES "Debug")
