@@ -35,18 +35,20 @@ public</code>, or <code>protected</code>.
 There exist two ways to initialize variables: <em> direct initialization </em>
 and <em> copy initialization </em>:
 @code{.cpp}
-  // Direct initialization
-  auto int(42);
+  // Direct (uniform) initialization
+  auto x{42};
   // Copy initialization
   auto x = 42;
 @endcode
 
 Although both styles are totally valid, we prefer to use direct initialization
-as it is more explicit in naming the initialized variable's type. It also
-avoids a potentially expensive copy operation in certain scenarios. Of course,
-there will always be cases where copy initialization is simply clearer without
-the cost of an expensive copy (such as initializing a reference or copying an
-rvalue for which there is a move constructor) so the choice is ultimately up
-to an informed developer's discretion.
+as it avoids a potentially expensive copy operation in certain scenarios.
+Furthermore, we prefer to use uniform initialization's curly braces as it
+prevents narrowing conversions.
+
+Of course, there will always be cases where copy initialization is simply
+clearer without the cost of an expensive copy (such as initializing a reference
+or copying an rvalue for which there is a move constructor) so the choice is
+ultimately up to an informed developer's discretion.
 
 */
