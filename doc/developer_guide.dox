@@ -7,7 +7,19 @@
 @section developer_guide_intro Introduction
 
 This guide is an overview of software design principles that MiniMC developers
-should adhere to.
+should adhere to. C++ is intended to be an efficient language but it does not
+necessarily mean that it has to be complicated. The C++ standard has undergone
+multiple revisions over the course of decades and, as a consequence, has syntax
+that supports many ways of doing the same thing. Often, there exists an
+idiomatic approach that clearly expresses intent without compromising
+performance. Developers must always be aware of how their code may perform, but
+never to the detriment of readability. <em>Avoid premature optimization uncless
+you can quantitatively prove its benefits via benchmarking</em>.
+
+Sources for information herein come primarily from
+<a href="https://isocpp.org/guidelines">the C++ Core Guidelines</a>. This seems
+to be the definitive guide for writing "modern" C++. Occasionally, matters of
+opinion refer to <a href="https://stackoverflow.com">Stack Overflow</a>.
 
 @section developer_guide_input_parsing Input Parsing
 
@@ -61,5 +73,55 @@ but is still incorrect since the cell `badcell` refers to `nonexistent`, a
 @endcode
 
 In this case, such an error should be caught during the construction of Cell.
+
+@section developer_guide_variables Variables
+
+Functions may accept variables as parameters and return variables. Some common
+practices are outlined here.
+
+@subsection developer_guide_variables_passing_parameters Passing Parameters
+
+It is generally recommended to avoid passing by value when one could otherwise
+pass by const reference. Passing by const reference avoids the overhead of
+copying a potentially large object:
+@code{.cpp}
+void func(HugeType x); // slow!
+void func(const HugeType& x); // fast!
+@endcode
+The first function creates a copy of `x` while the second function only copies
+a pointer to `x`.
+
+One notable exception is when the type itself can be smaller than the pointer
+used by references. On one system, a reference might be implemented as an
+8-byte pointer whereas a `char` only occupies 1-byte. In this case, passing the
+`char` by const reference may actually be slower than passing by value. A
+general disucssion on when to pass by reference or pass by value is available
+<a href="http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#f15-prefer-simple-and-conventional-ways-of-passing-information">
+here</a>.
+
+@subsection developer_guide_variables_returning_values Returning Values
+
+A function which intends to return a non-mutable object can either return by
+value or by const reference:
+@code{.cpp}
+HugeType func(); // return by value
+const HugeType& func(); // return by const reference
+@endcode
+
+In some cases, returning an existing object by value will return a <em>copy
+</em> of that object. If the object is large, there may be a significant cost
+incurred in copying such a large object. This can be addressed by
+<a href="http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#f44-return-a-t-when-copy-is-undesirable-and-returning-no-object-isnt-needed">
+returning a const reference</a>. Care must be taken to ensure that the
+referenced variable does not go out of scope.
+
+In other cases, returning a large object created in the local scope can avoid
+(<em>elide</em>) copying by using
+<a href="https://stackoverflow.com/a/2027535/5101335">
+return value optimization (RVO)</a> when it applies.
+
+@section developer_guide_smart_pointers Smart Pointers
+
+This is gonna be a long discussion.
 
 */
