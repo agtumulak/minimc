@@ -16,7 +16,7 @@ XMLDocument::XMLDocument(const std::filesystem::path& xml_filepath) {
   if (auto result = doc.load_file(xml_filepath.c_str()); !result) {
     throw std::runtime_error(result.description());
   }
-  root = doc.root();
+  root = doc.child("minimc");
 }
 
 // Convert from XMLCh array to std::string
