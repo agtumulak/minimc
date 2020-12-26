@@ -21,6 +21,25 @@ Sources for information herein come primarily from
 to be the definitive guide for writing "modern" C++. Occasionally, matters of
 opinion refer to <a href="https://stackoverflow.com">Stack Overflow</a>.
 
+@section developer_guide_commenting Commenting
+
+Generally speaking, comments should avoid explaining <em>what</em> the code is
+doing - that is the duty of writing "expressive" code. Rather, comments should
+largely be dedicated to <em>why</em>. If possible, try justifying certain code
+so that other developers can understand why you are implementing a feature in
+a particular way. Ideally, you may even cite the C++ Core Guidelines:
+@code{.cpp}
+class CSGSurface {
+public:
+  // Unique user-defined identifier (C.131)
+  const std::string name
+}
+@endcode
+
+A quick internet search of "C++ Core Guidelines C.131" will show this refers to
+<a href="http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#c131-avoid-trivial-getters-and-setters">
+C.131: Avoid trivial getters and setters</a>.
+
 @section developer_guide_input_parsing Input Parsing
 
 MiniMC users create XML input files to specify problem geometry, materials, and
