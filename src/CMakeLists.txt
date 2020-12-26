@@ -1,6 +1,12 @@
 # Add new source files here
 set(MINIMC_SOURCES
+  BasicTypes.hpp
+  CSGSurface.cpp
+  CSGSurface.hpp
+  Point.cpp
+  Point.hpp
   XMLDocument.cpp
+  XMLDocument.hpp
   )
 
 add_library(minimc ${MINIMC_SOURCES})

@@ -31,7 +31,7 @@ a particular way. Ideally, you may even cite the C++ Core Guidelines:
 @code{.cpp}
 class CSGSurface {
 public:
-  // Unique user-defined identifier (C.131)
+  // Unique user-defined identifier (C++ Core Guidelines C.131)
   const std::string name
 }
 @endcode

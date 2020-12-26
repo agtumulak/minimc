@@ -9,6 +9,8 @@ FetchContent_MakeAvailable(catch_download)
 
 # add new unit test source files here
 set(UNIT_TEST_SOURCES
+  test_CSGSurface.cpp
+  test_Point.cpp
   test_XMLDocument.cpp
   )
 # https://github.com/catchorg/Catch2/blob/devel/docs/slow-compiles.md
@@ -17,6 +19,9 @@ target_link_libraries(all_tests Catch2::Catch2 minimc)
 
 # add new unit test input files here
 set(UNIT_TEST_INPUTS
+  minimc.xsd
+  minimc_basictypes.xsd
+  simple.xml
   test_XMLDocument.xsd
   test_XMLDocument_valid.xml
   test_XMLDocument_invalid.xml

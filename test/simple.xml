@@ -1,0 +1,43 @@
+<minimc
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="minimc.xsd">
+<nuclides>
+  <nuclide name="consistent">
+    <groupwise_cross_sections groups="2">
+      <capture>0 1</capture>
+      <scatter>
+        0 1
+        0 0
+      </scatter>
+    </groupwise_cross_sections>
+  </nuclide>
+  <nuclide name="inconsistent">
+    <groupwise_cross_sections groups="2">
+      <capture>0 1 1</capture>
+      <scatter>
+        0 1
+        0 0 1
+      </scatter>
+    </groupwise_cross_sections>
+  </nuclide>
+</nuclides>
+<materials>
+  <material name="material"/>
+</materials>
+<surfaces>
+  <sphere name="inner sphere">
+    <center x="0" y="0" z="0"/>
+    <radius r="1"/>
+  </sphere>
+  <sphere name="outer sphere">
+    <center x="0" y="0" z="0"/>
+    <radius r="2"/>
+  </sphere>
+</surfaces>
+<cells>
+  <cell name="shell">
+    <surface name="inner sphere" sense="+1"/>
+    <surface name="outer sphere" sense="-1"/>
+  </cell>
+</cells>
+</minimc>
