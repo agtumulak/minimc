@@ -9,15 +9,8 @@
 #include <stdexcept>
 #include <string>
 
-XMLDocument::XMLDocument(const std::filesystem::path& xml_filepath) {
-  // Valideate with Xerces-C++
-  ValidateXML(xml_filepath);
-  // Load with pugixml
-  if (auto result = doc.load_file(xml_filepath.c_str()); !result) {
-    throw std::runtime_error(result.description());
-  }
-  root = doc.child("minimc");
-}
+XMLDocument::XMLDocument(const std::filesystem::path& xml_filepath)
+    : doc{ValidateXML(xml_filepath)} {}
 
 // Convert from XMLCh array to std::string
 std::string toCharString(const XMLCh* const str) {
@@ -75,7 +68,9 @@ public:
   }
 };
 
-void XMLDocument::ValidateXML(const std::filesystem::path& xml_filepath) {
+pugi::xml_document
+XMLDocument::ValidateXML(const std::filesystem::path& xml_filepath) {
+  // Xerces-C++ validation
   XercesInitializer init;
   XercesErrorHandler error_handler;
   xercesc::XercesDOMParser parser;
@@ -84,4 +79,10 @@ void XMLDocument::ValidateXML(const std::filesystem::path& xml_filepath) {
   parser.setDoNamespaces(true);
   parser.setErrorHandler(&error_handler);
   parser.parse(xml_filepath.string().c_str());
+  // pugixml DOM construction
+  pugi::xml_document doc{};
+  if (auto result = doc.load_file(xml_filepath.c_str()); !result) {
+    throw std::runtime_error(result.description());
+  }
+  return doc;
 }
