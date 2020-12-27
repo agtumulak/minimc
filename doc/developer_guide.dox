@@ -40,6 +40,34 @@ A quick internet search of "C++ Core Guidelines C.131" will show this refers to
 <a href="http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#c131-avoid-trivial-getters-and-setters">
 C.131: Avoid trivial getters and setters</a>.
 
+@section developer_guide_const Const
+
+<a href="https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines.html#con-constants-and-immutability">
+Use `const` as much as possible</a>.
+
+Sometimes, a `const` member variable (such as `const std::vector`) needs to be
+initialized using non-`const` methods (such as `std::vector::push_back()`). In
+such cases, it is recommended to create a static helper function which will
+construct a temporary object which is then used to initialize the `const`
+member.
+@code{.cpp}
+// Note: The following code won't compile as written because of the declaration
+// order but this will not be an issue if split into header and implemenation
+// files.
+class World {
+public:
+  World(...): cells{CreateCells(...)} {};
+private:
+  static std::vector<const Cell> CreateCells(...);
+  const std::vector<const Cell> cells;
+}
+@endcode
+
+In the above code, the constructor for `World` accepts parameters `(...)` which
+are passed onto `CreateCells()` which returns a properly-initialized temporary
+object. The temporary object is then used to move construct the `const` member
+`cells`.
+
 @section developer_guide_input_parsing Input Parsing
 
 MiniMC users create XML input files to specify problem geometry, materials, and
