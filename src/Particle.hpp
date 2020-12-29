@@ -1,6 +1,5 @@
 #pragma once
 
-#include "BasicTypes.hpp"
 #include "Point.hpp"
 
 /// @brief Particles get transported around

@@ -3,6 +3,8 @@ set(MINIMC_SOURCES
   BasicTypes.hpp
   CSGSurface.cpp
   CSGSurface.hpp
+  Particle.cpp
+  Particle.hpp
   Point.cpp
   Point.hpp
   XMLDocument.cpp
