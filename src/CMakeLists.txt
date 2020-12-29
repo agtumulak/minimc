@@ -7,6 +7,8 @@ set(MINIMC_SOURCES
   Particle.hpp
   Point.cpp
   Point.hpp
+  Source.cpp
+  Source.hpp
   XMLDocument.cpp
   XMLDocument.hpp
   )
