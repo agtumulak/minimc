@@ -19,6 +19,10 @@ public:
   Create(const pugi::xml_node& root, const std::string& name);
   /// @brief Virtual destructor (C++ Core Guidelines C.127)
   virtual ~CSGSurface() noexcept;
+  /// @brief Returns true if Point is in the "negative" side of the (open)
+  ///        surface. A point <em>on</em> the surface or outside is considered
+  ///        to be on the "positive" side.
+  virtual bool Contains(const Point& p) const noexcept = 0;
   /// @brief Return the distance from a given origin Point to the CSGSurface
   ///        along a given direction
   virtual Real
@@ -58,6 +62,8 @@ public:
   /// @param direction Unit vector. Must be normalized to unity.
   Real
   Distance(const Point& origin, const Point& direction) const noexcept override;
+  /// @brief Implements CSGSurface method
+  bool Contains(const Point& p) const noexcept override;
 
 private:
   const Point center;

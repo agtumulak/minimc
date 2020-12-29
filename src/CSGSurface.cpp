@@ -88,3 +88,8 @@ Real Sphere::Distance(
   const Point oc{origin - center};
   return SolveQuadratic(1, 2 * (oc * direction), oc * oc - radius * radius);
 }
+
+bool Sphere::Contains(const Point& p) const noexcept {
+  const Point pc{p - center};
+  return pc * pc < radius * radius;
+}

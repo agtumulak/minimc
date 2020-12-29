@@ -9,6 +9,17 @@
 World::World(const pugi::xml_node& root)
     : surfaces{CreateCSGSurfaces(root)}, cells{CreateCells(root, surfaces)} {}
 
+const Cell& World::FindCellContaining(const Point& p) const {
+  const auto cell_it =
+      std::find_if(cells.begin(), cells.end(), [&p](const Cell& cell) {
+        return cell.Contains(p);
+      });
+  if (cell_it != cells.end()) {
+    return *cell_it;
+  }
+  throw std::runtime_error("Point does not belong to any Cell");
+}
+
 //// private
 
 std::vector<std::shared_ptr<const CSGSurface>>
@@ -32,7 +43,7 @@ World::CreateCSGSurfaces(const pugi::xml_node& root) {
 
 std::vector<Cell> World::CreateCells(
     const pugi::xml_node& root,
-    const std::vector<const std::shared_ptr<const CSGSurface>>&
+    const std::vector<std::shared_ptr<const CSGSurface>>&
         all_surfaces) noexcept {
   std::vector<Cell> cells;
   for (const auto& cell_node : root.child("cells")) {

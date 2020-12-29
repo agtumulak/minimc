@@ -9,6 +9,8 @@ set(MINIMC_SOURCES
   Point.hpp
   Source.cpp
   Source.hpp
+  World.cpp
+  World.hpp
   XMLDocument.cpp
   XMLDocument.hpp
   )

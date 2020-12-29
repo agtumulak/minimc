@@ -10,8 +10,11 @@ FetchContent_MakeAvailable(catch_download)
 # add new unit test source files here
 set(UNIT_TEST_SOURCES
   test_CSGSurface.cpp
+  test_Cell.cpp
+  test_Particle.cpp
   test_Point.cpp
   test_XMLDocument.cpp
+  test_World.cpp
   )
 # https://github.com/catchorg/Catch2/blob/devel/docs/slow-compiles.md
 add_executable(all_tests catch_main.cpp ${UNIT_TEST_SOURCES})

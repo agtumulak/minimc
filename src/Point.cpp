@@ -1,19 +1,17 @@
 #include "Point.hpp"
 
 Point operator+(const Point& lhs, const Point& rhs) noexcept {
-  return Point(lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z);
+  return Point{lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z};
 }
 
 Point operator-(const Point& lhs, const Point& rhs) noexcept {
-  return Point(lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z);
+  return Point{lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z};
 }
 
 Real operator*(const Point& lhs, const Point& rhs) noexcept {
   return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z;
 }
 
-bool operator==(const Point& lhs, const Point& rhs) noexcept {
-  return lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z;
 }
 
 Point::Point(const pugi::xml_node& pointtype_node) noexcept
@@ -23,3 +21,7 @@ Point::Point(const pugi::xml_node& pointtype_node) noexcept
 
 Point::Point(const Real& x, const Real& y, const Real& z) noexcept
     : x{x}, y{y}, z{z} {}
+
+bool Point::operator==(const Point& rhs) const noexcept {
+  return x == rhs.x && y == rhs.y && z == rhs.z;
+}

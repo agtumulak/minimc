@@ -13,6 +13,10 @@ class World {
 public:
   /// @brief Constructs a World from an XML document
   World(const pugi::xml_node& root);
+  /// @brief Returns the current Cell occupied by a given Point
+  /// @details TODO: More than one Cell may contain a Particle. This should be
+  ///          checked during input parsing if possible.
+  const Cell& FindCellContaining(const Point& p) const;
 
 private:
   // Helper function to create all CSGSurface objects that appear in Cell
