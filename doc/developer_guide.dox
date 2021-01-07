@@ -40,6 +40,32 @@ A quick internet search of "C++ Core Guidelines C.131" will show this refers to
 <a href="http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#c131-avoid-trivial-getters-and-setters">
 C.131: Avoid trivial getters and setters</a>.
 
+@section developer_guide_workflow Workflow
+
+@subsection developer_guide_workflow_tdd Test Driven Development
+
+Unit tests make use of the <a href="https://github.com/catchorg/Catch2">Catch2
+</a> unit testing framework. It is recommended to follow a test driven
+development process which roughly follows
+-# Define feature requirements in terms of a Catch2 unit test
+-# Write unit test which <em>only test public interfaces</em>. Do not test
+   private members. They should be indirectly tested by producing correct
+   results in the public interfaces.
+-# Write source code to implement the feature until the unit test works. Do not
+   worry too much about optimization.
+-# Refactor for clarity and optimizations <em>if necessary</em>.
+-# Repeat.
+
+@subsection developer_guide_workflow_debugging Debugging
+
+During testing, it may be useful to
+<a href="https://github.com/catchorg/Catch2/blob/devel/docs/command-line.md#breaking-into-the-debugger">
+break into a debugger</a> to examine why unit tests are failing. For lldb, this
+can be done by
+@code{.sh}
+lldb all_tests --one-line "break set -E c++" -- --break
+@endcode
+
 @section developer_guide_const Const
 
 <a href="https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines.html#con-constants-and-immutability">
