@@ -11,7 +11,7 @@ TEST_CASE("nonexistent surface name throws exception") {
   REQUIRE_THROWS_WITH(
       CSGSurface::Create(doc.root, "nonexistent"),
       "Surface node \"nonexistent\" not found. Must be one of: "
-      "[\"inner sphere\", \"outer sphere\", ]");
+      "[\"inner sphere\", \"middle sphere\", \"outer sphere\", ]");
 }
 
 TEST_CASE("compute distances to Sphere") {

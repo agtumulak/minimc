@@ -1,6 +1,11 @@
 #include "Point.hpp"
 #include "catch2/catch.hpp"
 
+TEST_CASE("Point default constructor") {
+  Point p{};
+  REQUIRE(p == Point{0, 0, 0});
+}
+
 TEST_CASE("overloaded Point binary operators") {
   Point p{1, 1, 0};
   Point q{1, 0, 0};

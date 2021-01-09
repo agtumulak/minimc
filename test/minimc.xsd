@@ -6,13 +6,45 @@
 <xs:element name="minimc">
   <xs:complexType>
     <xs:all>
+      <xs:element name="general">
+        <xs:complexType>
+          <xs:all>
+            <xs:element name="particles" type="ParticleTypeList"/>
+          </xs:all>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="nuclides">
+        <xs:complexType>
+          <xs:choice>
+            <xs:element name="multigroup" type="MultigroupNuclearData"/>
+            <xs:element name="continuous" type="ContinuousNuclearData"/>
+          </xs:choice>
+        </xs:complexType>
+        <xs:unique name="unique-nuclide-name">
+          <xs:selector xpath="./*"/>
+          <xs:field xpath="@name"/>
+        </xs:unique>
+      </xs:element>
       <xs:element name="materials">
         <xs:complexType>
           <xs:choice minOccurs="1" maxOccurs="unbounded">
             <xs:element name="material">
               <xs:complexType>
+                <xs:choice minOccurs="1" maxOccurs="unbounded">
+                  <xs:element name="nuclide">
+                    <xs:complexType>
+                      <xs:attribute name="name" type="xs:normalizedString" use="required"/>
+                      <xs:attribute name="afrac" type="StrictlyPositiveDouble" use="required"/>
+                    </xs:complexType>
+                  </xs:element>
+                </xs:choice>
                 <xs:attribute name="name" use="required"/>
+                <xs:attribute name="aden" type="StrictlyPositiveDouble" use="required"/>
               </xs:complexType>
+              <xs:unique name="unique-material-nuclide-name">
+                <xs:selector xpath="nuclide"/>
+                <xs:field xpath="@name"/>
+              </xs:unique>
             </xs:element>
           </xs:choice>
         </xs:complexType>
@@ -65,6 +97,7 @@
                   </xs:element>
                 </xs:choice>
                 <xs:attribute name="name" type="xs:normalizedString" use="required"/>
+                <xs:attribute name="material" type="xs:normalizedString" use="required"/>
               </xs:complexType>
               <xs:unique name="unique-cell-surface-name">
                 <xs:selector xpath="surface"/>

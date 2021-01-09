@@ -1,0 +1,34 @@
+#pragma once
+
+#include "NuclearData.hpp"
+#include "Particle.hpp"
+#include "pugixml.hpp"
+
+#include <random>
+#include <string>
+
+/// @brief Aggregates cross sections for all reactions and related nuclear data
+class Nuclide {
+public:
+  /// @brief Constructs a Nuclide from an XML document
+  /// @param root Root node of existing XML document
+  /// @param nuclide_name Value of `name` attribute of `nuclide` node in XML
+  ///        document
+  /// @exception std::runtime_error `nuclide` node with matching `name`
+  ///            attribute not found, or incorrect number of entries
+  Nuclide(const pugi::xml_node& root, const std::string& nuclide_name);
+  /// @brief Returns the total cross section for a given Particle
+  const NuclearData::CrossSection GetTotal(const Particle& p) const noexcept;
+  /// @brief Scatters the Particle and updates its state
+  /// @exception std::runtime_error Sampling outgoing Energy failed
+  void Scatter(std::minstd_rand& rng, Particle& p) const;
+  /// @brief Samples a reaction
+  NuclearData::Reaction
+  SampleReaction(std::minstd_rand& rng, const Particle& p) const noexcept;
+  /// @brief Unique, user-defined identifier (C++ Core Guidelines C.131)
+  const std::string name;
+
+private:
+  // Aggregates (polymorphic) CrossSection objects for each Particle::Type
+  const NuclearData::Map xs;
+};

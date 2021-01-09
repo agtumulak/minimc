@@ -25,6 +25,10 @@ TEST_CASE("World is constructed properly") {
   REQUIRE(inner_shell.name == "inner shell");
   REQUIRE(outer_shell.name == "outer shell");
 
+  // test dependence of multiple Cell objects on the same Material
+  REQUIRE(pit.material == outer_shell.material);
+  REQUIRE(pit.material != inner_shell.material);
+
   // test dependence of multiple Cell objects on the same CSGSurface
   const auto& pit_outer_sphere = *std::find_if(
       pit.surface_senses.cbegin(), pit.surface_senses.cend(),

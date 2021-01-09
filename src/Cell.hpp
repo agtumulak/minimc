@@ -1,10 +1,12 @@
 #pragma once
 
 #include "CSGSurface.hpp"
+#include "Material.hpp"
 #include "pugixml.hpp"
 
 #include <map>
 #include <memory>
+#include <random>
 #include <string>
 
 class Particle;
@@ -20,17 +22,24 @@ private:
   // "sense" of the CSGSurface. Multiple Cell objects can share the same
   // CSGSurface object.
   using SurfaceSenses = std::map<std::shared_ptr<const CSGSurface>, bool>;
+  // A vector of Material objects. Multiple Cell objects can share the same
+  // Material object.
+  using MaterialVector = std::vector<std::shared_ptr<const Material>>;
 
 public:
   /// @brief Constructs a Cell from an XML document
   /// @param root Root node of existing XML document
   /// @param cell_name Value of `name` attribute of `cell` node in XML document
   /// @param all_surfaces CSGSurface objects which may appear in this Cell
+  /// @param all_materials Material objects which may appear in this Cell
   Cell(
       const pugi::xml_node& root, const std::string& cell_name,
-      const CSGSurfaceVector& all_surfaces) noexcept;
+      const CSGSurfaceVector& all_surfaces,
+      const MaterialVector& all_materials) noexcept;
   /// @brief Returns true if the point lies inside this Cell
   bool Contains(const Point& p) const noexcept;
+  /// @brief Sample the distance a particle will travel before colliding
+  Real SampleDistance(std::minstd_rand& rng, const Particle& p) const noexcept;
   /// @brief Returns true if both Cell objects are the same object
   bool operator==(const Cell& rhs) const noexcept;
   /// @brief Unique, user-defined identifier (C++ Core Guidelines C.131)
@@ -41,6 +50,8 @@ public:
   ///          This map returns `true` if the Cell lies in the "negative" side
   ///          of the CSGSurface and `false` otherwise.
   const SurfaceSenses surface_senses;
+  /// @brief Material this Cell is made of.
+  const std::shared_ptr<const Material> material;
 
 private:
   // Helper function to assign all CSGSurface objects which make up Cell with
@@ -49,4 +60,10 @@ private:
   static SurfaceSenses AssignSurfaceSenses(
       const pugi::xml_node& root, const std::string& cell_name,
       const CSGSurfaceVector& all_surfaces) noexcept;
+  // Helper function to assign Material object used by the Cell with the given
+  // name. Material objects from all_materials may be shared between Cell
+  // objects.
+  static std::shared_ptr<const Material> AssignMaterial(
+      const pugi::xml_node& root, const std::string& cell_name,
+      const MaterialVector& all_materials) noexcept;
 };

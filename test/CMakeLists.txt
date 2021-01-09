@@ -11,6 +11,8 @@ FetchContent_MakeAvailable(catch_download)
 set(UNIT_TEST_SOURCES
   test_CSGSurface.cpp
   test_Cell.cpp
+  test_Material.cpp
+  test_Nuclide.cpp
   test_Particle.cpp
   test_Point.cpp
   test_XMLDocument.cpp

@@ -3,6 +3,17 @@ set(MINIMC_SOURCES
   BasicTypes.hpp
   CSGSurface.cpp
   CSGSurface.hpp
+  Cell.cpp
+  Cell.hpp
+  Constants.hpp
+  Material.cpp
+  Material.hpp
+  Multigroup.cpp
+  Multigroup.hpp
+  NuclearData.cpp
+  NuclearData.hpp
+  Nuclide.cpp
+  Nuclide.hpp
   Particle.cpp
   Particle.hpp
   Point.cpp

@@ -8,9 +8,11 @@
 
 Cell::Cell(
     const pugi::xml_node& root, const std::string& cell_name,
-    const CSGSurfaceVector& all_surfaces) noexcept
-    : name{cell_name}, surface_senses{
-                           AssignSurfaceSenses(root, name, all_surfaces)} {}
+    const CSGSurfaceVector& all_surfaces,
+    const MaterialVector& all_materials) noexcept
+    : name{cell_name}, surface_senses{AssignSurfaceSenses(
+                           root, cell_name, all_surfaces)},
+      material{AssignMaterial(root, cell_name, all_materials)} {}
 
 bool Cell::Contains(const Point& p) const noexcept {
   return std::all_of(
@@ -20,6 +22,11 @@ bool Cell::Contains(const Point& p) const noexcept {
         // Are the Cell and the Point on the same side of the current surface?
         return surface_ptr->Contains(p) == is_surface_senses;
       });
+}
+
+Real Cell::SampleDistance(
+    std::minstd_rand& rng, const Particle& p) const noexcept {
+  return material->SampleDistance(rng, p);
 }
 
 bool Cell::operator==(const Cell& rhs) const noexcept { return this == &rhs; }
@@ -57,3 +64,20 @@ Cell::SurfaceSenses Cell::AssignSurfaceSenses(
   }
   return cell_surfaces;
 }
+
+std::shared_ptr<const Material> Cell::AssignMaterial(
+    const pugi::xml_node& root, const std::string& cell_name,
+    const MaterialVector& all_materials) noexcept {
+  auto material_name = root.child("cells")
+                           .find_child_by_attribute("name", cell_name.c_str())
+                           .attribute("material")
+                           .as_string();
+  auto material_it = std::find_if(
+      all_materials.cbegin(), all_materials.cend(),
+      [&material_name](const std::shared_ptr<const Material>& material) {
+        return material->name == material_name;
+      });
+  // World::CreateMaterials should have created all Material objects needed
+  assert(material_it != all_materials.cend());
+  return *material_it;
+};
