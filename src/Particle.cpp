@@ -23,7 +23,13 @@ Particle::Particle() noexcept {}
 Particle::Particle(const Energy& energy, const Type type) noexcept
     : energy{energy}, type{type} {};
 
-Particle::operator bool() const noexcept { return alive; }
+bool Particle::IsAlive() const noexcept { return alive; }
+
+void Particle::Kill() noexcept { alive = false; }
+
+void Particle::Stream(const Real distance) noexcept {
+  position += direction * distance;
+}
 
 const Point& Particle::GetPosition() const noexcept { return position; };
 

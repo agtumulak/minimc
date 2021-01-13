@@ -18,6 +18,12 @@ Real operator*(const Point& lhs, const Point& rhs) noexcept {
   return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z;
 }
 
+Point operator*(const Point& lhs, const Real& rhs) noexcept {
+  return Point{lhs.x * rhs, lhs.y * rhs, lhs.z * rhs};
+}
+
+Point operator*(const Real& lhs, const Point& rhs) noexcept {
+  return rhs * lhs;
 }
 
 //// public
@@ -38,6 +44,13 @@ void Point::SetIsotropic(std::minstd_rand& rng) noexcept {
   const Real phi = std::uniform_real_distribution{0., 2 * constants::pi}(rng);
   y = sin_theta * std::cos(phi);
   z = sin_theta * std::sin(phi);
+}
+
+Point& Point::operator+=(const Point& rhs) noexcept {
+  x += rhs.x;
+  y += rhs.y;
+  z += rhs.z;
+  return *this;
 }
 
 bool Point::operator==(const Point& rhs) const noexcept {

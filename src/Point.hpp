@@ -13,6 +13,10 @@ class Point {
   friend Point operator-(const Point& lhs, const Point& rhs) noexcept;
   /// @brief Returns the inner product of two Point objects
   friend Real operator*(const Point& lhs, const Point& rhs) noexcept;
+  /// @brief Returns the elementwise product
+  friend Point operator*(const Point& lhs, const Real& rhs) noexcept;
+  /// @brief Returns the elementwise product
+  friend Point operator*(const Real& lhs, const Point& rhs) noexcept;
 
 public:
   /// @brief Default constructor. Creates a Point at the origin;
@@ -24,6 +28,8 @@ public:
   Point(const Real& x, const Real& y, const Real& z) noexcept;
   /// @brief Sample isotropic distribution and set values
   void SetIsotropic(std::minstd_rand& rng) noexcept;
+  /// @brief Adds the given Point to the current Point
+  Point& operator+=(const Point& rhs) noexcept;
   /// @brief Returns true if each corresponding element is equal
   bool operator==(const Point& rhs) const noexcept;
 

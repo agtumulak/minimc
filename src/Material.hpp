@@ -31,7 +31,8 @@ public:
       const pugi::xml_node& root, const std::string& name,
       const std::vector<std::shared_ptr<const Nuclide>>& all_nuclides);
   /// @brief Sample the distance a Particle will travel before colliding
-  Real SampleDistance(std::minstd_rand& rng, const Particle& p) const noexcept;
+  Real SampleCollisionDistance(
+      std::minstd_rand& rng, const Particle& p) const noexcept;
   /// @brief Sample a Nuclide given that a Particle has collided inside this
   ///        Material
   const Nuclide&

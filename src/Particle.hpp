@@ -40,8 +40,12 @@ public:
   ///          Particle::Type and Energy. These two parameters are all that
   ///          are used when accessing nuclear data.
   Particle(const Energy& energy, const Type type) noexcept;
-  /// @brief Checks if `*this` is still alive
-  explicit operator bool() const noexcept;
+  /// @brief Checks if Particle can still produce history
+  bool IsAlive() const noexcept;
+  /// @brief Kill the Particle, stopping the history
+  void Kill() noexcept;
+  /// @brief Moves the particle along its current direction a given distance
+  void Stream(const Real distance) noexcept;
   /// @brief Return the current position of the Particle
   const Point& GetPosition() const noexcept;
   /// @brief Return the current direction of the Particle

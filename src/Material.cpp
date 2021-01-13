@@ -45,7 +45,7 @@ Material::GetMicroscopicTotal(const Particle& p) const noexcept {
       });
 }
 
-Real Material::SampleDistance(
+Real Material::SampleCollisionDistance(
     std::minstd_rand& rng, const Particle& p) const noexcept {
   return std::exponential_distribution{number_density * GetMicroscopicTotal(p)}(
       rng);

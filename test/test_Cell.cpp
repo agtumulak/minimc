@@ -30,7 +30,7 @@ TEST_CASE("Cell is constructed properly") {
         [&samples](std::minstd_rand& rng, const Cell& c, const Particle& p) {
           Real accumulated{0};
           for (size_t i = 1; i <= samples; i++) {
-            accumulated += c.SampleDistance(rng, p);
+            accumulated += c.SampleCollisionDistance(rng, p);
           }
           return accumulated / samples;
         };

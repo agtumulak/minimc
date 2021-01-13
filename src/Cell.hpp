@@ -8,6 +8,7 @@
 #include <memory>
 #include <random>
 #include <string>
+#include <tuple>
 
 class Particle;
 
@@ -38,8 +39,16 @@ public:
       const MaterialVector& all_materials) noexcept;
   /// @brief Returns true if the point lies inside this Cell
   bool Contains(const Point& p) const noexcept;
+  /// @brief Finds the nearest CSGSurface from a point along a given direction
+  /// @param p position in the Cell
+  /// @param d direction to search along
+  /// @exception std::runtime_error No CSGSurface found
+  /// @return Returns a tuple to nearest CSGSurface and distance to it
+  std::tuple<std::shared_ptr<const CSGSurface>, Real>
+  NearestSurface(const Point& p, const Point& d) const;
   /// @brief Sample the distance a particle will travel before colliding
-  Real SampleDistance(std::minstd_rand& rng, const Particle& p) const noexcept;
+  Real SampleCollisionDistance(
+      std::minstd_rand& rng, const Particle& p) const noexcept;
   /// @brief Returns true if both Cell objects are the same object
   bool operator==(const Cell& rhs) const noexcept;
   /// @brief Unique, user-defined identifier (C++ Core Guidelines C.131)
