@@ -81,29 +81,19 @@
           <xs:choice minOccurs="1" maxOccurs="unbounded">
             <xs:element name="cell">
               <xs:complexType>
-                <xs:choice minOccurs="1" maxOccurs="unbounded">
-                  <xs:element name="surface">
-                    <xs:complexType>
-                      <xs:attribute name="name" type="xs:normalizedString" use="required"/>
-                      <xs:attribute name="sense" use="required">
-                        <xs:simpleType>
-                          <xs:restriction base="xs:string">
-                            <xs:enumeration value="+1"/>
-                            <xs:enumeration value="-1"/>
-                          </xs:restriction>
-                        </xs:simpleType>
-                      </xs:attribute>
-                    </xs:complexType>
-                  </xs:element>
-                </xs:choice>
-                <xs:attribute name="name" type="xs:normalizedString" use="required"/>
-                <xs:attribute name="material" type="xs:normalizedString" use="required"/>
+                <xs:complexContent>
+                  <xs:extension base="CSGDefinition">
+                    <xs:attribute name="name" type="xs:normalizedString" use="required"/>
+                    <xs:attribute name="material" type="xs:normalizedString" use="required"/>
+                  </xs:extension>
+                </xs:complexContent>
               </xs:complexType>
               <xs:unique name="unique-cell-surface-name">
                 <xs:selector xpath="surface"/>
                 <xs:field xpath="@name"/>
               </xs:unique>
             </xs:element>
+            <xs:element name="void" type="CSGDefinition"/>
           </xs:choice>
         </xs:complexType>
         <xs:unique name="unique-cell-name">

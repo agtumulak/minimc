@@ -48,6 +48,10 @@ std::vector<std::shared_ptr<const Nuclide>>
 World::CreateNuclides(const pugi::xml_node& root) {
   std::vector<std::shared_ptr<const Nuclide>> all_nuclides;
   for (const auto& cell_node : root.child("cells")) {
+    if (std::string{cell_node.name()} == "void") {
+      // Skip void cells
+      continue;
+    }
     auto material_name = cell_node.attribute("material").as_string();
     auto material_node = Material::FindNode(root, material_name);
     for (const auto& material_nuclide_node : material_node) {
@@ -71,6 +75,10 @@ std::vector<std::shared_ptr<const Material>> World::CreateMaterials(
     const std::vector<std::shared_ptr<const Nuclide>>& all_nuclides) {
   std::vector<std::shared_ptr<const Material>> all_materials;
   for (const auto& cell_node : root.child("cells")) {
+    if (std::string{cell_node.name()} == "void") {
+      // Skip void cells
+      continue;
+    }
     auto material_name = cell_node.attribute("material").as_string();
     auto material_it = std::find_if(
         all_materials.cbegin(), all_materials.cend(),

@@ -90,6 +90,10 @@ Cell::SurfaceSenses Cell::AssignSurfaceSenses(
 std::shared_ptr<const Material> Cell::AssignMaterial(
     const pugi::xml_node& root, const std::string& cell_name,
     const MaterialVector& all_materials) noexcept {
+  // void cells do not have a material
+  if (cell_name.empty()) {
+    return nullptr;
+  }
   auto material_name = root.child("cells")
                            .find_child_by_attribute("name", cell_name.c_str())
                            .attribute("material")

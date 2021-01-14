@@ -59,7 +59,7 @@ public:
   ///          This map returns `true` if the Cell lies in the "negative" side
   ///          of the CSGSurface and `false` otherwise.
   const SurfaceSenses surface_senses;
-  /// @brief Material this Cell is made of.
+  /// @brief Material this Cell is made of. A nullptr corresponds to a void.
   const std::shared_ptr<const Material> material;
 
 private:
