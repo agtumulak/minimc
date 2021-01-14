@@ -29,8 +29,8 @@ set(MINIMC_SOURCES
 add_library(minimc ${MINIMC_SOURCES})
 add_dependencies(minimc xerces_download pugixml_download)
 target_include_directories(minimc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_compile_options(minimc PRIVATE -Wall
-  $<$<AND:$<CONFIG:Debug>,$<BOOL:${APPLE}>>:-fprofile-instr-generate -fcoverage-mapping -Og>)
+target_compile_options(minimc PUBLIC
+  $<$<AND:$<CONFIG:Debug>,$<BOOL:${APPLE}>>:-fprofile-instr-generate -fcoverage-mapping -Og -Wall>)
 target_link_options(minimc PUBLIC
   $<$<AND:$<CONFIG:Debug>,$<BOOL:${APPLE}>>:-fprofile-instr-generate>)
 target_link_libraries(minimc xerces pugixml)
