@@ -92,9 +92,6 @@ TEST_CASE("Nuclide member methods work properly") {
       };
       return static_cast<double>(lower_energy) / samples;
     };
-    // When epsilons are used, they correspond to 3 sigma variance of mean for
-    // a Bernoulli distribution
-    Real epsilon;
     // purely downscattering (Group 1 -> Group 2)
     REQUIRE(
         LowerEnergyProbability(rng, hydrogen, neutron_group1) ==
