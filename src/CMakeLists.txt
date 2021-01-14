@@ -37,3 +37,5 @@ target_link_libraries(minimc xerces pugixml)
 set_target_properties(minimc PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
   )
+add_executable(runminimc minimc.cpp)
+target_link_libraries(runminimc minimc)
