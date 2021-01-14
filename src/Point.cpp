@@ -39,7 +39,7 @@ Point::Point(const Real& x, const Real& y, const Real& z) noexcept
     : x{x}, y{y}, z{z} {}
 
 void Point::SetIsotropic(std::minstd_rand& rng) noexcept {
-  x = std::uniform_real_distribution{-1, +1}(rng);
+  x = std::uniform_real_distribution{-1., +1.}(rng);
   const Real sin_theta = std::sqrt(1 - x * x);
   const Real phi = std::uniform_real_distribution{0., 2 * constants::pi}(rng);
   y = sin_theta * std::cos(phi);
