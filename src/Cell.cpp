@@ -28,22 +28,18 @@ bool Cell::Contains(const Point& p) const noexcept {
 
 std::tuple<std::shared_ptr<const CSGSurface>, Real>
 Cell::NearestSurface(const Point& p, const Point& d) const {
-  Real min_distance = std::numeric_limits<Real>::infinity();
   const auto& nearest_it = std::min_element(
       surface_senses.cbegin(), surface_senses.cend(),
-      [&p, &d, &min_distance](const auto& lhs, const auto& rhs) {
-        Real lhs_distance = lhs.first->Distance(p, d);
-        if (lhs_distance < rhs.first->Distance(p, d)) {
-          min_distance = lhs_distance;
-          return true;
-        }
-        return false;
+      [&p, &d](const auto& lhs, const auto& rhs) {
+        return lhs.first->Distance(p, d) < rhs.first->Distance(p, d);
       });
   if (nearest_it == surface_senses.cend()) {
     throw std::runtime_error(
         "Particle in Cell \"" + name + "\" could not find nearest surface");
   }
-  return std::make_tuple((*nearest_it).first, min_distance);
+  const auto& nearest_surface = (*nearest_it).first;
+  // TODO: Cache result of nearest surface distance instead of computing again
+  return std::make_tuple(nearest_surface, nearest_surface->Distance(p, d));
 }
 
 Real Cell::SampleCollisionDistance(
