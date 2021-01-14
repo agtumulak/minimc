@@ -26,14 +26,14 @@ TEST_CASE("Cell is constructed properly") {
     // define helper function for calling Cell::SampleDistance
     std::minstd_rand rng{42};
     const size_t samples{1000};
-    auto TestSampleDistance =
-        [&samples](std::minstd_rand& rng, const Cell& c, const Particle& p) {
-          Real accumulated{0};
-          for (size_t i = 1; i <= samples; i++) {
-            accumulated += c.SampleCollisionDistance(rng, p);
-          }
-          return accumulated / samples;
-        };
+    auto TestSampleDistance = [](std::minstd_rand& rng, const Cell& c,
+                                 const Particle& p) {
+      Real accumulated{0};
+      for (size_t i = 1; i <= samples; i++) {
+        accumulated += c.SampleCollisionDistance(rng, p);
+      }
+      return accumulated / samples;
+    };
     // Total macroscopic cross section in pit is 1 for Group 1
     REQUIRE(
         TestSampleDistance(rng, pit, neutron_group1) ==
