@@ -10,6 +10,9 @@
         <xs:complexType>
           <xs:all>
             <xs:element name="particles" type="ParticleTypeList"/>
+            <xs:element name="histories" type="xs:positiveInteger"/>
+            <xs:element name="threads" type="xs:positiveInteger"/>
+            <xs:element name="chunksize" type="xs:positiveInteger"/>
           </xs:all>
         </xs:complexType>
       </xs:element>
