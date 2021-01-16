@@ -18,7 +18,7 @@ public:
   ///            attribute not found, or incorrect number of entries
   Nuclide(const pugi::xml_node& root, const std::string& nuclide_name);
   /// @brief Returns the total cross section for a given Particle
-  const NuclearData::CrossSection GetTotal(const Particle& p) const noexcept;
+  NuclearData::CrossSection GetTotal(const Particle& p) const noexcept;
   /// @brief Scatters the Particle and updates its state
   /// @exception std::runtime_error Sampling outgoing Energy failed
   void Scatter(std::minstd_rand& rng, Particle& p) const;
