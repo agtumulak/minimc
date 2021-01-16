@@ -1,0 +1,16 @@
+/**
+
+@mainpage Main Page
+
+@tableofcontents
+
+@section intro Introduction
+
+Welcome to MiniMC
+
+@section development Development
+
+- @ref developer_guide
+- @ref style_guide
+
+*/

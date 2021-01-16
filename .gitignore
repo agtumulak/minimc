@@ -1,3 +1,9 @@
+# clang
+.cache/
+.clang-format
+compile_commands.json
+*.profraw
+
 # Prerequisites
 *.d
 
@@ -30,3 +36,6 @@
 *.exe
 *.out
 *.app
+
+# misc
+build/

@@ -1,0 +1,200 @@
+/**
+
+@page developer_guide Developer Guide
+
+@tableofcontents
+
+@section developer_guide_intro Introduction
+
+This guide is an overview of software design principles that MiniMC developers
+should adhere to. C++ is intended to be an efficient language but it does not
+necessarily mean that it has to be complicated. The C++ standard has undergone
+multiple revisions over the course of decades and, as a consequence, has syntax
+that supports many ways of doing the same thing. Often, there exists an
+idiomatic approach that clearly expresses intent without compromising
+performance. Developers must always be aware of how their code may perform, but
+never to the detriment of readability. <em>Avoid premature optimization uncless
+you can quantitatively prove its benefits via benchmarking</em>.
+
+Sources for information herein come primarily from
+<a href="https://isocpp.org/guidelines">the C++ Core Guidelines</a>. This seems
+to be the definitive guide for writing "modern" C++. Occasionally, matters of
+opinion refer to <a href="https://stackoverflow.com">Stack Overflow</a>.
+
+@section developer_guide_commenting Commenting
+
+Generally speaking, comments should avoid explaining <em>what</em> the code is
+doing - that is the duty of writing "expressive" code. Rather, comments should
+largely be dedicated to <em>why</em>. If possible, try justifying certain code
+so that other developers can understand why you are implementing a feature in
+a particular way. Ideally, you may even cite the C++ Core Guidelines:
+@code{.cpp}
+class CSGSurface {
+public:
+  // Unique user-defined identifier (C++ Core Guidelines C.131)
+  const std::string name
+}
+@endcode
+
+A quick internet search of "C++ Core Guidelines C.131" will show this refers to
+<a href="http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#c131-avoid-trivial-getters-and-setters">
+C.131: Avoid trivial getters and setters</a>.
+
+@section developer_guide_workflow Workflow
+
+@subsection developer_guide_workflow_tdd Test Driven Development
+
+Unit tests make use of the <a href="https://github.com/catchorg/Catch2">Catch2
+</a> unit testing framework. It is recommended to follow a test driven
+development process which roughly follows
+-# Define feature requirements in terms of a Catch2 unit test
+-# Write unit test which <em>only test public interfaces</em>. Do not test
+   private members. They should be indirectly tested by producing correct
+   results in the public interfaces.
+-# Write source code to implement the feature until the unit test works. Do not
+   worry too much about optimization.
+-# Refactor for clarity and optimizations <em>if necessary</em>.
+-# Repeat.
+
+@subsection developer_guide_workflow_debugging Debugging
+
+During testing, it may be useful to
+<a href="https://github.com/catchorg/Catch2/blob/devel/docs/command-line.md#breaking-into-the-debugger">
+break into a debugger</a> to examine why unit tests are failing. For lldb, this
+can be done by
+@code{.sh}
+lldb all_tests --one-line "break set -E c++" -- --break
+@endcode
+
+@section developer_guide_const Const
+
+<a href="https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines.html#con-constants-and-immutability">
+Use `const` as much as possible</a>.
+
+Sometimes, a `const` member variable (such as `const std::vector`) needs to be
+initialized using non-`const` methods (such as `std::vector::push_back()`). In
+such cases, it is recommended to create a static helper function which will
+construct a temporary object which is then used to initialize the `const`
+member.
+@code{.cpp}
+// Note: The following code won't compile as written because of the declaration
+// order but this will not be an issue if split into header and implemenation
+// files.
+class World {
+public:
+  World(...): cells{CreateCells(...)} {};
+private:
+  static std::vector<const Cell> CreateCells(...);
+  const std::vector<const Cell> cells;
+}
+@endcode
+
+In the above code, the constructor for `World` accepts parameters `(...)` which
+are passed onto `CreateCells()` which returns a properly-initialized temporary
+object. The temporary object is then used to move construct the `const` member
+`cells`.
+
+@section developer_guide_input_parsing Input Parsing
+
+MiniMC users create XML input files to specify problem geometry, materials, and
+other settings. MiniMC uses two XML libraries:
+<a href="http://xerces.apache.org/xerces-c/">Xerces-C++</a> for XML validation
+and <a href="https://pugixml.org">pugixml</a> for object construction.
+Xerces-C++ was selected since it supports
+<a href="https://www.w3.org/TR/xmlschema-1/">XSD 1.0</a> validation. For
+object construction, pugixml was selected since it is overwhelmingly easier
+for developers to use.
+
+MiniMC expects XML input files to follow a particular format. Malformed input
+files should be reported back to the user. There are two main places where
+developers can catch malformed input files: <em>XML validation</em> and
+<em>object creation</em>.
+
+@subsection developer_guide_input_parsing_validation XML Validation
+
+The input file first undergoes XML validation when it is loaded by XMLDocument.
+Input files can link to an external schema file in the top-level node:
+@code{.xml}
+<minimc
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="minimc.xsd">
+  ...
+</minimc>
+@endcode
+
+Ideally, developers will catch input file errors during XML validation. This
+allows errors to be caught before they can propagate downstream. Downstream
+code can also be guaranteed that the XML input file validates against a schema
+so certain checks (such as the existence of particular child nodes for a
+particular parent node) can be skipped entirely.
+
+@subsection developer_guide_input_parsing_object_construction Object Construction
+
+In some cases, the schema is not expressive enough to capture input files which
+are malformed. For instance, the following input file may pass validation
+but is still incorrect since the cell `badcell` refers to `nonexistent`, a
+`surface` which does not exist:
+@code{.xml}
+<surfaces>
+  <sphere name="exists" x="0." y="0." z="0." r="1."/>
+</surfaces>
+<cells>
+  <cell name="badcell">
+    <surface name="nonexistent" sense="-1"/>
+  </cell>
+</cells>
+@endcode
+
+In this case, such an error should be caught during the construction of Cell.
+
+@section developer_guide_variables Variables
+
+Functions may accept variables as parameters and return variables. Some common
+practices are outlined here.
+
+@subsection developer_guide_variables_passing_parameters Passing Parameters
+
+It is generally recommended to avoid passing by value when one could otherwise
+pass by const reference. Passing by const reference avoids the overhead of
+copying a potentially large object:
+@code{.cpp}
+void func(HugeType x); // slow!
+void func(const HugeType& x); // fast!
+@endcode
+The first function creates a copy of `x` while the second function only copies
+a pointer to `x`.
+
+One notable exception is when the type itself can be smaller than the pointer
+used by references. On one system, a reference might be implemented as an
+8-byte pointer whereas a `char` only occupies 1-byte. In this case, passing the
+`char` by const reference may actually be slower than passing by value. A
+general disucssion on when to pass by reference or pass by value is available
+<a href="http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#f15-prefer-simple-and-conventional-ways-of-passing-information">
+here</a>.
+
+@subsection developer_guide_variables_returning_values Returning Values
+
+A function which intends to return a non-mutable object can either return by
+value or by const reference:
+@code{.cpp}
+HugeType func(); // return by value
+const HugeType& func(); // return by const reference
+@endcode
+
+In some cases, returning an existing object by value will return a <em>copy
+</em> of that object. If the object is large, there may be a significant cost
+incurred in copying such a large object. This can be addressed by
+<a href="http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#f44-return-a-t-when-copy-is-undesirable-and-returning-no-object-isnt-needed">
+returning a const reference</a>. Care must be taken to ensure that the
+referenced variable does not go out of scope.
+
+In other cases, returning a large object created in the local scope can avoid
+(<em>elide</em>) copying by using
+<a href="https://stackoverflow.com/a/2027535/5101335">
+return value optimization (RVO)</a> when it applies.
+
+@section developer_guide_smart_pointers Smart Pointers
+
+This is gonna be a long discussion.
+
+*/

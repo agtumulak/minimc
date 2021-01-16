@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+<!-- simple types -->
+
+<xs:simpleType name="NonNegativeDouble">
+  <xs:restriction base="xs:double">
+    <xs:minInclusive value="0.0"/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="StrictlyPositiveDouble">
+  <xs:restriction base="xs:double">
+    <xs:minExclusive value="0.0"/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="ParticleType">
+  <xs:restriction base="xs:string">
+    <xs:enumeration value="neutron"/>
+    <xs:enumeration value="photon"/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="ParticleTypeList">
+  <xs:list itemType="ParticleType"/>
+</xs:simpleType>
+
+<xs:simpleType name="ParticleTypeEntries">
+  <xs:list itemType="NonNegativeDouble"/>
+</xs:simpleType>
+
+<xs:simpleType name="GroupXS">
+  <xs:list itemType="NonNegativeDouble"/>
+</xs:simpleType>
+
+<!-- copmlex types -->
+
+<xs:complexType name="PointType">
+  <xs:attribute name="x" type="xs:double" use="required"/>
+  <xs:attribute name="y" type="xs:double" use="required"/>
+  <xs:attribute name="z" type="xs:double" use="required"/>
+</xs:complexType>
+
+<xs:complexType name="GroupXSReactions">
+  <xs:all>
+    <xs:element name="capture" type="GroupXS"/>
+    <xs:element name="scatter" type="GroupXS"/>
+  </xs:all>
+</xs:complexType>
+
+<xs:complexType name="MultigroupNuclearData">
+  <xs:choice minOccurs="1" maxOccurs="unbounded">
+    <xs:element name="nuclide">
+      <xs:complexType>
+        <xs:all>
+          <xs:element name="neutron" type="GroupXSReactions" minOccurs="0"/>
+          <xs:element name="photon" type="GroupXSReactions" minOccurs="0"/>
+        </xs:all>
+        <xs:attribute name="name" use="required"/>
+      </xs:complexType>
+    </xs:element>
+  </xs:choice>
+  <xs:attribute name="groups" type="xs:positiveInteger" use="required"/>
+</xs:complexType>
+
+<xs:complexType name="ContinuousNuclearData">
+  <xs:choice minOccurs="1" maxOccurs="unbounded">
+    <xs:element name="nuclide">
+      <xs:complexType>
+        <xs:all>
+          <xs:element name="neutron" minOccurs="0"/>
+          <xs:element name="photon" minOccurs="0"/>
+        </xs:all>
+      </xs:complexType>
+    </xs:element>
+  </xs:choice>
+</xs:complexType>
+
+<xs:complexType name="CSGDefinition">
+  <xs:choice minOccurs="1" maxOccurs="unbounded">
+    <xs:element name="surface">
+      <xs:complexType>
+        <xs:attribute name="name" type="xs:normalizedString" use="required"/>
+        <xs:attribute name="sense" use="required">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:enumeration value="+1"/>
+              <xs:enumeration value="-1"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+      </xs:complexType>
+    </xs:element>
+  </xs:choice>
+</xs:complexType>
+
+</xs:schema>

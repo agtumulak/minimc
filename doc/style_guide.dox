@@ -1,0 +1,54 @@
+/**
+
+@page style_guide Style Guide
+
+@tableofcontents
+
+@section style_guide_intro Introduction
+
+MiniMC primarily adheres to the
+<a href="https://google.github.io/styleguide/cppguide.html">Google C++ Style
+Guide</a> for source code style. Cases which are not addressed in the Google
+C++ Style Guide are addressed individually here.
+
+@section style_guide_declaration_order Declaration Order
+
+<a href="https://google.github.io/styleguide/cppguide.html#Declaration_Order">
+The declaration order provided in the Google C++ Style Guide</a> is
+recommended. This section clarifies cases which are not explicitly mentioned
+therein.
+
+@subsection style_guide_declaration_order_static Static Functions
+
+Static functions (such as helper functions which do not access instance member
+variables) should be declared after class constants, followed by factory
+functions and class constructors.
+
+@subsection style_guide_declaration_order_friend Friends
+
+<code>friend</code> declarations occur at the very beginning of a class
+declaration, before any access specifiers such as <code>private</code>, <code>
+public</code>, or <code>protected</code>.
+
+@section style_guide_variable_assignment Variable Assignments
+
+There exist two ways to initialize variables: <em> direct initialization </em>
+and <em> copy initialization </em>:
+@code{.cpp}
+  // Direct (uniform) initialization
+  auto x{42};
+  // Copy initialization
+  auto x = 42;
+@endcode
+
+Although both styles are totally valid, we prefer to use direct initialization
+as it avoids a potentially expensive copy operation in certain scenarios.
+Furthermore, we prefer to use uniform initialization's curly braces as it
+prevents narrowing conversions.
+
+Of course, there will always be cases where copy initialization is simply
+clearer without the cost of an expensive copy (such as initializing a reference
+or copying an rvalue for which there is a move constructor) so the choice is
+ultimately up to an informed developer's discretion.
+
+*/
