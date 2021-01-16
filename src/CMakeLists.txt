@@ -5,6 +5,8 @@ set(MINIMC_SOURCES
   CSGSurface.hpp
   Cell.cpp
   Cell.hpp
+  Estimator.cpp
+  Estimator.hpp
   Constants.hpp
   Material.cpp
   Material.hpp
