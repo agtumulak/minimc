@@ -11,6 +11,6 @@ int main(int argc, char* argv[]) {
   }
   XMLDocument doc{argv[1]};
   FixedSource problem{doc.root};
-  problem.Solve();
+  problem.PoolSolve();
   return 0;
 }

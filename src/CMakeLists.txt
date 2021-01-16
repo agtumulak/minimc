@@ -8,6 +8,8 @@ set(MINIMC_SOURCES
   Estimator.cpp
   Estimator.hpp
   Constants.hpp
+  FixedSource.cpp
+  FixedSource.hpp
   Material.cpp
   Material.hpp
   Multigroup.cpp
