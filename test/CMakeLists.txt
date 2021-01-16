@@ -13,6 +13,7 @@ set(UNIT_TEST_SOURCES
   test_Cell.cpp
   test_Material.cpp
   test_Nuclide.cpp
+  test_Parallel.cpp
   test_Particle.cpp
   test_Point.cpp
   test_XMLDocument.cpp
