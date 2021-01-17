@@ -1,5 +1,6 @@
 #include "NuclearData.hpp"
 
+#include "Continuous.hpp"
 #include "Multigroup.hpp"
 
 #include <numeric>
@@ -45,7 +46,9 @@ NuclearData::Map NuclearData::Create(
               particle_node, energy_type_node.attribute("groups").as_uint()));
     }
     else if (energy_type == "continuous") {
-      // TODO: Implement continuous energy cross section construction
+      xs.emplace(
+          Particle::ToType(particle_name),
+          std::make_unique<const Continuous>(particle_node));
     }
     else {
       assert(false); // this should have been caught by the validator
