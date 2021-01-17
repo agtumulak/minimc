@@ -7,6 +7,54 @@
 #include <stdexcept>
 #include <variant>
 
+// Multigroup
+
+//// public
+
+Multigroup::Multigroup(const pugi::xml_node& particle_node, const Group G)
+    : scatter_matrix{CreateScatterMatrix(particle_node, G)},
+      reactions{CreateReactions(particle_node, G, scatter_matrix)},
+      total{CreateTotalXS(reactions, G)} {}
+
+NuclearData::CrossSection
+Multigroup::GetTotal(const Particle& p) const noexcept {
+  return total.at(std::get<Group>(p.GetEnergy()));
+}
+
+void Multigroup::Scatter(std::minstd_rand& rng, Particle& p) const {
+  const CrossSection threshold = std::uniform_real_distribution{}(
+      rng)*GetReaction(p, NuclearData::Reaction::scatter);
+  CrossSection accumulated{0};
+  Group g{0};
+  for (const auto& outgoing_probability : GetOutgoingScatterProbs(p)) {
+    accumulated += outgoing_probability;
+    g++;
+    if (accumulated > threshold) {
+      p.SetEnergy(g);
+      p.SetDirectionIsotropic(rng);
+      return;
+    }
+  }
+  throw std::runtime_error(
+      "SampleOutgoing reached end of possible outgoing Groups");
+}
+
+NuclearData::Reaction Multigroup::SampleReaction(
+    std::minstd_rand& rng, const Particle& p) const noexcept {
+  const CrossSection threshold{
+      std::uniform_real_distribution{}(rng)*GetTotal(p)};
+  CrossSection accumulated{0};
+  for (const auto& [reaction, reaction_xs] : reactions) {
+    accumulated += reaction_xs.at(std::get<Group>(p.GetEnergy()));
+    if (accumulated > threshold) {
+      return reaction;
+    }
+  }
+  // TODO: Check each Nuclide has nonzero total cross section so this never
+  //       happens
+  assert(false);
+}
+
 // Multigroup::OneDimensional
 
 //// public
@@ -57,78 +105,7 @@ Multigroup::TwoDimensional::end() const noexcept {
   return elements.end();
 }
 
-// Multigroup::Reactions
-
-Multigroup::Reactions::Reactions(){};
-
-void Multigroup::Reactions::insert(
-    Multigroup::Reactions::elements_type::value_type&& value) {
-  elements.insert(value);
-}
-
-const Multigroup::OneDimensional&
-Multigroup::Reactions::at(const NuclearData::Reaction reaction) const {
-  return elements.at(reaction);
-}
-
-Multigroup::Reactions::elements_type::const_iterator
-Multigroup::Reactions::begin() const noexcept {
-  return elements.begin();
-}
-
-Multigroup::Reactions::elements_type::const_iterator
-Multigroup::Reactions::end() const noexcept {
-  return elements.end();
-}
-
 // Multigroup
-
-//// public
-Multigroup::Multigroup(const pugi::xml_node& particle_node, const Group G)
-    : scatter_matrix{CreateScatterMatrix(particle_node, G)},
-      reactions{CreateReactions(particle_node, G, scatter_matrix)},
-      total{CreateTotalXS(reactions, G)} {}
-
-NuclearData::CrossSection
-Multigroup::GetTotal(const Particle& p) const noexcept {
-  return total.at(std::get<Group>(p.GetEnergy()));
-}
-
-void Multigroup::Scatter(std::minstd_rand& rng, Particle& p) const {
-  const CrossSection total_scatter{
-      GetReaction(p, NuclearData::Reaction::scatter)};
-  const CrossSection threshold{
-      std::uniform_real_distribution{}(rng)*total_scatter};
-  CrossSection accumulated{0};
-  Group g{0};
-  for (const auto& outgoing_probability : GetOutgoingScatterProbs(p)) {
-    accumulated += outgoing_probability;
-    g++;
-    if (accumulated > threshold) {
-      p.SetEnergy(g);
-      p.SetDirectionIsotropic(rng);
-      return;
-    }
-  }
-  throw std::runtime_error(
-      "SampleOutgoing reached end of possible outgoing Groups");
-}
-
-NuclearData::Reaction Multigroup::SampleReaction(
-    std::minstd_rand& rng, const Particle& p) const noexcept {
-  const CrossSection threshold{
-      std::uniform_real_distribution{}(rng)*GetTotal(p)};
-  CrossSection accumulated{0};
-  for (const auto& [reaction, reaction_xs] : reactions) {
-    accumulated += GetReaction(p, reaction);
-    if (accumulated > threshold) {
-      return reaction;
-    }
-  }
-  // TODO: Check each Nuclide has nonzero total cross section so this never
-  //       happens
-  assert(false);
-}
 
 //// private
 
@@ -159,10 +136,10 @@ Multigroup::TwoDimensional Multigroup::CreateScatterMatrix(
   return scatter_matrix;
 }
 
-Multigroup::Reactions Multigroup::CreateReactions(
+Multigroup::ReactionsMap Multigroup::CreateReactions(
     const pugi::xml_node& particle_node, const Group G,
     const TwoDimensional& scatter_matrix) {
-  Multigroup::Reactions reactions;
+  Multigroup::ReactionsMap reactions;
   for (const auto& reaction_node : particle_node) {
     std::vector<Real> xs;
     const auto reaction{NuclearData::ToReaction(reaction_node.name())};
@@ -186,13 +163,13 @@ Multigroup::Reactions Multigroup::CreateReactions(
             " entries but got " + std::to_string(xs.size()));
       }
     }
-    reactions.insert(std::make_pair(reaction, xs));
+    reactions.emplace(reaction, xs);
   }
   return reactions;
 }
 
-Multigroup::OneDimensional
-Multigroup::CreateTotalXS(const Reactions& reactions, const Group G) noexcept {
+Multigroup::OneDimensional Multigroup::CreateTotalXS(
+    const ReactionsMap& reactions, const Group G) noexcept {
   return std::accumulate(
       reactions.begin(), reactions.end(), std::vector<Real>(G, 0),
       [](auto& accumulated, const auto& reaction_xs) noexcept {
