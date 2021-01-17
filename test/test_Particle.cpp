@@ -28,7 +28,7 @@ TEST_CASE("Particle can be killed") {
 }
 
 TEST_CASE("Particle Cell can be assigned") {
-  XMLDocument doc{"simple.xml"};
+  XMLDocument doc{"simple_multigroup.xml"};
   const auto w{World{doc.root}};
   Particle p{Group{1}, Particle::Type::neutron};
   REQUIRE_THROWS_WITH(p.GetCell(), "Particle does not belong to a Cell");

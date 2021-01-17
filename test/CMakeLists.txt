@@ -27,7 +27,8 @@ target_link_libraries(all_tests Catch2::Catch2 minimc)
 set(UNIT_TEST_INPUTS
   minimc.xsd
   minimc_basictypes.xsd
-  simple.xml
+  simple_continuous.xml
+  simple_multigroup.xml
   test_XMLDocument.xsd
   test_XMLDocument_valid.xml
   test_XMLDocument_invalid.xml

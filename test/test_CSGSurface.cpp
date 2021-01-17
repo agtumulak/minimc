@@ -7,7 +7,7 @@
 #include <numeric>
 
 TEST_CASE("nonexistent surface name throws exception") {
-  XMLDocument doc{"simple.xml"};
+  XMLDocument doc{"simple_multigroup.xml"};
   REQUIRE_THROWS_WITH(
       CSGSurface::Create(doc.root, "nonexistent"),
       "Surface node \"nonexistent\" not found. Must be one of: "
@@ -15,7 +15,7 @@ TEST_CASE("nonexistent surface name throws exception") {
 }
 
 TEST_CASE("compute distances to Sphere") {
-  XMLDocument doc{"simple.xml"};
+  XMLDocument doc{"simple_multigroup.xml"};
   const std::unique_ptr<const CSGSurface> surface{
       CSGSurface::Create(doc.root, "inner sphere")};
 

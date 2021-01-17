@@ -7,7 +7,7 @@
 #include <random>
 
 TEST_CASE("Cell is constructed properly") {
-  XMLDocument doc{"simple.xml"};
+  XMLDocument doc{"simple_multigroup.xml"};
   const World w{doc.root};
 
   const auto& pit = w.cells.at(0);

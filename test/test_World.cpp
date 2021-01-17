@@ -5,7 +5,7 @@
 #include <algorithm>
 
 TEST_CASE("construct a World") {
-  XMLDocument doc{"simple.xml"};
+  XMLDocument doc{"simple_multigroup.xml"};
   REQUIRE_NOTHROW(World{doc.root});
 }
 
@@ -13,7 +13,7 @@ TEST_CASE("World is constructed properly") {
   // Test interdependencies between objects in a World (Cell on Material,
   // Material on Nuclide, Cell on CSGSurface). Tests on standalone objects
   // (CSGsurface, Nuclide) or stateless static members are performed elsewhere.
-  XMLDocument doc{"simple.xml"};
+  XMLDocument doc{"simple_multigroup.xml"};
   const World w{doc.root};
 
   // only three Cells were declared in the input file
