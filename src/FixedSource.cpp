@@ -63,9 +63,11 @@ Estimator FixedSource::StartWorker() {
           const auto& nuclide{p.GetCell().material->SampleNuclide(rng, p)};
           switch (nuclide.SampleReaction(rng, p)) {
           case NuclearData::Reaction::capture:
+            worker_estimator.at(Estimator::Event::capture)++;
             p.Kill();
             break;
           case NuclearData::Reaction::scatter:
+            worker_estimator.at(Estimator::Event::scatter)++;
             nuclide.Scatter(rng, p);
             break;
           }

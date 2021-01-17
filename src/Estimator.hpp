@@ -13,8 +13,10 @@ class Estimator {
 public:
   /// @brief Label for significant events
   enum class Event {
-    surface_crossing,
+    capture,
     collision,
+    scatter,
+    surface_crossing,
   };
   /// @brief Helper function to convert from Event to std::string
   static std::string ToString(const Event e) noexcept;
@@ -37,5 +39,10 @@ private:
   // Used by ranged-based for loops
   elements_type::const_iterator end() const noexcept;
   // Default initialized to zero counts
-  elements_type elements{{Event::surface_crossing, 0}, {Event::collision, 0}};
+  elements_type elements{
+      {Event::capture, 0},
+      {Event::collision, 0},
+      {Event::scatter, 0},
+      {Event::surface_crossing, 0},
+  };
 };

@@ -14,8 +14,12 @@ std::ostream& operator<<(std::ostream& os, const Estimator& e) noexcept {
 
 std::string Estimator::ToString(const Event e) noexcept {
   switch (e) {
+  case Estimator::Event::capture:
+    return "capture";
   case Estimator::Event::collision:
     return "collision";
+  case Estimator::Event::scatter:
+    return "scatter";
   case Estimator::Event::surface_crossing:
     return "surface crossing";
   }
