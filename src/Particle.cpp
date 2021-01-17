@@ -18,8 +18,6 @@ Particle::Type Particle::ToType(const std::string& name) noexcept {
   };
 }
 
-Particle::Particle() noexcept {}
-
 Particle::Particle(const Energy& energy, const Type type) noexcept
     : energy{energy}, type{type} {};
 

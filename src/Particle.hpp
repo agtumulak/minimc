@@ -32,13 +32,9 @@ public:
   };
   /// @brief Helper function to convert from std::string to Type
   static Type ToType(const std::string& name) noexcept;
-  /// @brief Default constructor. Returns a neutron at the origin moving in
-  ///        the x direction in Group 1.
-  Particle() noexcept;
   /// @brief Type and Energy constructor. For accessing nuclear data.
-  /// @details Similar to default constructor but with user-define
-  ///          Particle::Type and Energy. These two parameters are all that
-  ///          are used when accessing nuclear data.
+  /// @details Type and Energy are the only two parameters that are used when
+  ///          accessing nuclear data.
   Particle(const Energy& energy, const Type type) noexcept;
   /// @brief Checks if Particle can still produce history
   bool IsAlive() const noexcept;

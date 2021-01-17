@@ -16,7 +16,7 @@
 //// public
 
 FixedSource::FixedSource(const pugi::xml_node& root)
-    : world{root}, source{},
+    : world{root}, source{root},
       histories(
           std::stoi(root.child("general").child("histories").child_value())),
       threads(std::stoi(root.child("general").child("threads").child_value())),
