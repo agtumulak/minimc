@@ -64,14 +64,27 @@
   <xs:attribute name="groups" type="xs:positiveInteger" use="required"/>
 </xs:complexType>
 
+<xs:complexType name="ContinuousReactionFilepath">
+  <xs:attribute name="file" type="xs:anyURI" use="required"/>
+</xs:complexType>
+
+<xs:complexType name="ContinuousXSReactions">
+  <xs:all>
+    <xs:element name="total" type="ContinuousReactionFilepath"/>
+    <xs:element name="capture" type="ContinuousReactionFilepath"/>
+    <xs:element name="scatter" type="ContinuousReactionFilepath"/>
+  </xs:all>
+</xs:complexType>
+
 <xs:complexType name="ContinuousNuclearData">
   <xs:choice minOccurs="1" maxOccurs="unbounded">
     <xs:element name="nuclide">
       <xs:complexType>
         <xs:all>
-          <xs:element name="neutron" minOccurs="0"/>
-          <xs:element name="photon" minOccurs="0"/>
+          <xs:element name="neutron" type="ContinuousXSReactions" minOccurs="0"/>
+          <xs:element name="photon" type="ContinuousXSReactions" minOccurs="0"/>
         </xs:all>
+        <xs:attribute name="name" use="required"/>
       </xs:complexType>
     </xs:element>
   </xs:choice>
