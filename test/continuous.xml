@@ -1,0 +1,40 @@
+<minimc
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="minimc.xsd">
+<general>
+  <particles>neutron</particles>
+  <histories>100000</histories>
+  <threads>2</threads>
+  <chunksize>1000</chunksize>
+</general>
+<nuclides>
+  <continuous>
+    <nuclide name="hydrogen">
+      <neutron>
+        <total file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-total.csv"/>
+        <capture file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-gamma.csv"/>
+        <scatter file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-elastic.csv"/>
+      </neutron>
+    </nuclide>
+  </continuous>
+</nuclides>
+<materials>
+  <material name="hydrogen" aden="1">
+    <nuclide name="hydrogen" afrac="0.1"/>
+  </material>
+</materials>
+<surfaces>
+  <sphere name="sphere">
+    <center x="0" y="0" z="0"/>
+    <radius r="1"/>
+  </sphere>
+</surfaces>
+<cells>
+  <cell name="sphere" material="hydrogen">
+    <surface name="sphere" sense="-1"/>
+  </cell>
+  <void>
+    <surface name="sphere" sense="+1"/>
+  </void>
+</cells>
+</minimc>
