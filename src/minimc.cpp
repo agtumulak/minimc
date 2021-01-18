@@ -10,7 +10,6 @@ int main(int argc, char* argv[]) {
     throw std::runtime_error("MiniMC accepts exactly one argument");
   }
   XMLDocument doc{argv[1]};
-  FixedSource problem{doc.root};
-  problem.PoolSolve();
+  FixedSourceStandalone(doc.root).Solve();
   return 0;
 }

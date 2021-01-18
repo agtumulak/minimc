@@ -15,13 +15,11 @@
 
 //// public
 
-FixedSource::FixedSource(const pugi::xml_node& root)
-    : world{root}, source{root},
-      histories(
-          std::stoi(root.child("general").child("histories").child_value())),
-      threads(std::stoi(root.child("general").child("threads").child_value())),
-      chunksize(
-          std::stoi(root.child("general").child("chunksize").child_value())) {}
+FixedSource::FixedSource(
+    Estimator& estimators, const World& world, const Source& source,
+    History histories, size_t threads, size_t chunksize)
+    : global{estimators}, world{world}, source{source}, histories{histories},
+      threads{threads}, chunksize{chunksize} {}
 
 void FixedSource::PoolSolve() {
   std::cout << "Spawning " << std::to_string(threads) << " threads working on "
@@ -38,7 +36,8 @@ void FixedSource::PoolSolve() {
       [](auto& accumulated, auto& future) {
         return accumulated += future.get();
       });
-  std::cout << result;
+  global += result;
+  std::cout << global;
 }
 
 //// private
@@ -85,4 +84,21 @@ Estimator FixedSource::StartWorker() {
     }
   }
   return worker_estimator;
+}
+
+// FixedSourceStandalone
+
+//// public
+
+FixedSourceStandalone::FixedSourceStandalone(const pugi::xml_node& root)
+    : world{root}, source{root},
+      histories(
+          std::stoi(root.child("general").child("histories").child_value())),
+      threads{
+          std::stoul(root.child("general").child("histories").child_value())},
+      chunksize{
+          std::stoul(root.child("general").child("chunksize").child_value())} {}
+
+void FixedSourceStandalone::Solve() {
+  FixedSource{global, world, source, histories, threads, chunksize}.PoolSolve();
 }
