@@ -1,104 +1,102 @@
 #include "FixedSource.hpp"
 
-#include "Constants.hpp"
-#include "XMLDocument.hpp"
+#include "History.hpp"
 
 #include <future>
 #include <iostream>
-#include <memory>
 #include <numeric>
-#include <random>
-#include <string>
-#include <vector>
+#include <sstream>
+
+// ChunkGiver
+
+//// public
+
+ChunkGiver::ChunkGiver(RNG::result_type last, size_t chunksize)
+    : last{last}, chunksize{chunksize} {}
+
+std::optional<std::pair<RNG::result_type, RNG::result_type>>
+ChunkGiver::Next() {
+  const std::lock_guard<std::mutex> lock(m);
+  next_begin = next_end;
+  if (next_begin > last) {
+    return std::nullopt;
+  }
+  next_end = next_begin + chunksize;
+  if (next_end > last + 1) {
+    return std::make_pair(next_begin, last + 1);
+  }
+  return std::make_pair(next_begin, next_end);
+}
 
 // FixedSource
 
 //// public
 
-FixedSource::FixedSource(
-    Estimator& estimators, const World& world, const Source& source,
-    History histories, size_t threads, size_t chunksize)
-    : global{estimators}, world{world}, source{source}, histories{histories},
-      threads{threads}, chunksize{chunksize} {}
+FixedSource::FixedSource(const pugi::xml_node& root)
+    : Driver{root}, particle_type{CreateParticleType(root)},
+      initial_energy{CreateDefaultEnergy(root)} {}
 
-void FixedSource::PoolSolve() {
-  std::cout << "Spawning " << std::to_string(threads) << " threads working on "
-            << std::to_string(histories) << " histories split into "
-            << std::to_string(
-                   histories / chunksize + (histories % chunksize != 0))
-            << " chunks... " << std::endl;
+void FixedSource::Solve() {
   std::vector<std::future<Estimator>> results;
-  for (size_t i = 1; i <= threads; i++) {
+  std::cout << "Spawning " << std::to_string(threads) << " threads working on "
+            << std::to_string(batchsize) << " histories split into "
+            << std::to_string(
+                   batchsize / chunksize + (batchsize % chunksize != 0))
+            << " chunks... " << std::endl;
+  for (size_t i = 0; i < threads; i++) {
     results.push_back(std::async(&FixedSource::StartWorker, this));
   }
-  const auto result = std::reduce(
+  estimators = std::reduce(
       results.begin(), results.end(), Estimator{},
       [](auto& accumulated, auto& future) {
         return accumulated += future.get();
       });
-  global += result;
-  std::cout << global;
+  std::cout << estimators;
 }
-
-//// private
 
 Estimator FixedSource::StartWorker() {
   Estimator worker_estimator;
-  while (const auto range = history_chunks.Next()) {
+  while (const auto range = chunk_giver.Next()) {
     if (!range) {
       break;
     }
-    for (History h = range->first; h < range->second; h++) {
-      std::minstd_rand rng{h};
-      auto p{source.Sample(rng, world)};
-      while (p.IsAlive()) {
-        Real collision_distance, surfacecross_distance;
-        std::shared_ptr<const CSGSurface> nearest_surface;
-        collision_distance = p.GetCell().SampleCollisionDistance(rng, p);
-        std::tie(nearest_surface, surfacecross_distance) =
-            p.GetCell().NearestSurface(p.GetPosition(), p.GetDirection());
-        if (collision_distance < surfacecross_distance) {
-          p.Stream(collision_distance);
-          const auto& nuclide{p.GetCell().material->SampleNuclide(rng, p)};
-          switch (nuclide.SampleReaction(rng, p)) {
-          case NuclearData::Reaction::capture:
-            worker_estimator.at(Estimator::Event::capture)++;
-            p.Kill();
-            break;
-          case NuclearData::Reaction::scatter:
-            worker_estimator.at(Estimator::Event::scatter)++;
-            nuclide.Scatter(rng, p);
-            break;
-          }
-          worker_estimator.at(Estimator::Event::collision)++;
-        }
-        else {
-          p.Stream(surfacecross_distance + constants::nudge);
-          worker_estimator.at(Estimator::Event::surface_crossing)++;
-          p.SetCell(world.FindCellContaining(p.GetPosition()));
-          if (!p.GetCell().material) {
-            p.Kill();
-          }
-        }
-      }
+    for (auto h = range->first; h < range->second; h++) {
+      auto source_particle{Sample(h)};
+      worker_estimator += History{source_particle, world}.Transport().estimator;
     }
   }
   return worker_estimator;
 }
 
-// FixedSourceStandalone
+//// private
 
-//// public
+Particle::Type
+FixedSource::CreateParticleType(const pugi::xml_node& root) noexcept {
+  std::string particle_name;
+  std::stringstream particle_name_list{
+      root.child("general").child("particles").child_value()};
+  particle_name_list >> particle_name;
+  return Particle::ToType(particle_name);
+}
 
-FixedSourceStandalone::FixedSourceStandalone(const pugi::xml_node& root)
-    : world{root}, source{root},
-      histories(
-          std::stoi(root.child("general").child("histories").child_value())),
-      threads{
-          std::stoul(root.child("general").child("histories").child_value())},
-      chunksize{
-          std::stoul(root.child("general").child("chunksize").child_value())} {}
+Energy FixedSource::CreateDefaultEnergy(const pugi::xml_node& root) noexcept {
+  const std::string energy_type{root.child("nuclides").first_child().name()};
+  if (energy_type == "multigroup") {
+    return Group{1};
+  }
+  else if (energy_type == "continuous") {
+    return ContinuousEnergy{1e-6};
+  }
+  else {
+    assert(false); // this should hae been caught by the validator
+  }
+}
 
-void FixedSourceStandalone::Solve() {
-  FixedSource{global, world, source, histories, threads, chunksize}.PoolSolve();
+Particle FixedSource::Sample(RNG::result_type history) const noexcept {
+  RNG rng{history};
+  Particle p{initial_energy, particle_type};
+  p.SetDirectionIsotropic(rng);
+  p.SetCell(world.FindCellContaining(p.GetPosition()));
+  p.seed = rng();
+  return p;
 }

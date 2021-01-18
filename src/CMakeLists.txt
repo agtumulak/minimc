@@ -5,6 +5,8 @@ set(MINIMC_SOURCES
   CSGSurface.hpp
   Cell.cpp
   Cell.hpp
+  Driver.cpp
+  Driver.hpp
   Continuous.cpp
   Continuous.hpp
   Estimator.cpp
@@ -12,6 +14,8 @@ set(MINIMC_SOURCES
   Constants.hpp
   FixedSource.cpp
   FixedSource.hpp
+  History.cpp
+  History.hpp
   Material.cpp
   Material.hpp
   Multigroup.cpp
@@ -20,14 +24,10 @@ set(MINIMC_SOURCES
   NuclearData.hpp
   Nuclide.cpp
   Nuclide.hpp
-  Parallel.cpp
-  Parallel.hpp
   Particle.cpp
   Particle.hpp
   Point.cpp
   Point.hpp
-  Source.cpp
-  Source.hpp
   World.cpp
   World.hpp
   XMLDocument.cpp

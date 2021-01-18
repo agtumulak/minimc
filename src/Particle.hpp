@@ -14,11 +14,12 @@ class Cell;
 ///          ------------- | ------------- | -------------
 ///          position      |            24 |            24
 ///          direction     |            24 |            48
-///          energy        |             8 |            56
-///          cell*         |             8 |            64
-///          type          |             4 |            68
-///          alive         |             1 |            69
-///          padding       |             3 |            72
+///          energy        |            16 |            64
+///          cell*         |             8 |            72
+///          type          |             4 |            76
+///          seed          |             4 |            80
+///          alive         |             1 |            81
+///          padding       |             7 |            88
 /// @note All users of this class should assume that the direction member is
 ///       normalized to one to avoid extra computation. Maintainers of this
 ///       class must take care care to keep direction normalized.
@@ -71,6 +72,16 @@ private:
 public:
   /// @brief Type of the Particle (C++ Core Guidelines C.131)
   const Type type{Type::neutron};
+  /// @brief Seed used to initialize rng once this Particle is constructed
+  /// @details In monte carlo methods, there is a paradoxical requirement that
+  ///          results are completely deterministic. In k-eigenvalue
+  ///          calculations, a given fixed-source cycle must yield the same
+  ///          result every time the simulation is run. To do this, we note
+  ///          that the outcome of sampling a history depends entirely on two
+  ///          things: the initial state of the source particle, and the
+  ///          initial state of the random number generator (rng) used to
+  ///          sample the sequence of events that follow.
+  RNG::result_type seed {0};
 
 private:
   // Flag for determining if this Particle is still alive
