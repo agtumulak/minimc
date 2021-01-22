@@ -1,6 +1,7 @@
 #include "NuclearData.hpp"
 #include "Nuclide.hpp"
 #include "Particle.hpp"
+#include "Point.hpp"
 #include "Statistics.hpp"
 #include "XMLDocument.hpp"
 #include "catch2/catch.hpp"
@@ -47,8 +48,10 @@ TEST_CASE("Nuclide member methods work properly") {
   };
   SECTION("Multigroup methods") {
     XMLDocument doc{"simple_multigroup.xml"};
-    const Particle neutron_group1{Group{1}, Particle::Type::neutron};
-    const Particle neutron_group2{Group{2}, Particle::Type::neutron};
+    const Particle neutron_group1{
+        Point{}, Direction{1, 0, 0}, Group{1}, Particle::Type::neutron};
+    const Particle neutron_group2{
+        Point{}, Direction{1, 0, 0}, Group{2}, Particle::Type::neutron};
     const Nuclide hydrogen{doc.root, "hydrogen"};
     const Nuclide oxygen{doc.root, "oxygen"};
 
@@ -114,7 +117,9 @@ TEST_CASE("Nuclide member methods work properly") {
   }
   SECTION("Continuous methods") {
     XMLDocument doc{"simple_continuous.xml"};
-    const Particle neutron{ContinuousEnergy{0.999}, Particle::Type::neutron};
+    const Particle neutron{
+        Point{}, Direction{1, 0, 0}, ContinuousEnergy{0.999},
+        Particle::Type::neutron};
     const Nuclide hydrogen{doc.root, "hydrogen"};
     const Nuclide oxygen{doc.root, "oxygen"};
     REQUIRE_THROWS_WITH(

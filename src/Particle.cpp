@@ -18,8 +18,10 @@ Particle::Type Particle::ToType(const std::string& name) noexcept {
   };
 }
 
-Particle::Particle(const Energy& energy, const Type type) noexcept
-    : energy{energy}, type{type} {};
+Particle::Particle(
+    const Point& position, const Direction& direction, const Energy& energy,
+    const Type type) noexcept
+    : position{position}, direction{direction}, energy{energy}, type{type} {}
 
 bool Particle::IsAlive() const noexcept { return alive; }
 

@@ -33,8 +33,10 @@ TEST_CASE("Material member methods work properly") {
     const World w{doc.root};
     const auto& hydrogen = *w.cells.at(0).material;
     const auto& water = *w.cells.at(1).material;
-    const Particle neutron_group1{Group{1}, Particle::Type::neutron};
-    const Particle neutron_group2{Group{2}, Particle::Type::neutron};
+    const Particle neutron_group1{
+        Point{}, Direction{1, 0, 0}, Group{1}, Particle::Type::neutron};
+    const Particle neutron_group2{
+        Point{}, Direction{1, 0, 0}, Group{2}, Particle::Type::neutron};
     // hydrogen is the only nuclide in the hydrogen material
     REQUIRE(
         HydrogenProbability(rng, hydrogen, neutron_group1) ==
@@ -60,7 +62,9 @@ TEST_CASE("Material member methods work properly") {
     const World w{doc.root};
     const auto& hydrogen = *w.cells.at(0).material;
     const auto& water = *w.cells.at(1).material;
-    const Particle neutron{ContinuousEnergy{0.999}, Particle::Type::neutron};
+    const Particle neutron{
+        Point{}, Direction{1, 0, 0}, ContinuousEnergy{0.999},
+        Particle::Type::neutron};
     // hydrogen is the only nuclide in the hydrogen material
     REQUIRE(
         HydrogenProbability(rng, hydrogen, neutron) ==

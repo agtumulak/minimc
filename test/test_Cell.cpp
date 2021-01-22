@@ -12,8 +12,10 @@ TEST_CASE("Cell is constructed properly") {
 
   const auto& pit = w.cells.at(0);
   const auto& inner_shell = w.cells.at(1);
-  const Particle neutron_group1{Group{1}, Particle::Type::neutron};
-  const Particle neutron_group2{Group{2}, Particle::Type::neutron};
+  const Particle neutron_group1{
+      Point{}, Direction{1, 0, 0}, Group{1}, Particle::Type::neutron};
+  const Particle neutron_group2{
+      Point{}, Direction{1, 0, 0}, Group{2}, Particle::Type::neutron};
 
   SECTION("Cell returns correct nearest CSGSurface"){
     const auto& [surface, distance] =

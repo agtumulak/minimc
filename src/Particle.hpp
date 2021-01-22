@@ -33,10 +33,10 @@ public:
   };
   /// @brief Helper function to convert from std::string to Type
   static Type ToType(const std::string& name) noexcept;
-  /// @brief Type and Energy constructor. For accessing nuclear data.
-  /// @details Type and Energy are the only two parameters that are used when
-  ///          accessing nuclear data.
-  Particle(const Energy& energy, const Type type) noexcept;
+  /// @brief Member constructor. Explicitly assigns phase-space members.
+  Particle(
+      const Point& position, const Direction& direction, const Energy& energy,
+      const Type type) noexcept;
   /// @brief Checks if Particle can still produce history
   bool IsAlive() const noexcept;
   /// @brief Kill the Particle, stopping the history
