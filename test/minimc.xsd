@@ -110,7 +110,15 @@
           <xs:field xpath="@name"/>
         </xs:unique>
       </xs:element>
+      <xs:element name="problemtype">
+        <xs:complexType>
+          <xs:choice>
+            <xs:element name="fixedsource" type="SourceDistributionType"/>
+          </xs:choice>
+        </xs:complexType>
+      </xs:element>
     </xs:all>
   </xs:complexType>
 </xs:element>
 </xs:schema>
+

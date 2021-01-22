@@ -33,8 +33,7 @@ ChunkGiver::Next() {
 //// public
 
 FixedSource::FixedSource(const pugi::xml_node& root)
-    : Driver{root}, particle_type{CreateParticleType(root)},
-      initial_energy{CreateDefaultEnergy(root)} {}
+    : Driver{root}, source{root.child("problemtype").child("fixedsource")} {};
 
 void FixedSource::Solve() {
   std::vector<std::future<Estimator>> results;
@@ -94,9 +93,7 @@ Energy FixedSource::CreateDefaultEnergy(const pugi::xml_node& root) noexcept {
 
 Particle FixedSource::Sample(RNG::result_type history) const noexcept {
   RNG rng{history};
-  Particle p{initial_energy, particle_type};
-  p.SetDirectionIsotropic(rng);
-  p.SetCell(world.FindCellContaining(p.GetPosition()));
+  auto p = source.Sample(rng);
   p.seed = rng();
   return p;
 }

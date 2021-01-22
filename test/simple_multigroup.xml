@@ -93,4 +93,20 @@
     <surface name="outer sphere" sense="-1"/>
   </cell>
 </cells>
+<problemtype>
+  <fixedsource>
+    <position>
+      <constant x="0" y="0" z="0"/>
+    </position>
+    <direction>
+      <isotropic/>
+    </direction>
+    <energy>
+      <constant energy="1"/>
+    </energy>
+    <particletype>
+      <constant type="neutron"/>
+    </particletype>
+  </fixedsource>
+</problemtype>
 </minimc>

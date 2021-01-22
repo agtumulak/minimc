@@ -28,6 +28,8 @@ set(MINIMC_SOURCES
   Particle.hpp
   Point.cpp
   Point.hpp
+  Source.cpp
+  Source.hpp
   World.cpp
   World.hpp
   XMLDocument.cpp

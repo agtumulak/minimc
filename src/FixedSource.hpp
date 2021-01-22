@@ -3,6 +3,7 @@
 #include "BasicTypes.hpp"
 #include "Driver.hpp"
 #include "Particle.hpp"
+#include "Source.hpp"
 #include "pugixml.hpp"
 
 #include <mutex>
@@ -57,6 +58,5 @@ private:
   Particle Sample(RNG::result_type history) const noexcept;
 
   ChunkGiver chunk_giver{batchsize, chunksize};
-  const Particle::Type particle_type;
-  const Energy initial_energy;
+  Source source;
 };

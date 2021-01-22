@@ -108,4 +108,46 @@
   </xs:choice>
 </xs:complexType>
 
+<xs:complexType name="PointDistributionType">
+  <xs:choice>
+    <xs:element name="constant" type="PointType"/>
+  </xs:choice>
+</xs:complexType>
+
+<xs:complexType name="DirectionDistribtionType">
+  <xs:choice>
+    <xs:element name="constant" type="PointType"/>
+    <xs:element name="isotropic"/>
+  </xs:choice>
+</xs:complexType>
+
+<xs:complexType name="EnergyDistributionType">
+  <xs:choice>
+    <xs:element name="constant">
+      <xs:complexType>
+        <xs:attribute name="energy" type="StrictlyPositiveDouble" use="required"/>
+      </xs:complexType>
+    </xs:element>
+  </xs:choice>
+</xs:complexType>
+
+<xs:complexType name="ParticleTypeDistributionType">
+  <xs:choice>
+    <xs:element name="constant">
+      <xs:complexType>
+        <xs:attribute name="type" type="ParticleType"/>
+      </xs:complexType>
+    </xs:element>
+  </xs:choice>
+</xs:complexType>
+
+<xs:complexType name="SourceDistributionType">
+  <xs:all>
+    <xs:element name="position" type="PointDistributionType"/>
+    <xs:element name="direction" type="DirectionDistribtionType"/>
+    <xs:element name="energy" type="EnergyDistributionType"/>
+    <xs:element name="particletype" type="ParticleTypeDistributionType"/>
+  </xs:all>
+</xs:complexType>
+
 </xs:schema>
