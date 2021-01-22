@@ -46,10 +46,10 @@ public:
   /// @brief Return the current position of the Particle
   const Point& GetPosition() const noexcept;
   /// @brief Return the current direction of the Particle
-  const Point& GetDirection() const noexcept;
+  const Direction& GetDirection() const noexcept;
   /// @brief Sets the direction to a random isotropic direction
   /// @note This should be replaced by a method which accepts scattering cosine
-  void SetDirectionIsotropic(std::minstd_rand& rng) noexcept;
+  void SetDirectionIsotropic(RNG& rng) noexcept;
   /// @brief Returns the current energy of the Particle
   const Energy& GetEnergy() const noexcept;
   /// @brief Updates the current energy of the Particle
@@ -63,7 +63,7 @@ private:
   // Position may be anywhere in @f$ \mathbb{R}^3 @f$
   Point position{0, 0, 0};
   // Direction must be constrained to @f$ \lVert v \rVert = 1 @f$
-  Point direction{1, 0, 0};
+  Direction direction{1, 0, 0};
   // Energy in continuous energy calculation or group in multigroup calculation
   Energy energy{Group{1}};
   // Non-owning pointer to current const Cell occupied by the Particle

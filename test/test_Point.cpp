@@ -1,6 +1,8 @@
 #include "Point.hpp"
 #include "catch2/catch.hpp"
 
+#include <cmath>
+
 TEST_CASE("Point default constructor") {
   Point p{};
   REQUIRE(p == Point{0, 0, 0});
@@ -25,6 +27,18 @@ TEST_CASE("overloaded Point binary operators") {
 
 TEST_CASE("overloaded member operators") {
   Point p{1, 2, 3};
-  p += Point{4, 5, 6};
-  REQUIRE(p == Point{5, 7, 9});
+  SECTION("assignment by addition") {
+    p += Point{4, 5, 6};
+    REQUIRE(p == Point{5, 7, 9});
+  }
+  SECTION("assignment by division") {
+    p /= 2;
+    REQUIRE(p == Point{0.5, 1, 1.5});
+  }
+}
+
+TEST_CASE("point normalization works"){
+  Point p{1, 1, 0};
+  p.Normalize();
+  REQUIRE(p == Point{1 / std::sqrt(2), 1 / std::sqrt(2), 0});
 }

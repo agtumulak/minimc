@@ -45,7 +45,7 @@ public:
   /// @exception std::runtime_error No CSGSurface found
   /// @return Returns a tuple to nearest CSGSurface and distance to it
   std::tuple<std::shared_ptr<const CSGSurface>, Real>
-  NearestSurface(const Point& p, const Point& d) const;
+  NearestSurface(const Point& p, const Direction& d) const;
   /// @brief Sample the distance a particle will travel before colliding
   Real SampleCollisionDistance(
       std::minstd_rand& rng, const Particle& p) const noexcept;

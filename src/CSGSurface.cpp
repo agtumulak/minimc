@@ -84,7 +84,7 @@ Sphere::Sphere(const pugi::xml_node& sphere_node) noexcept
       radius{sphere_node.child("radius").attribute("r").as_double()} {}
 
 Real Sphere::Distance(
-    const Point& origin, const Point& direction) const noexcept {
+    const Point& origin, const Direction& direction) const noexcept {
   const Point oc{origin - center};
   return SolveQuadratic(1, 2 * (oc * direction), oc * oc - radius * radius);
 }

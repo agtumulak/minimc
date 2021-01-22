@@ -26,18 +26,33 @@ public:
   Point(const pugi::xml_node& pointtype_node) noexcept;
   /// @brief Constructs a Point with the given components
   Point(const Real& x, const Real& y, const Real& z) noexcept;
-  /// @brief Sample isotropic distribution and set values
-  void SetIsotropic(std::minstd_rand& rng) noexcept;
+  /// @brief Scales the point to satisfy @f$ \lVert v \rVert = 1 @f$
+  void Normalize() noexcept;
   /// @brief Adds the given Point to the current Point
   Point& operator+=(const Point& rhs) noexcept;
+  /// @brief Divides each element of this Point with rhs
+  Point& operator/=(const Real& rhs) noexcept;
   /// @brief Returns true if each corresponding element is equal
   bool operator==(const Point& rhs) const noexcept;
 
-private:
+protected:
   /// @brief x component
   Real x{0};
   /// @brief y component
   Real y{0};
   /// @brief z component
   Real z{0};
+};
+
+/// @brief Point in @f$ \mathbb{R}^{3} @f$ subject to
+///        @f$ \lVert v \rVert = 1 @f$
+class Direction : public Point {
+public:
+  /// @brief Constructs an isotropically sampled Direction
+  static Direction CreateIsotropic(RNG& rng) noexcept;
+  /// @brief Constructs a Direction from a `PointType` node
+  /// @details `PointType` is a `complexType` defined in the minimc XML schema.
+  Direction(const pugi::xml_node& pointtype_node) noexcept;
+  /// @brief Constructs a Direction with the given components
+  Direction(const Real& x, const Real& y, const Real& z) noexcept;
 };

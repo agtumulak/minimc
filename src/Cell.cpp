@@ -27,7 +27,7 @@ bool Cell::Contains(const Point& p) const noexcept {
 }
 
 std::tuple<std::shared_ptr<const CSGSurface>, Real>
-Cell::NearestSurface(const Point& p, const Point& d) const {
+Cell::NearestSurface(const Point& p, const Direction& d) const {
   const auto& nearest_it = std::min_element(
       surface_senses.cbegin(), surface_senses.cend(),
       [&p, &d](const auto& lhs, const auto& rhs) {

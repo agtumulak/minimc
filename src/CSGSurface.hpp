@@ -26,7 +26,7 @@ public:
   /// @brief Return the distance from a given origin Point to the CSGSurface
   ///        along a given direction
   virtual Real
-  Distance(const Point& origin, const Point& direction) const noexcept = 0;
+  Distance(const Point& origin, const Direction& direction) const noexcept = 0;
   /// @brief Unique, user-defined identifier (C++ Core Guidelines C.131)
   const std::string name;
 
@@ -60,8 +60,8 @@ public:
   ///        line-sphere intersection algorithm</a>
   /// @param origin Starting point from where distance will be calculated.
   /// @param direction Unit vector. Must be normalized to unity.
-  Real
-  Distance(const Point& origin, const Point& direction) const noexcept override;
+  Real Distance(
+      const Point& origin, const Direction& direction) const noexcept override;
   /// @brief Implements CSGSurface method
   bool Contains(const Point& p) const noexcept override;
 

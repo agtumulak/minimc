@@ -17,7 +17,7 @@ TEST_CASE("Cell is constructed properly") {
 
   SECTION("Cell returns correct nearest CSGSurface"){
     const auto& [surface, distance] =
-        inner_shell.NearestSurface(Point{1.5, 0, 0}, Point{1, 0, 0});
+        inner_shell.NearestSurface(Point{1.5, 0, 0}, Direction{1, 0, 0});
     REQUIRE(surface->name == "middle sphere");
     REQUIRE(distance == Approx(0.5));
   }

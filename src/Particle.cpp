@@ -31,10 +31,10 @@ void Particle::Stream(const Real distance) noexcept {
 
 const Point& Particle::GetPosition() const noexcept { return position; };
 
-const Point& Particle::GetDirection() const noexcept { return direction; };
+const Direction& Particle::GetDirection() const noexcept { return direction; };
 
-void Particle::SetDirectionIsotropic(std::minstd_rand& rng) noexcept {
-  direction.SetIsotropic(rng);
+void Particle::SetDirectionIsotropic(RNG& rng) noexcept {
+  direction = Direction::CreateIsotropic(rng);
 }
 
 const Energy& Particle::GetEnergy() const noexcept { return energy; };

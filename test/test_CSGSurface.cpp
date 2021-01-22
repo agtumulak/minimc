@@ -21,24 +21,24 @@ TEST_CASE("compute distances to Sphere") {
 
   // discriminant less than zero; no intersection
   REQUIRE(
-      surface->Distance(Point{2, 0, 0}, Point{0, 0, 1}) ==
+      surface->Distance(Point{2, 0, 0}, Direction{0, 0, 1}) ==
       std::numeric_limits<Real>::infinity());
   // discriminant equal zero; no intersection; grazing
   REQUIRE(
-      surface->Distance(Point{1, 0, 0}, Point{0, 0, 1}) ==
+      surface->Distance(Point{1, 0, 0}, Direction{0, 0, 1}) ==
       std::numeric_limits<Real>::infinity());
   // outside sphere; headed towards sphere
-  REQUIRE(surface->Distance(Point{0, 0, -2}, Point{0, 0, 1}) == Approx(1));
+  REQUIRE(surface->Distance(Point{0, 0, -2}, Direction{0, 0, 1}) == Approx(1));
   // on sphere; leaving sphere
-  REQUIRE(surface->Distance(Point{0, 0, -1}, Point{0, 0, 1}) == Approx(2));
+  REQUIRE(surface->Distance(Point{0, 0, -1}, Direction{0, 0, 1}) == Approx(2));
   // in sphere; leaving sphere
-  REQUIRE(surface->Distance(Point{0, 0, 0}, Point{0, 0, 1}) == Approx(1));
+  REQUIRE(surface->Distance(Point{0, 0, 0}, Direction{0, 0, 1}) == Approx(1));
   // on sphere; headed away from sphere
   REQUIRE(
-      surface->Distance(Point{0, 0, 1}, Point{0, 0, 1}) ==
+      surface->Distance(Point{0, 0, 1}, Direction{0, 0, 1}) ==
       std::numeric_limits<Real>::infinity());
   // outside sphere; headed away from sphere
   REQUIRE(
-      surface->Distance(Point{0, 0, 2}, Point{0, 0, 1}) ==
+      surface->Distance(Point{0, 0, 2}, Direction{0, 0, 1}) ==
       std::numeric_limits<Real>::infinity());
 }

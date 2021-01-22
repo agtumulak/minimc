@@ -38,12 +38,8 @@ Point::Point(const pugi::xml_node& pointtype_node) noexcept
 Point::Point(const Real& x, const Real& y, const Real& z) noexcept
     : x{x}, y{y}, z{z} {}
 
-void Point::SetIsotropic(std::minstd_rand& rng) noexcept {
-  x = std::uniform_real_distribution{-1., +1.}(rng);
-  const Real sin_theta = std::sqrt(1 - x * x);
-  const Real phi = std::uniform_real_distribution{0., 2 * constants::pi}(rng);
-  y = sin_theta * std::cos(phi);
-  z = sin_theta * std::sin(phi);
+void Point::Normalize() noexcept {
+  *this /= std::sqrt(*this * *this); // sorry about this
 }
 
 Point& Point::operator+=(const Point& rhs) noexcept {
@@ -53,6 +49,36 @@ Point& Point::operator+=(const Point& rhs) noexcept {
   return *this;
 }
 
+Point& Point::operator/=(const Real& rhs) noexcept {
+  x /= rhs;
+  y /= rhs;
+  z /= rhs;
+  return *this;
+}
+
 bool Point::operator==(const Point& rhs) const noexcept {
   return x == rhs.x && y == rhs.y && z == rhs.z;
+}
+
+// Direction
+
+//// public
+
+Direction Direction::CreateIsotropic(RNG& rng) noexcept {
+  Real x = std::uniform_real_distribution{-1., +1.}(rng);
+  const Real sin_theta = std::sqrt(1 - x * x);
+  const Real phi = std::uniform_real_distribution{0., 2 * constants::pi}(rng);
+  Real y = sin_theta * std::cos(phi);
+  Real z = sin_theta * std::sin(phi);
+  return Direction{x, y, z};
+}
+
+Direction::Direction(const pugi::xml_node& pointtype_node) noexcept
+    : Point{pointtype_node} {
+  Normalize();
+}
+
+Direction::Direction(const Real& x, const Real& y, const Real& z) noexcept
+    : Point{x, y, z} {
+  Normalize();
 }
