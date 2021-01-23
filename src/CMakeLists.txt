@@ -38,7 +38,7 @@ add_library(minimc ${MINIMC_SOURCES})
 add_dependencies(minimc xerces_download pugixml_download)
 target_include_directories(minimc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_options(minimc PUBLIC
-  $<$<AND:$<CONFIG:Debug>,$<BOOL:${APPLE}>>:-fprofile-instr-generate -fcoverage-mapping -O0 -Wall -Wextra>
+  $<$<AND:$<CONFIG:Debug>,$<BOOL:${APPLE}>>:-fprofile-instr-generate -fcoverage-mapping -O0 -Wall -Wextra -Wdocumentation>
   $<$<AND:$<CONFIG:Release>,$<CXX_COMPILER_ID:Clang,GNU>>:-O3>)
 target_link_options(minimc PUBLIC
   $<$<AND:$<CONFIG:Debug>,$<BOOL:${APPLE}>>:-fprofile-instr-generate>)
