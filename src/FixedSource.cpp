@@ -73,5 +73,6 @@ Particle FixedSource::Sample(RNG::result_type history) const noexcept {
   RNG rng{history};
   auto p = source.Sample(rng);
   p.seed = rng();
+  p.SetCell(world.FindCellContaining(p.GetPosition()));
   return p;
 }
