@@ -44,8 +44,11 @@ Distribution<T>::Create(const pugi::xml_node& property_node) {
   }
   else if constexpr (std::is_same<T, Energy>::value) {
     if (distribution_name == "constant") {
-      const std::string energy_type =
-          property_node.root().child("nuclides").first_child().name();
+      const std::string energy_type = property_node.root()
+                                          .child("minimc")
+                                          .child("nuclides")
+                                          .first_child()
+                                          .name();
       const std::string energy_value =
           distribution_node.attribute("energy").as_string();
       if (energy_type == "multigroup") {
