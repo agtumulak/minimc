@@ -5,28 +5,7 @@
 #include <future>
 #include <iostream>
 #include <numeric>
-#include <sstream>
-
-// ChunkGiver
-
-//// public
-
-ChunkGiver::ChunkGiver(RNG::result_type last, size_t chunksize)
-    : last{last}, chunksize{chunksize} {}
-
-std::optional<std::pair<RNG::result_type, RNG::result_type>>
-ChunkGiver::Next() {
-  const std::lock_guard<std::mutex> lock(m);
-  next_begin = next_end;
-  if (next_begin > last) {
-    return std::nullopt;
-  }
-  next_end = next_begin + chunksize;
-  if (next_end > last + 1) {
-    return std::make_pair(next_begin, last + 1);
-  }
-  return std::make_pair(next_begin, next_end);
-}
+#include <optional>
 
 // FixedSource
 

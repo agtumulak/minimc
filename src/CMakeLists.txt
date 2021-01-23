@@ -24,6 +24,8 @@ set(MINIMC_SOURCES
   NuclearData.hpp
   Nuclide.cpp
   Nuclide.hpp
+  Parallel.cpp
+  Parallel.hpp
   Particle.cpp
   Particle.hpp
   Point.cpp

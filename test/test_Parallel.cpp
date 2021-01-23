@@ -1,42 +1,40 @@
 #include "BasicTypes.hpp"
-#include "FixedSource.hpp"
+#include "Parallel.hpp"
 #include "catch2/catch.hpp"
 
 #include <future>
 #include <numeric>
 #include <vector>
 
-using history = RNG::result_type;
-
 TEST_CASE("split chunks") {
   // One chunk only
   ChunkGiver single_chunk{10, 1000};
-  REQUIRE(single_chunk.Next() == std::pair{history{1}, history{11}});
+  REQUIRE(single_chunk.Next() == std::pair{size_t{1}, size_t{11}});
   REQUIRE(single_chunk.Next() == std::nullopt);
   // perfectly even
   ChunkGiver perfectly_even{999, 333};
-  REQUIRE(perfectly_even.Next() == std::pair{history{1}, history{334}});
-  REQUIRE(perfectly_even.Next() == std::pair{history{334}, history{667}});
-  REQUIRE(perfectly_even.Next() == std::pair{history{667}, history{1000}});
+  REQUIRE(perfectly_even.Next() == std::pair{size_t{1}, size_t{334}});
+  REQUIRE(perfectly_even.Next() == std::pair{size_t{334}, size_t{667}});
+  REQUIRE(perfectly_even.Next() == std::pair{size_t{667}, size_t{1000}});
   REQUIRE(perfectly_even.Next() == std::nullopt);
   // modulo one
   ChunkGiver mod_one{1000, 333};
-  REQUIRE(mod_one.Next() == std::pair{history{1}, history{334}});
-  REQUIRE(mod_one.Next() == std::pair{history{334}, history{667}});
-  REQUIRE(mod_one.Next() == std::pair{history{667}, history{1000}});
-  REQUIRE(mod_one.Next() == std::pair{history{1000}, history{1001}});
+  REQUIRE(mod_one.Next() == std::pair{size_t{1}, size_t{334}});
+  REQUIRE(mod_one.Next() == std::pair{size_t{334}, size_t{667}});
+  REQUIRE(mod_one.Next() == std::pair{size_t{667}, size_t{1000}});
+  REQUIRE(mod_one.Next() == std::pair{size_t{1000}, size_t{1001}});
   REQUIRE(mod_one.Next() == std::nullopt);
   // modulo two
   ChunkGiver mod_two{1001, 333};
-  REQUIRE(mod_two.Next() == std::pair{history{1}, history{334}});
-  REQUIRE(mod_two.Next() == std::pair{history{334}, history{667}});
-  REQUIRE(mod_two.Next() == std::pair{history{667}, history{1000}});
-  REQUIRE(mod_two.Next() == std::pair{history{1000}, history{1002}});
+  REQUIRE(mod_two.Next() == std::pair{size_t{1}, size_t{334}});
+  REQUIRE(mod_two.Next() == std::pair{size_t{334}, size_t{667}});
+  REQUIRE(mod_two.Next() == std::pair{size_t{667}, size_t{1000}});
+  REQUIRE(mod_two.Next() == std::pair{size_t{1000}, size_t{1002}});
   REQUIRE(mod_two.Next() == std::nullopt);
 }
 
 TEST_CASE("multithreaded chunk splitting") {
-  history h{1000};
+  size_t h{1000};
   size_t threads{10};
   // shared between threads
   ChunkGiver shared_chunk{h, 10};
