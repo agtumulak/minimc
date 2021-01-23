@@ -20,7 +20,9 @@ const Cell& World::FindCellContaining(const Point& p) const {
   if (cell_it != cells.end()) {
     return *cell_it;
   }
-  throw std::runtime_error("Point does not belong to any Cell");
+  throw std::runtime_error(
+      "Point does not belong to any Cell. Please check"
+      "that all space is either assigned a material or void.");
 }
 
 //// private
