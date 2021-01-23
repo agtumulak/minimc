@@ -15,4 +15,7 @@ namespace constants {
 constexpr Real pi = M_PI;
 /// @brief Additional distance to stream Particle to cross CSGSurface properly
 constexpr Real nudge = 10 * std::numeric_limits<Real>::epsilon();
+/// @brief Interval between RNG seeds to keep sequences "far apart". Is this
+///        a legitimate concern?
+constexpr RNG::result_type seed_stride{7919};
 } // namespace constants

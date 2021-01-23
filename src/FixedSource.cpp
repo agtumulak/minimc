@@ -1,5 +1,6 @@
 #include "FixedSource.hpp"
 
+#include "Constants.hpp"
 #include "History.hpp"
 
 #include <future>
@@ -49,7 +50,7 @@ Estimator FixedSource::StartWorker() {
 //// private
 
 Particle FixedSource::Sample(RNG::result_type history) const noexcept {
-  RNG rng{history};
+  RNG rng{(history + 1) * constants::seed_stride}; // avoid zero seed with +1
   auto p = source.Sample(rng);
   p.SetCell(world.FindCellContaining(p.GetPosition()));
   return p;
