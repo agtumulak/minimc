@@ -69,28 +69,6 @@ Estimator FixedSource::StartWorker() {
 
 //// private
 
-Particle::Type
-FixedSource::CreateParticleType(const pugi::xml_node& root) noexcept {
-  std::string particle_name;
-  std::stringstream particle_name_list{
-      root.child("general").child("particles").child_value()};
-  particle_name_list >> particle_name;
-  return Particle::ToType(particle_name);
-}
-
-Energy FixedSource::CreateDefaultEnergy(const pugi::xml_node& root) noexcept {
-  const std::string energy_type{root.child("nuclides").first_child().name()};
-  if (energy_type == "multigroup") {
-    return Group{1};
-  }
-  else if (energy_type == "continuous") {
-    return ContinuousEnergy{1e-6};
-  }
-  else {
-    assert(false); // this should hae been caught by the validator
-  }
-}
-
 Particle FixedSource::Sample(RNG::result_type history) const noexcept {
   RNG rng{history};
   auto p = source.Sample(rng);

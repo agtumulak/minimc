@@ -40,7 +40,6 @@ private:
 class FixedSource : public Driver {
 public:
   /// @brief Creates objects necessary for a fixed source calculation
-  /// @param root Root node of existing XML document
   FixedSource(const pugi::xml_node& root);
   /// @brief Spawn workers to work on chunks of history
   void Solve() override;
@@ -48,15 +47,10 @@ public:
   Estimator StartWorker();
 
 private:
-  // Helper function to create a set of Particle::Type which will spawn
-  // TODO: Support more than one Particle::Type
-  static Particle::Type CreateParticleType(const pugi::xml_node& root) noexcept;
-  // Helper function to set default initial energy of spawned Particle
-  static Energy CreateDefaultEnergy(const pugi::xml_node& root) noexcept;
   // In a fixed-source calculation a single integer (`history`) uniquely
-  // specifies the history of a particle.
+  // determines the history of a particle.
   Particle Sample(RNG::result_type history) const noexcept;
 
   ChunkGiver chunk_giver{batchsize, chunksize};
-  Source source;
+  const Source source;
 };
