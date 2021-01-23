@@ -117,7 +117,9 @@ Source::Source(const pugi::xml_node& source_node)
           source_node.child("particletype"))} {}
 
 Particle Source::Sample(RNG& rng) const noexcept {
-  return Particle{
+  Particle p{
       position->Sample(rng), direction->Sample(rng), energy->Sample(rng),
       particle_type->Sample(rng)};
+  p.seed = rng();
+  return p;
 }
