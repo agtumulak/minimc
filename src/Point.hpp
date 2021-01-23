@@ -13,9 +13,9 @@ class Point {
   friend Point operator-(const Point& lhs, const Point& rhs) noexcept;
   /// @brief Returns the inner product of two Point objects
   friend Real operator*(const Point& lhs, const Point& rhs) noexcept;
-  /// @brief Returns the elementwise product
+  /// @brief Returns Point with each element multiplied by lhs
   friend Point operator*(const Point& lhs, const Real& rhs) noexcept;
-  /// @brief Returns the elementwise product
+  /// @brief Returns Point with each element multiplied by rhs
   friend Point operator*(const Real& lhs, const Point& rhs) noexcept;
 
 public:
