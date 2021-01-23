@@ -30,7 +30,8 @@ public:
   /// @brief Returns the total cross section for a given Particle
   CrossSection GetTotal(const Particle& p) const noexcept override;
   /// @brief Scatters the Particle and updates its group and direction
-  /// @brief std::runtime_error A suitable outgoing Group could not be sampled.
+  /// @exception std::runtime_error A suitable outgoing Group could not be
+  ///            sampled.
   void Scatter(std::minstd_rand& rng, Particle& p) const override;
   /// @brief Samples a Reaction
   Reaction SampleReaction(
