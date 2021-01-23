@@ -5,13 +5,13 @@
 #include <optional>
 #include <utility>
 
-/// @brief Splits a contiguous range of integers into fixed-size chunks.
-/// @details The last chunk may have fewer values than `chunksize`. Each call
+/// @brief Splits a range of nonnegative integers into fixed-size chunks.
+/// @details The last chunk may have fewer values than `chunk`. Each call
 ///          to Next() will return a distinct subrange in a thread-safe manner.
 class ChunkGiver {
 public:
-  /// @brief Constructs a ChunkGiver with a last integer and fixed chunk size
-  ChunkGiver(size_t last, size_t chunksize);
+  /// @brief Constructs a ChunkGiver for `size` elements and fixed chunk size
+  ChunkGiver(size_t size, size_t chunk);
   /// @brief Disallow copy/move constructor:
   ///        https://www.stroustrup.com/C++11FAQ.html#default2
   ChunkGiver(const ChunkGiver&) = delete;
@@ -25,8 +25,8 @@ public:
 
 private:
   std::mutex m;
-  const size_t last;
-  const size_t chunksize;
-  size_t next_begin{1};
-  size_t next_end{1};
+  const size_t size;
+  const size_t chunk;
+  size_t begin{0};
+  size_t end{0};
 };

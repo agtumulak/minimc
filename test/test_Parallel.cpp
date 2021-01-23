@@ -9,27 +9,27 @@
 TEST_CASE("split chunks") {
   // One chunk only
   ChunkGiver single_chunk{10, 1000};
-  REQUIRE(single_chunk.Next() == std::pair{size_t{1}, size_t{11}});
+  REQUIRE(single_chunk.Next() == std::pair{size_t{0}, size_t{10}});
   REQUIRE(single_chunk.Next() == std::nullopt);
   // perfectly even
   ChunkGiver perfectly_even{999, 333};
-  REQUIRE(perfectly_even.Next() == std::pair{size_t{1}, size_t{334}});
-  REQUIRE(perfectly_even.Next() == std::pair{size_t{334}, size_t{667}});
-  REQUIRE(perfectly_even.Next() == std::pair{size_t{667}, size_t{1000}});
+  REQUIRE(perfectly_even.Next() == std::pair{size_t{0}, size_t{333}});
+  REQUIRE(perfectly_even.Next() == std::pair{size_t{333}, size_t{666}});
+  REQUIRE(perfectly_even.Next() == std::pair{size_t{666}, size_t{999}});
   REQUIRE(perfectly_even.Next() == std::nullopt);
   // modulo one
   ChunkGiver mod_one{1000, 333};
-  REQUIRE(mod_one.Next() == std::pair{size_t{1}, size_t{334}});
-  REQUIRE(mod_one.Next() == std::pair{size_t{334}, size_t{667}});
-  REQUIRE(mod_one.Next() == std::pair{size_t{667}, size_t{1000}});
-  REQUIRE(mod_one.Next() == std::pair{size_t{1000}, size_t{1001}});
+  REQUIRE(mod_one.Next() == std::pair{size_t{0}, size_t{333}});
+  REQUIRE(mod_one.Next() == std::pair{size_t{333}, size_t{666}});
+  REQUIRE(mod_one.Next() == std::pair{size_t{666}, size_t{999}});
+  REQUIRE(mod_one.Next() == std::pair{size_t{999}, size_t{1000}});
   REQUIRE(mod_one.Next() == std::nullopt);
   // modulo two
   ChunkGiver mod_two{1001, 333};
-  REQUIRE(mod_two.Next() == std::pair{size_t{1}, size_t{334}});
-  REQUIRE(mod_two.Next() == std::pair{size_t{334}, size_t{667}});
-  REQUIRE(mod_two.Next() == std::pair{size_t{667}, size_t{1000}});
-  REQUIRE(mod_two.Next() == std::pair{size_t{1000}, size_t{1002}});
+  REQUIRE(mod_two.Next() == std::pair{size_t{0}, size_t{333}});
+  REQUIRE(mod_two.Next() == std::pair{size_t{333}, size_t{666}});
+  REQUIRE(mod_two.Next() == std::pair{size_t{666}, size_t{999}});
+  REQUIRE(mod_two.Next() == std::pair{size_t{999}, size_t{1001}});
   REQUIRE(mod_two.Next() == std::nullopt);
 }
 

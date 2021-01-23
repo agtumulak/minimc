@@ -4,18 +4,17 @@
 
 //// public
 
-ChunkGiver::ChunkGiver(size_t last, size_t chunksize)
-    : last{last}, chunksize{chunksize} {}
+ChunkGiver::ChunkGiver(size_t size, size_t chunk) : size{size}, chunk{chunk} {}
 
 std::optional<std::pair<size_t, size_t>> ChunkGiver::Next() {
   const std::lock_guard<std::mutex> lock(m);
-  next_begin = next_end;
-  if (next_begin > last) {
+  begin = end;
+  if (begin >= size) {
     return std::nullopt;
   }
-  next_end = next_begin + chunksize;
-  if (next_end > last + 1) {
-    return std::make_pair(next_begin, last + 1);
+  end = begin + chunk;
+  if (end > size) {
+    return std::make_pair(begin, size);
   }
-  return std::make_pair(next_begin, next_end);
+  return std::make_pair(begin, end);
 }
