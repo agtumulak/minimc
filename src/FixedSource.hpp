@@ -14,7 +14,7 @@ public:
   FixedSource(const pugi::xml_node& root);
   /// @brief Spawn workers to work on chunks of history
   void Solve() override;
-  /// @brief Function exiected by a worker on a single thread
+  /// @brief Function executed by a worker on a single thread
   Estimator StartWorker();
 
 private:
