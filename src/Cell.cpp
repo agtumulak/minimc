@@ -42,8 +42,7 @@ Cell::NearestSurface(const Point& p, const Direction& d) const {
   return std::make_tuple(nearest_surface, nearest_surface->Distance(p, d));
 }
 
-Real Cell::SampleCollisionDistance(
-    std::minstd_rand& rng, const Particle& p) const noexcept {
+Real Cell::SampleCollisionDistance(RNG& rng, const Particle& p) const noexcept {
   return material->SampleCollisionDistance(rng, p);
 }
 

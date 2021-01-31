@@ -28,7 +28,7 @@ Continuous::GetTotal(const Particle& p) const noexcept {
   return total.at(std::get<ContinuousEnergy>(p.GetEnergy()));
 }
 
-void Continuous::Scatter(std::minstd_rand& rng, Particle& p) const noexcept {
+void Continuous::Scatter(RNG& rng, Particle& p) const noexcept {
   p.SetDirectionIsotropic(rng);
   return;
 }
@@ -52,8 +52,8 @@ Continuous::Fission(RNG& rng, Particle& p) const noexcept {
   return fission_neutrons;
 }
 
-NuclearData::Reaction Continuous::SampleReaction(
-    std::minstd_rand& rng, const Particle& p) const noexcept {
+NuclearData::Reaction
+Continuous::SampleReaction(RNG& rng, const Particle& p) const noexcept {
   const CrossSection threshold =
       std::uniform_real_distribution{}(rng)*GetTotal(p);
   CrossSection accumulated{0};

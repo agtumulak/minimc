@@ -33,7 +33,7 @@ Multigroup::GetTotal(const Particle& p) const noexcept {
   return total.at(std::get<Group>(p.GetEnergy()));
 }
 
-void Multigroup::Scatter(std::minstd_rand& rng, Particle& p) const noexcept {
+void Multigroup::Scatter(RNG& rng, Particle& p) const noexcept {
   const Real threshold = std::uniform_real_distribution{}(rng);
   Real accumulated{0};
   const auto& group_probs{

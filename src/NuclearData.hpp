@@ -38,13 +38,13 @@ public:
   /// @brief Scatters the Particle and updates its energy and direction
   /// @exception std::runtime_error Most likely cause is that the scattering
   ///            cross section is zero so an outgoing Energy cannot be sampled
-  virtual void Scatter(std::minstd_rand& rng, Particle& p) const = 0;
+  virtual void Scatter(RNG& rng, Particle& p) const = 0;
   /// @brief Fissions the Nuclide and produces secondaries
   virtual std::vector<Particle>
   Fission(RNG& rng, Particle& p) const noexcept = 0;
   /// @brief Samples a reaction
   virtual Reaction
-  SampleReaction(std::minstd_rand& rng, const Particle& p) const noexcept = 0;
+  SampleReaction(RNG& rng, const Particle& p) const noexcept = 0;
 
 protected:
   /// @brief Helper function to convert from std::string to Reaction

@@ -46,13 +46,13 @@ Material::GetMicroscopicTotal(const Particle& p) const noexcept {
 }
 
 Real Material::SampleCollisionDistance(
-    std::minstd_rand& rng, const Particle& p) const noexcept {
+    RNG& rng, const Particle& p) const noexcept {
   return std::exponential_distribution{number_density * GetMicroscopicTotal(p)}(
       rng);
 }
 
-const Nuclide& Material::SampleNuclide(
-    std::minstd_rand& rng, const Particle& p) const noexcept {
+const Nuclide&
+Material::SampleNuclide(RNG& rng, const Particle& p) const noexcept {
   const CrossSection threshold{
       std::uniform_real_distribution{}(rng)*GetMicroscopicTotal(p)};
   CrossSection accumulated{0};

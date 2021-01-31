@@ -47,8 +47,7 @@ public:
   std::tuple<std::shared_ptr<const CSGSurface>, Real>
   NearestSurface(const Point& p, const Direction& d) const;
   /// @brief Sample the distance a particle will travel before colliding
-  Real SampleCollisionDistance(
-      std::minstd_rand& rng, const Particle& p) const noexcept;
+  Real SampleCollisionDistance(RNG& rng, const Particle& p) const noexcept;
   /// @brief Returns true if both Cell objects are the same object
   bool operator==(const Cell& rhs) const noexcept;
   /// @brief Unique, user-defined identifier (C++ Core Guidelines C.131)

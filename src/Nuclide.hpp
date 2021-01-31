@@ -28,7 +28,7 @@ public:
   std::vector<Particle> Fission(RNG& rng, Particle& p) const noexcept;
   /// @brief Samples a reaction
   NuclearData::Reaction
-  SampleReaction(std::minstd_rand& rng, const Particle& p) const noexcept;
+  SampleReaction(RNG& rng, const Particle& p) const noexcept;
   /// @brief Unique, user-defined identifier (C++ Core Guidelines C.131)
   const std::string name;
 
