@@ -11,32 +11,35 @@
 
 //// public
 
-Multigroup::Multigroup(const pugi::xml_node& particle_node, const Group G)
-    : scatter_matrix{CreateScatterMatrix(particle_node, G)},
-      reactions{CreateReactions(particle_node, G, scatter_matrix)},
-      total{CreateTotalXS(reactions, G)} {}
+Multigroup::Multigroup(const pugi::xml_node& particle_node)
+    : scatter_probs{particle_node.child("scatter")
+              ? std::make_optional<NormalizedTwoDimensional>(
+                  particle_node.child("scatter"))
+              : std::nullopt},
+      reactions{CreateReactions(particle_node)},
+      total{CreateTotalXS(particle_node, reactions)},
+      max_group{GroupStructureSize(particle_node.root())} {}
 
 NuclearData::CrossSection
 Multigroup::GetTotal(const Particle& p) const noexcept {
   return total.at(std::get<Group>(p.GetEnergy()));
 }
 
-void Multigroup::Scatter(std::minstd_rand& rng, Particle& p) const {
-  const CrossSection threshold = std::uniform_real_distribution{}(
-      rng)*GetReaction(p, NuclearData::Reaction::scatter);
-  CrossSection accumulated{0};
-  Group g{0};
-  for (const auto& outgoing_probability : GetOutgoingScatterProbs(p)) {
-    accumulated += outgoing_probability;
-    g++;
+void Multigroup::Scatter(std::minstd_rand& rng, Particle& p) const noexcept {
+  const Real threshold = std::uniform_real_distribution{}(rng);
+  Real accumulated{0};
+  const auto& group_probs{
+      scatter_probs.value().at(std::get<Group>(p.GetEnergy()))};
+  for (Group g = 1; g <= max_group; g++) {
+    accumulated += group_probs.at(g);
     if (accumulated > threshold) {
       p.SetEnergy(g);
       p.SetDirectionIsotropic(rng);
       return;
     }
   }
-  throw std::runtime_error(
-      "SampleOutgoing reached end of possible outgoing Groups");
+  // scatter_probs is a NormalizedTwoDimensional so this shouldn't ever happen
+  assert(false);
 }
 
 NuclearData::Reaction Multigroup::SampleReaction(
@@ -62,6 +65,20 @@ NuclearData::Reaction Multigroup::SampleReaction(
 Multigroup::OneDimensional::OneDimensional(const elements_type& elements)
     : elements{elements} {}
 
+Multigroup::OneDimensional::OneDimensional(const pugi::xml_node& groupxs_node) {
+  const Group G{GroupStructureSize(groupxs_node.root())};
+  std::stringstream element_stringlist{groupxs_node.child_value()};
+  Real element;
+  while (element_stringlist >> element) {
+    elements.push_back(element);
+  }
+  if (elements.size() != G) {
+    throw std::runtime_error(
+        groupxs_node.path() + ": Expected " + std::to_string(G) +
+        " entries but got " + std::to_string(elements.size()));
+  }
+}
+
 Real& Multigroup::OneDimensional::at(const Group g) {
   return elements.at(g - 1);
 }
@@ -70,10 +87,21 @@ const Real& Multigroup::OneDimensional::at(const Group g) const {
   return elements.at(g - 1);
 }
 
+Multigroup::OneDimensional::elements_type::iterator
+Multigroup::OneDimensional::begin() noexcept {
+  return elements.begin();
+}
+
 Multigroup::OneDimensional::elements_type::const_iterator
 Multigroup::OneDimensional::begin() const noexcept {
   return elements.begin();
 }
+
+Multigroup::OneDimensional::elements_type::iterator
+Multigroup::OneDimensional::end() noexcept {
+  return elements.end();
+};
+
 Multigroup::OneDimensional::elements_type::const_iterator
 Multigroup::OneDimensional::end() const noexcept {
   return elements.end();
@@ -83,8 +111,30 @@ Multigroup::OneDimensional::end() const noexcept {
 
 //// public
 
-Multigroup::TwoDimensional::TwoDimensional(const elements_type& elements)
-    : elements{elements} {}
+Multigroup::TwoDimensional::TwoDimensional(const pugi::xml_node& groupxs_node) {
+  const Group G{GroupStructureSize(groupxs_node.root())};
+  // Load scatter matrix entries as flattened values
+  std::vector<Real> flattened;
+  std::stringstream element_stringlist{groupxs_node.child_value()};
+  Real element;
+  while (element_stringlist >> element) {
+    flattened.push_back(element);
+  }
+  const size_t expected_size{G * G};
+  if (flattened.size() != expected_size) {
+    throw std::runtime_error(
+        groupxs_node.path() + ": Expected " + std::to_string(expected_size) +
+        " entries but got " + std::to_string(flattened.size()));
+  }
+  // Construct column by column
+  for (Group gp = 1; gp <= G; gp++) {
+    std::vector<Real> column;
+    for (Group g = 1; g <= G; g++) {
+      column.push_back(flattened.at(G * (g - 1) + (gp - 1)));
+    }
+    elements.push_back(column);
+  }
+}
 
 Multigroup::OneDimensional& Multigroup::TwoDimensional::at(Group g) {
   return elements.at(g - 1);
@@ -105,71 +155,74 @@ Multigroup::TwoDimensional::end() const noexcept {
   return elements.end();
 }
 
+// Multigroup::NormalizedTwoDimensional
+
+//// public
+
+Multigroup::NormalizedTwoDimensional::NormalizedTwoDimensional(
+    const pugi::xml_node& groupxs_node)
+    : TwoDimensional(groupxs_node) {
+  std::for_each(
+      elements.begin(), elements.end(),
+      [](elements_type::value_type& one_dimensional) {
+        auto column_sum = std::accumulate(
+            one_dimensional.begin(), one_dimensional.end(), Real{0},
+            std::plus<Real>());
+        if (column_sum == 0.) {
+          return;
+        }
+        else {
+          std::for_each(
+              one_dimensional.begin(), one_dimensional.end(),
+              [&column_sum](auto& element) { element /= column_sum; });
+        }
+      });
+}
+
 // Multigroup
 
 //// private
 
-Multigroup::TwoDimensional Multigroup::CreateScatterMatrix(
-    const pugi::xml_node& particle_node, const Group G) {
-  TwoDimensional scatter_matrix(
-      std::vector<OneDimensional>(G, std::vector<Real>(G, 0)));
-  const auto& scatter_node{particle_node.child("scatter")};
-  // Load scatter matrix entries as flattened values
-  std::vector<Real> flattened;
-  std::stringstream elements{scatter_node.child_value()};
-  Real element;
-  while (elements >> element) {
-    flattened.push_back(element);
-  }
-  const size_t expected_size{G * G};
-  if (flattened.size() != expected_size) {
-    throw std::runtime_error(
-        scatter_node.path() + ": Expected " + std::to_string(expected_size) +
-        " entries but got " + std::to_string(flattened.size()));
-  }
-  // Unflatten matrix entries
-  for (Group g = 1; g <= G; g++) {      // g corresponds to outgoing group
-    for (Group gp = 1; gp <= G; gp++) { // gp corresponds to incoming group
-      scatter_matrix.at(gp).at(g) = flattened.at(G * (g - 1) + (gp - 1));
-    }
-  }
-  return scatter_matrix;
+Group Multigroup::GroupStructureSize(const pugi::xml_node& root) noexcept {
+  return root.root()
+      .child("minimc")
+      .child("nuclides")
+      .child("multigroup")
+      .attribute("groups")
+      .as_uint();
 }
 
-Multigroup::ReactionsMap Multigroup::CreateReactions(
-    const pugi::xml_node& particle_node, const Group G,
-    const TwoDimensional& scatter_matrix) {
+Multigroup::OneDimensional
+Multigroup::CreateScatterXS(const pugi::xml_node& scatter_node) {
+  std::vector<CrossSection> column_sums;
+  auto scatter_matrix = TwoDimensional{scatter_node};
+  for (const auto& column : scatter_matrix) {
+    column_sums.push_back(
+        std::accumulate(column.begin(), column.end(), CrossSection{0}));
+  }
+  return column_sums;
+}
+
+Multigroup::ReactionsMap
+Multigroup::CreateReactions(const pugi::xml_node& particle_node) {
   Multigroup::ReactionsMap reactions;
   for (const auto& reaction_node : particle_node) {
-    std::vector<Real> xs;
-    const auto reaction{NuclearData::ToReaction(reaction_node.name())};
-    // scatter cross section is obtained by summing columns of scatter_matrix
+    std::string reaction_name{reaction_node.name()};
+    const auto reaction{NuclearData::ToReaction(reaction_name)};
     if (reaction == NuclearData::Reaction::scatter) {
-      for (const auto& column : scatter_matrix) {
-        xs.push_back(std::accumulate(
-            column.begin(), column.end(), Real{0}, std::plus<Real>()));
-      }
+      reactions.emplace(reaction, CreateScatterXS(reaction_node));
     }
     else {
-      // everything else is a 1d vector
-      std::stringstream elements{reaction_node.child_value()};
-      Real element;
-      while (elements >> element) {
-        xs.push_back(element);
-      }
-      if (xs.size() != G) {
-        throw std::runtime_error(
-            reaction_node.path() + ": Expected " + std::to_string(G) +
-            " entries but got " + std::to_string(xs.size()));
-      }
+      reactions.emplace(reaction, reaction_node);
     }
-    reactions.emplace(reaction, xs);
   }
   return reactions;
 }
 
 Multigroup::OneDimensional Multigroup::CreateTotalXS(
-    const ReactionsMap& reactions, const Group G) noexcept {
+    const pugi::xml_node& particle_node,
+    const ReactionsMap& reactions) noexcept {
+  const Group G{GroupStructureSize(particle_node.root())};
   return std::accumulate(
       reactions.begin(), reactions.end(), std::vector<Real>(G, 0),
       [](auto& accumulated, const auto& reaction_xs) noexcept {
@@ -183,9 +236,4 @@ Multigroup::OneDimensional Multigroup::CreateTotalXS(
 NuclearData::CrossSection
 Multigroup::GetReaction(const Particle& p, const Reaction r) const noexcept {
   return reactions.at(r).at(std::get<Group>(p.GetEnergy()));
-}
-
-const Multigroup::OneDimensional&
-Multigroup::GetOutgoingScatterProbs(const Particle& p) const noexcept {
-  return scatter_matrix.at(std::get<Group>(p.GetEnergy()));
 }

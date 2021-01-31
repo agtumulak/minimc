@@ -6,6 +6,7 @@
 #include "pugixml.hpp"
 
 #include <map>
+#include <optional>
 #include <random>
 #include <vector>
 
@@ -19,20 +20,16 @@ public:
   /// @details Creates cross sections for each Reaction. If no corresponding
   ///          reaction node is found, it is not added to the map.
   /// @param particle_node The requested particle node in the XML document
-  /// @param G The largest group number expected. Corresponds to group with the
-  ///        <em>lowest</em> energy.
   /// @exception std::runtime_error Number of entries is not consistent with
-  ///            `G` parameter
-  Multigroup(const pugi::xml_node& particle_node, const Group G);
+  ///            number of groups
+  Multigroup(const pugi::xml_node& particle_node);
   /// @brief Constructs multigroup nuclear data from an existing set of
   ///        Multigroup data and associated weights.
   Multigroup(const std::map<NuclearData, Real>& weights);
   /// @brief Returns the total cross section for a given Particle
   CrossSection GetTotal(const Particle& p) const noexcept override;
   /// @brief Scatters the Particle and updates its group and direction
-  /// @exception std::runtime_error A suitable outgoing Group could not be
-  ///            sampled.
-  void Scatter(std::minstd_rand& rng, Particle& p) const override;
+  void Scatter(std::minstd_rand& rng, Particle& p) const noexcept override;
   /// @brief Samples a Reaction
   Reaction SampleReaction(
       std::minstd_rand& rng, const Particle& p) const noexcept override;
@@ -47,13 +44,21 @@ private:
   public:
     // Constructs Multigroup::OneDimensional from vector of Real
     OneDimensional(const elements_type& elements);
+    // Constructs Multigroup::OneDimensional from a `GroupXS` type node. Refer
+    // to XML schema for structure of `GroupXS` type node.
+    OneDimensional(const pugi::xml_node& groupxs_node);
     // Returns a reference to the `g`-th group
     Real& at(const Group g);
     // Returns a const reference to the `g`-th group
     const Real& at(const Group g) const;
     // Returns an iterator corresponding to most energetic Group
+    elements_type::iterator begin() noexcept;
+    // Returns a const_iterator corresponding to most energetic Group
     elements_type::const_iterator begin() const noexcept;
     // Returns an iterator corresponding to the Group following the least
+    // energetic Group
+    elements_type::iterator end() noexcept;
+    // Returns a const_iterator corresponding to the Group following the least
     // energetic Group
     elements_type::const_iterator end() const noexcept;
 
@@ -62,13 +67,14 @@ private:
   };
   // Groupwise cross sections indexed by two Groups
   class TwoDimensional {
-  private:
+  protected:
     // The STL container underlying a TwoDimensional object
     using elements_type = std::vector<OneDimensional>;
 
   public:
-    // Constructs Multigroup::TwoDimensional from vector of vector of Real
-    TwoDimensional(const elements_type& elements);
+    // Constructs Multigroup::TwoDimensional from a `GroupXS` type node. Refer
+    // to XML schema for structure of `GroupXS` type node.
+    TwoDimensional(const pugi::xml_node& groupxs_node);
     // Returns a reference to the `g`-th group
     OneDimensional& at(const Group g);
     // Returns a const reference to the `g`-th group
@@ -79,32 +85,38 @@ private:
     // energetic Group
     elements_type::const_iterator end() const noexcept;
 
-  private:
+  protected:
     elements_type elements;
   };
+  // Like TwoDimensional, but each OneDimensional element is normalized
+  class NormalizedTwoDimensional : public TwoDimensional {
+  public:
+    // Constructs Multigroup::TwoDimensional from a `GroupXS` type node. Refer
+    // to XML schema for structure of `GroupXS` type node.
+    NormalizedTwoDimensional(const pugi::xml_node& groupxs_node);
+  };
   using ReactionsMap = std::map<NuclearData::Reaction, OneDimensional>;
-  // Helper function to create scattering matrix. Throws exception on incorrect
-  // number of entries.
-  static TwoDimensional
-  CreateScatterMatrix(const pugi::xml_node& particle_node, const Group G);
+  // Returns the user-specified number of groups under the `multigroup` node
+  static Group GroupStructureSize(const pugi::xml_node& root) noexcept;
+  // Creates scatter cross section from a scatter matrix by summing each column
+  static OneDimensional
+  CreateScatterXS(const pugi::xml_node& scatter_node);
   // Helper function for reaction cross section construction. Throws exception
   // on incorrect number of entries.
-  static ReactionsMap CreateReactions(
-      const pugi::xml_node& particle_node, const Group G,
-      const TwoDimensional& scatter_matirx);
+  static ReactionsMap
+  CreateReactions(const pugi::xml_node& particle_node);
   // Helper function for creating total cross section by summing all reactions
-  static OneDimensional
-  CreateTotalXS(const ReactionsMap& reactions, const Group G) noexcept;
+  static OneDimensional CreateTotalXS(
+      const pugi::xml_node& particle_node,
+      const ReactionsMap& reactions) noexcept;
   // Returns the Reaction cross section for a given Particle
   CrossSection GetReaction(const Particle& p, const Reaction r) const noexcept;
-  // Returns the (unnormalized) outgoing group probabilities for a given
-  // Particle
-  const OneDimensional&
-  GetOutgoingScatterProbs(const Particle& p) const noexcept;
   // Probabilities for scattering from incoming energy to outgoing energy
-  const TwoDimensional scatter_matrix;
+  const std::optional<NormalizedTwoDimensional> scatter_probs;
   // Cross section data for each Reactions
   const ReactionsMap reactions;
   // Total cross section obtained by summing all reactions
   const OneDimensional total;
+  // Number of groups
+  const Group max_group;
 };

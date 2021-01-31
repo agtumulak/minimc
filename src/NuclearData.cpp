@@ -42,8 +42,7 @@ NuclearData::Map NuclearData::Create(
     if (energy_type == "multigroup") {
       xs.emplace(
           Particle::ToType(particle_name),
-          std::make_unique<const Multigroup>(
-              particle_node, energy_type_node.attribute("groups").as_uint()));
+          std::make_unique<const Multigroup>(particle_node));
     }
     else if (energy_type == "continuous") {
       xs.emplace(

@@ -100,10 +100,10 @@ TEST_CASE("Nuclide member methods work properly") {
       REQUIRE(
           LowerEnergyProbability(rng, hydrogen, neutron_group1) ==
           Approx(1).epsilon(epsilon::Bernoulli(1, samples)));
-      // zero scattering cross section; shouldn't be called during transport
-      REQUIRE_THROWS_WITH(
-          LowerEnergyProbability(rng, hydrogen, neutron_group2),
-          "SampleOutgoing reached end of possible outgoing Groups");
+
+      // The case LowerEnergyProbability(rng, hydrogen, neutron_group2) would
+      // never call Scatter() since it has zero scattering cross section
+
       // equally likely to inscatter (Group 1 -> Group 1) or downscatter
       // (Group 1 -> Group 2)
       REQUIRE(
