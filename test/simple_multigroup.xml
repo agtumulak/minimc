@@ -27,6 +27,21 @@
         </scatter>
       </neutron>
     </nuclide>
+    <nuclide name="uranium235">
+      <neutron>
+        <capture>0.33 0.67</capture>
+        <scatter>
+          1 0
+          0 1
+        </scatter>
+        <fission>0 1</fission>
+        <nubar>0 2.43</nubar>
+        <chi>
+          0 0.5
+          0 0.5
+        </chi>
+      </neutron>
+    </nuclide>
     <nuclide name="inconsistent capture">
       <neutron>
         <capture>0 1 1</capture>

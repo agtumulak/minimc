@@ -1,11 +1,13 @@
 #pragma once
 
+#include "BasicTypes.hpp"
 #include "NuclearData.hpp"
 #include "Particle.hpp"
 #include "pugixml.hpp"
 
 #include <random>
 #include <string>
+#include <vector>
 
 /// @brief Aggregates cross sections for all reactions and related nuclear data
 class Nuclide {
@@ -21,7 +23,9 @@ public:
   NuclearData::CrossSection GetTotal(const Particle& p) const noexcept;
   /// @brief Scatters the Particle and updates its state
   /// @exception std::runtime_error Sampling outgoing Energy failed
-  void Scatter(std::minstd_rand& rng, Particle& p) const;
+  void Scatter(RNG& rng, Particle& p) const;
+  /// @brief Fissions the Nuclide and produces secondaries
+  std::vector<Particle> Fission(RNG& rng, Particle& p) const noexcept;
   /// @brief Samples a reaction
   NuclearData::Reaction
   SampleReaction(std::minstd_rand& rng, const Particle& p) const noexcept;

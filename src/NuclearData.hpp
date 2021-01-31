@@ -20,6 +20,7 @@ public:
   enum class Reaction {
     capture,
     scatter,
+    fission,
   };
   /// @brief Associates a Particle::Type with a polymorphic pointer to
   ///        NuclearData
@@ -38,6 +39,9 @@ public:
   /// @exception std::runtime_error Most likely cause is that the scattering
   ///            cross section is zero so an outgoing Energy cannot be sampled
   virtual void Scatter(std::minstd_rand& rng, Particle& p) const = 0;
+  /// @brief Fissions the Nuclide and produces secondaries
+  virtual std::vector<Particle>
+  Fission(RNG& rng, Particle& p) const noexcept = 0;
   /// @brief Samples a reaction
   virtual Reaction
   SampleReaction(std::minstd_rand& rng, const Particle& p) const noexcept = 0;

@@ -18,6 +18,8 @@ std::string Estimator::ToString(const Event e) noexcept {
     return "capture";
   case Estimator::Event::collision:
     return "collision";
+  case Estimator::Event::fission:
+    return "fission";
   case Estimator::Event::scatter:
     return "scatter";
   case Estimator::Event::surface_crossing:

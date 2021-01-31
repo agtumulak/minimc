@@ -15,6 +15,10 @@ void Nuclide::Scatter(std::minstd_rand& rng, Particle& p) const {
   xs.at(p.type)->Scatter(rng, p);
 }
 
+std::vector<Particle> Nuclide::Fission(RNG& rng, Particle& p) const noexcept {
+  return xs.at(p.type)->Fission(rng, p);
+}
+
 NuclearData::Reaction Nuclide::SampleReaction(
     std::minstd_rand& rng, const Particle& p) const noexcept {
   return xs.at(p.type)->SampleReaction(rng, p);

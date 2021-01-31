@@ -12,7 +12,15 @@
 //// public
 
 Multigroup::Multigroup(const pugi::xml_node& particle_node)
-    : scatter_probs{particle_node.child("scatter")
+    : nubar{particle_node.child("nubar")
+              ? std::make_optional<OneDimensional>(
+                  particle_node.child("nubar"))
+              : std::nullopt},
+      chi{particle_node.child("chi")
+              ? std::make_optional<NormalizedTwoDimensional>(
+                  particle_node.child("chi"))
+              : std::nullopt},
+      scatter_probs{particle_node.child("scatter")
               ? std::make_optional<NormalizedTwoDimensional>(
                   particle_node.child("scatter"))
               : std::nullopt},
@@ -42,8 +50,34 @@ void Multigroup::Scatter(std::minstd_rand& rng, Particle& p) const noexcept {
   assert(false);
 }
 
-NuclearData::Reaction Multigroup::SampleReaction(
-    std::minstd_rand& rng, const Particle& p) const noexcept {
+std::vector<Particle>
+Multigroup::Fission(RNG& rng, Particle& p) const noexcept {
+  std::vector<Particle> fission_neutrons;
+  p.Kill();
+  auto incident_group{std::get<Group>(p.GetEnergy())};
+  // rely on the fact that double to int conversions essentially do a floor()
+  size_t fission_yield(
+      nubar.value().at(incident_group) + std::uniform_real_distribution{}(rng));
+  const auto& group_probs{chi.value().at(incident_group)};
+  for (size_t i = 0; i < fission_yield; i++) {
+    const Real threshold = std::uniform_real_distribution{}(rng);
+    Real accumulated{0};
+    for (Group g = 1; g <= max_group; g++) {
+      accumulated += group_probs.at(g);
+      if (accumulated > threshold) {
+        fission_neutrons.emplace_back(
+            p.GetPosition(), Direction::CreateIsotropic(rng), Energy{Group{g}},
+            Particle::Type::neutron);
+        break;
+      }
+    }
+  }
+  assert(fission_neutrons.size() == fission_yield);
+  return fission_neutrons;
+}
+
+NuclearData::Reaction
+Multigroup::SampleReaction(RNG& rng, const Particle& p) const noexcept {
   const CrossSection threshold{
       std::uniform_real_distribution{}(rng)*GetTotal(p)};
   CrossSection accumulated{0};
@@ -167,7 +201,7 @@ Multigroup::NormalizedTwoDimensional::NormalizedTwoDimensional(
       [](elements_type::value_type& one_dimensional) {
         auto column_sum = std::accumulate(
             one_dimensional.begin(), one_dimensional.end(), Real{0},
-            std::plus<Real>());
+            std::plus<Real>{});
         if (column_sum == 0.) {
           return;
         }
@@ -208,6 +242,10 @@ Multigroup::CreateReactions(const pugi::xml_node& particle_node) {
   Multigroup::ReactionsMap reactions;
   for (const auto& reaction_node : particle_node) {
     std::string reaction_name{reaction_node.name()};
+    // nuclear data which aren't reactions are handled elsewhere
+    if (reaction_name == "nubar" || reaction_name == "chi") {
+      continue;
+    }
     const auto reaction{NuclearData::ToReaction(reaction_name)};
     if (reaction == NuclearData::Reaction::scatter) {
       reactions.emplace(reaction, CreateScatterXS(reaction_node));
@@ -228,7 +266,7 @@ Multigroup::OneDimensional Multigroup::CreateTotalXS(
       [](auto& accumulated, const auto& reaction_xs) noexcept {
         std::transform(
             accumulated.begin(), accumulated.end(), reaction_xs.second.begin(),
-            accumulated.begin(), std::plus<Real>());
+            accumulated.begin(), std::plus<Real>{});
         return accumulated;
       });
 }

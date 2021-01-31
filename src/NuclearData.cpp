@@ -68,7 +68,10 @@ NuclearData::ToReaction(const std::string& name) noexcept {
   else if (name == "scatter") {
     return NuclearData::Reaction::scatter;
   }
+  else if (name == "fission") {
+    return NuclearData::Reaction::fission;
+  }
   else {
-    assert(false); // this should have been caught by the validator
+    assert(false); // only mutually exclusive reactions are valid
   };
 }

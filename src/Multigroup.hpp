@@ -23,16 +23,15 @@ public:
   /// @exception std::runtime_error Number of entries is not consistent with
   ///            number of groups
   Multigroup(const pugi::xml_node& particle_node);
-  /// @brief Constructs multigroup nuclear data from an existing set of
-  ///        Multigroup data and associated weights.
-  Multigroup(const std::map<NuclearData, Real>& weights);
   /// @brief Returns the total cross section for a given Particle
   CrossSection GetTotal(const Particle& p) const noexcept override;
   /// @brief Scatters the Particle and updates its group and direction
-  void Scatter(std::minstd_rand& rng, Particle& p) const noexcept override;
+  void Scatter(RNG& rng, Particle& p) const noexcept override;
+  /// @brief Fissions the Nuclide and produces secondaries
+  /// @details Currently, only fission neutrons are produced
+  std::vector<Particle> Fission(RNG& rng, Particle& p) const noexcept override;
   /// @brief Samples a Reaction
-  Reaction SampleReaction(
-      std::minstd_rand& rng, const Particle& p) const noexcept override;
+  Reaction SampleReaction(RNG& rng, const Particle& p) const noexcept override;
 
 private:
   // Groupwise cross sections indexed by one Group
@@ -111,6 +110,10 @@ private:
       const ReactionsMap& reactions) noexcept;
   // Returns the Reaction cross section for a given Particle
   CrossSection GetReaction(const Particle& p, const Reaction r) const noexcept;
+  // Average number of secondary particles produced per fission
+  const std::optional<OneDimensional> nubar;
+  // Outgoing energy distribution of fission neutrons
+  const std::optional<NormalizedTwoDimensional> chi;
   // Probabilities for scattering from incoming energy to outgoing energy
   const std::optional<NormalizedTwoDimensional> scatter_probs;
   // Cross section data for each Reactions

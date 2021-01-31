@@ -15,6 +15,7 @@ public:
   enum class Event {
     capture,
     collision,
+    fission,
     scatter,
     surface_crossing,
   };
@@ -42,6 +43,7 @@ private:
   elements_type elements{
       {Event::capture, 0},
       {Event::collision, 0},
+      {Event::fission, 0},
       {Event::scatter, 0},
       {Event::surface_crossing, 0},
   };

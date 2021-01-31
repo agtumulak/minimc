@@ -14,8 +14,8 @@ TEST_CASE("nonexistent nuclide name throws exception") {
   REQUIRE_THROWS_WITH(
       Nuclide(doc.root, "nonexistent"),
       "Nuclide node \"nonexistent\" not found. Must be one of: [\"hydrogen\", "
-      "\"oxygen\", \"inconsistent capture\", \"inconsistent scatter\", \"wrong "
-      "particle\", ]");
+      "\"oxygen\", \"uranium235\", \"inconsistent capture\", \"inconsistent "
+      "scatter\", \"wrong particle\", ]");
 }
 
 TEST_CASE("poorly formed multigroup data for Nuclide throws exception") {
