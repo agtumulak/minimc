@@ -113,10 +113,6 @@ Multigroup::OneDimensional::OneDimensional(const pugi::xml_node& groupxs_node) {
   }
 }
 
-Real& Multigroup::OneDimensional::at(const Group g) {
-  return elements.at(g - 1);
-}
-
 const Real& Multigroup::OneDimensional::at(const Group g) const {
   return elements.at(g - 1);
 }
@@ -168,10 +164,6 @@ Multigroup::TwoDimensional::TwoDimensional(const pugi::xml_node& groupxs_node) {
     }
     elements.push_back(column);
   }
-}
-
-Multigroup::OneDimensional& Multigroup::TwoDimensional::at(Group g) {
-  return elements.at(g - 1);
 }
 
 const Multigroup::OneDimensional&
@@ -269,9 +261,4 @@ Multigroup::OneDimensional Multigroup::CreateTotalXS(
             accumulated.begin(), std::plus<Real>{});
         return accumulated;
       });
-}
-
-NuclearData::CrossSection
-Multigroup::GetReaction(const Particle& p, const Reaction r) const noexcept {
-  return reactions.at(r).at(std::get<Group>(p.GetEnergy()));
 }

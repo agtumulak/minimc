@@ -46,8 +46,6 @@ private:
     // Constructs Multigroup::OneDimensional from a `GroupXS` type node. Refer
     // to XML schema for structure of `GroupXS` type node.
     OneDimensional(const pugi::xml_node& groupxs_node);
-    // Returns a reference to the `g`-th group
-    Real& at(const Group g);
     // Returns a const reference to the `g`-th group
     const Real& at(const Group g) const;
     // Returns an iterator corresponding to most energetic Group
@@ -74,8 +72,6 @@ private:
     // Constructs Multigroup::TwoDimensional from a `GroupXS` type node. Refer
     // to XML schema for structure of `GroupXS` type node.
     TwoDimensional(const pugi::xml_node& groupxs_node);
-    // Returns a reference to the `g`-th group
-    OneDimensional& at(const Group g);
     // Returns a const reference to the `g`-th group
     const OneDimensional& at(const Group g) const;
     // Returns an iterator corresponding to most energetic Group
@@ -108,8 +104,6 @@ private:
   static OneDimensional CreateTotalXS(
       const pugi::xml_node& particle_node,
       const ReactionsMap& reactions) noexcept;
-  // Returns the Reaction cross section for a given Particle
-  CrossSection GetReaction(const Particle& p, const Reaction r) const noexcept;
   // Average number of secondary particles produced per fission
   const std::optional<OneDimensional> nubar;
   // Outgoing energy distribution of fission neutrons
