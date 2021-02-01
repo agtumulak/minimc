@@ -6,6 +6,7 @@
 #include "XMLDocument.hpp"
 #include "catch2/catch.hpp"
 
+#include <algorithm>
 #include <random>
 #include <variant>
 
@@ -54,11 +55,14 @@ TEST_CASE("Nuclide member methods work properly") {
         Point{}, Direction{1, 0, 0}, Group{2}, Particle::Type::neutron};
     const Nuclide hydrogen{doc.root, "hydrogen"};
     const Nuclide oxygen{doc.root, "oxygen"};
+    const Nuclide uranium235{doc.root, "uranium235"};
 
     REQUIRE(hydrogen.GetTotal(neutron_group1) == 1);
     REQUIRE(hydrogen.GetTotal(neutron_group2) == 1);
     REQUIRE(oxygen.GetTotal(neutron_group1) == 1.5);
     REQUIRE(oxygen.GetTotal(neutron_group2) == 1);
+    REQUIRE(uranium235.GetTotal(neutron_group1) == 1.33);
+    REQUIRE(uranium235.GetTotal(neutron_group2) == 2.67);
 
     SECTION("SampleReaction() returns expected number of scatters") {
       // purely scattering for Group 1
@@ -69,25 +73,33 @@ TEST_CASE("Nuclide member methods work properly") {
       REQUIRE(
           ScatterProbability(rng, hydrogen, neutron_group2) ==
           Approx(0).epsilon(epsilon::Bernoulli(0, samples)));
-      // total microscopic cross section is 1.5 for Group 1
-      // scattering cross section is 1.0 for Group 1
+      // total microscopic cross section is 1.5
+      // scattering cross section is 1.0
       REQUIRE(
           ScatterProbability(rng, oxygen, neutron_group1) ==
           Approx(1. / 1.5).epsilon(epsilon::Bernoulli(1. / 1.5, samples)));
-      // total microscopic cross section is 1.0 for Group 2
-      // scattering cross section is 0.5 for Group 2
+      // total microscopic cross section is 1.0
+      // scattering cross section is 0.5
       REQUIRE(
           ScatterProbability(rng, oxygen, neutron_group2) ==
           Approx(0.5).epsilon(epsilon::Bernoulli(0.5, samples)));
+      // total microscopic cross section is 1.33
+      // scattering cross section is 1
+      REQUIRE(
+          ScatterProbability(rng, uranium235, neutron_group1) ==
+          Approx(1. / 1.33).epsilon(epsilon::Bernoulli(1. / 1.33, samples)));
+      // total microscopic cross section is 2.67
+      // scattering cross section is 1
+      REQUIRE(
+          ScatterProbability(rng, uranium235, neutron_group2) ==
+          Approx(1. / 2.67).epsilon(epsilon::Bernoulli(1. / 2.67, samples)));
     }
     SECTION("Scatter() returns expected number of Particles in lower energy "
             "Group") {
-      std::minstd_rand rng{42};
-      const size_t samples{1000};
       auto LowerEnergyProbability = [](std::minstd_rand& rng, const Nuclide& n,
                                        const Particle& p) {
         size_t lower_energy{0};
-        for (size_t i = 1; i <= 1000; i++) {
+        for (size_t i = 1; i <= samples; i++) {
           auto p_copy = p;
           n.Scatter(rng, p_copy);
           if (std::get<Group>(p_copy.GetEnergy()) == Group{2}) {
@@ -101,8 +113,9 @@ TEST_CASE("Nuclide member methods work properly") {
           LowerEnergyProbability(rng, hydrogen, neutron_group1) ==
           Approx(1).epsilon(epsilon::Bernoulli(1, samples)));
 
-      // The case LowerEnergyProbability(rng, hydrogen, neutron_group2) would
-      // never call Scatter() since it has zero scattering cross section
+      // The case LowerEnergyProbability(rng, hydrogen, neutron_group2) is not
+      // tested. The particle neutron_group2 would never call Scatter() as it
+      // has zero scatter cross section.
 
       // equally likely to inscatter (Group 1 -> Group 1) or downscatter
       // (Group 1 -> Group 2)
@@ -113,6 +126,58 @@ TEST_CASE("Nuclide member methods work properly") {
       REQUIRE(
           LowerEnergyProbability(rng, oxygen, neutron_group2) ==
           Approx(1).epsilon(epsilon::Bernoulli(1, samples)));
+      // purely inscatteirng (Group 1 -> Group 1)
+      REQUIRE(
+          LowerEnergyProbability(rng, uranium235, neutron_group1) ==
+          Approx(0).epsilon(epsilon::Bernoulli(0, samples)));
+      // purely inscattering (Group 2 -> Group 2)
+      REQUIRE(
+          LowerEnergyProbability(rng, uranium235, neutron_group2) ==
+          Approx(1).epsilon(epsilon::Bernoulli(1, samples)));
+    }
+    SECTION("Fission() returns expected number and spectrum of Particles") {
+      struct FissionStatisticsResult {
+        double ceil_nu_prob;
+        double lower_energy_prob;
+      };
+      auto FissionStatistics = [](RNG& rng, const Nuclide& n,
+                                  const Particle& p) {
+        std::vector<Particle> bank;
+        for (size_t i = 1; i <= samples; i++) {
+          auto p_copy = p;
+          const auto yield = n.Fission(rng, p_copy);
+          for (const auto& fission_particle : n.Fission(rng, p_copy)) {
+            bank.push_back(fission_particle);
+          }
+        }
+        const auto sample_nu = static_cast<double>(bank.size()) / samples;
+        const auto ceil_nu_prob =
+            sample_nu - static_cast<unsigned int>(sample_nu);
+        const auto lower_energy_prob =
+            static_cast<double>(std::count_if(
+                bank.cbegin(), bank.cend(),
+                [](const auto& p) {
+                  return std::get<Group>(p.GetEnergy()) == Group{2};
+                })) /
+            bank.size();
+        return FissionStatisticsResult{ceil_nu_prob, lower_energy_prob};
+      };
+
+      // The case FissionStatistics(rng, uranium235, neutron_group1) is not
+      // tested. The particle neutron_group1 would never call Fission() as it
+      // has zero fission cros section.
+
+      // Only neutron_group2 can cause a fission
+      const auto stats = FissionStatistics(rng, uranium235, neutron_group2);
+      // nu bar is 2.43
+      REQUIRE(
+          stats.ceil_nu_prob ==
+          Approx(0.43).epsilon(epsilon::Bernoulli(0.43, samples)));
+      // chi spectrum gives equal likelihood of fission particle in Group 1
+      // or Group 2
+      REQUIRE(
+          stats.lower_energy_prob ==
+          Approx(0.5).epsilon(epsilon::Bernoulli(0.5, samples)));
     }
   }
   SECTION("Continuous methods") {
