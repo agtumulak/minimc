@@ -183,16 +183,18 @@ TEST_CASE("Nuclide member methods work properly") {
   SECTION("Continuous methods") {
     XMLDocument doc{"simple_continuous.xml"};
     const Particle neutron{
-        Point{}, Direction{1, 0, 0}, ContinuousEnergy{0.999},
+        Point{}, Direction{1, 0, 0}, ContinuousEnergy{0.999e-6},
         Particle::Type::neutron};
     const Nuclide hydrogen{doc.root, "hydrogen"};
     const Nuclide oxygen{doc.root, "oxygen"};
+    const Nuclide uranium235{doc.root, "uranium235"};
     REQUIRE_THROWS_WITH(
         Nuclide(doc.root, "badpath"), "File not found: /not/real");
     REQUIRE(hydrogen.GetTotal(neutron) == 20.74762);
     REQUIRE(oxygen.GetTotal(neutron) == 3.796956);
+    REQUIRE(uranium235.GetTotal(neutron) == 92.60272);
     SECTION("SampleReaction() returns expected number of scatters") {
-      // At 1.0 MeV, for hydrogen,
+      // At 1.0 eV, for hydrogen,
       // capture: 0.05293893
       // elastic: 20.69468
       // total: 20.74762
@@ -200,7 +202,7 @@ TEST_CASE("Nuclide member methods work properly") {
       REQUIRE(
           ScatterProbability(rng, hydrogen, neutron) ==
           Approx(h_expected).epsilon(epsilon::Bernoulli(h_expected, samples)));
-      // At 1.0 MeV, for oxygen,
+      // At 1.0 eV, for oxygen,
       // capture: 2.715658E-5
       // elastic: 3.796929
       // total: 3.796956
@@ -208,6 +210,54 @@ TEST_CASE("Nuclide member methods work properly") {
       REQUIRE(
           ScatterProbability(rng, oxygen, neutron) ==
           Approx(o_expected).epsilon(epsilon::Bernoulli(o_expected, samples)));
+      // At 1.0 eV, for uranium-235,
+      // capture: 12.51272
+      // elastic: 12.63409
+      // total: 92.60272
+      constexpr auto u_expected = 12.63409 / 92.60272;
+      REQUIRE(
+          ScatterProbability(rng, uranium235, neutron) ==
+          Approx(u_expected).epsilon(epsilon::Bernoulli(u_expected, samples)));
+    }
+    SECTION("Fission() returns expected number and spectrum of Particles") {
+      struct FissionStatisticsResult {
+        double ceil_nu_prob;
+        double lower_energy_prob;
+      };
+      auto FissionStatistics = [](RNG& rng, const Nuclide& n, const Particle& p,
+                                  const ContinuousEnergy& chi_median) {
+        std::vector<Particle> bank;
+        for (size_t i = 1; i <= samples; i++) {
+          auto p_copy = p;
+          for (const auto& fission_particle : n.Fission(rng, p_copy)) {
+            bank.push_back(fission_particle);
+          }
+        }
+        const auto sample_nu = static_cast<double>(bank.size()) / samples;
+        const auto ceil_nu_prob =
+            sample_nu - static_cast<unsigned int>(sample_nu);
+        const auto lower_energy_prob =
+            static_cast<double>(std::count_if(
+                bank.cbegin(), bank.cend(),
+                [&chi_median](const auto& p) {
+                  return std::get<ContinuousEnergy>(p.GetEnergy()) <=
+                         chi_median;
+                })) /
+            bank.size();
+        return FissionStatisticsResult{ceil_nu_prob, lower_energy_prob};
+      };
+      // At 1.0 eV, for uranium235,
+      // nu bar: 2.43385
+      // median of chi: between 1.6 MeV and 1.7 MeV
+      const auto chi_median = 1.65;
+      const auto stats =
+          FissionStatistics(rng, uranium235, neutron, chi_median);
+      REQUIRE(
+          stats.ceil_nu_prob ==
+          Approx(0.43385).epsilon(epsilon::Bernoulli(0.43385, samples)));
+      REQUIRE(
+          stats.lower_energy_prob ==
+          Approx(0.5).epsilon(epsilon::Bernoulli(0.5, samples)));
     }
   }
 }
