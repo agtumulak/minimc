@@ -2,6 +2,9 @@
 
 #include "Constants.hpp"
 
+#include <algorithm>
+#include <iterator>
+
 // History
 
 //// public
@@ -26,6 +29,13 @@ History::Outcome History::Transport() {
       case NuclearData::Reaction::scatter:
         result.estimator.at(Estimator::Event::scatter)++;
         nuclide.Scatter(rng, p);
+        break;
+      case NuclearData::Reaction::fission:
+        result.estimator.at(Estimator::Event::fission)++;
+        auto fission_yield{nuclide.Fission(rng, p)};
+        std::move(
+            fission_yield.begin(), fission_yield.end(),
+            std::back_insert_iterator(result.banked));
         break;
       }
     }
