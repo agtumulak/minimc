@@ -12,13 +12,15 @@
 //// public
 
 Continuous::Continuous(const pugi::xml_node& particle_node)
-    : nubar{particle_node.child("nubar")
+    : nubar{particle_node.child("fission").child("nubar")
               ? std::make_optional<OneDimensional>(
-                  particle_node.child("nubar").attribute("file").as_string())
+                  particle_node.child("fission").child("nubar")
+                  .attribute("file").as_string())
               : std::nullopt},
-      chi{particle_node.child("chi")
+      chi{particle_node.child("fission").child("chi")
               ? std::make_optional<CDF>(
-                  particle_node.child("chi").attribute("file").as_string())
+                  particle_node.child("fission").child("chi").attribute("file")
+                  .as_string())
               : std::nullopt},
       reactions{CreateReactions(particle_node)},
       total{particle_node.child("total").attribute("file").as_string()} {}
@@ -153,13 +155,21 @@ Continuous::CreateReactions(const pugi::xml_node& particle_node) {
   Continuous::ReactionsMap reactions;
   for (const auto& reaction_node : particle_node) {
     const std::string reaction_name = reaction_node.name();
-    if (reaction_name == "total" || reaction_name == "chi" ||
-        reaction_name == "nubar") {
+    if (reaction_name == "total") {
       continue; // skip total cross section
     }
-    reactions.emplace(
-        NuclearData::ToReaction(reaction_name),
-        OneDimensional{reaction_node.attribute("file").as_string()});
+    const auto reaction{NuclearData::ToReaction(reaction_name)};
+    if (reaction == NuclearData::Reaction::fission) {
+      reactions.emplace(
+          reaction,
+          OneDimensional{
+              reaction_node.child("xs").attribute("file").as_string()});
+    }
+    else {
+      reactions.emplace(
+          NuclearData::ToReaction(reaction_name),
+          OneDimensional{reaction_node.attribute("file").as_string()});
+    }
   }
   return reactions;
 }

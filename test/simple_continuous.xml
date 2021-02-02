@@ -28,9 +28,11 @@
         <total file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-total.csv"/>
         <capture file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-gamma.csv"/>
         <scatter file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-elastic.csv"/>
-        <fission file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-fission.csv"/>
-        <nubar file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-nubar.csv"/>
-        <chi file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-chi.csv"/>
+        <fission>
+          <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-fission.csv"/>
+          <nubar file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-nubar.csv"/>
+          <chi file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-chi.csv"/>
+        </fission>
       </neutron>
     </nuclide>
     <nuclide name="badpath">

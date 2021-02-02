@@ -46,9 +46,15 @@
   <xs:all>
     <xs:element name="capture" type="GroupXS" minOccurs="0"/>
     <xs:element name="scatter" type="GroupXS" minOccurs="0"/>
-    <xs:element name="fission" type="GroupXS" minOccurs="0"/>
-    <xs:element name="nubar" type="GroupXS" minOccurs="0"/>
-    <xs:element name="chi" type="GroupXS" minOccurs="0"/>
+    <xs:element name="fission" minOccurs="0">
+      <xs:complexType>
+        <xs:all>
+          <xs:element name="xs" type="GroupXS"/>
+          <xs:element name="nubar" type="GroupXS"/>
+          <xs:element name="chi" type="GroupXS"/>
+        </xs:all>
+      </xs:complexType>
+    </xs:element>
   </xs:all>
 </xs:complexType>
 
@@ -76,9 +82,15 @@
     <xs:element name="total" type="ContinuousReactionFilepath" minOccurs="0"/>
     <xs:element name="capture" type="ContinuousReactionFilepath" minOccurs="0"/>
     <xs:element name="scatter" type="ContinuousReactionFilepath" minOccurs="0"/>
-    <xs:element name="fission" type="ContinuousReactionFilepath" minOccurs="0"/>
-    <xs:element name="nubar" type="ContinuousReactionFilepath" minOccurs="0"/>
-    <xs:element name="chi" type="ContinuousReactionFilepath" minOccurs="0"/>
+    <xs:element name="fission" minOccurs="0">
+      <xs:complexType>
+        <xs:all>
+          <xs:element name="xs" type="ContinuousReactionFilepath"/>
+          <xs:element name="nubar" type="ContinuousReactionFilepath"/>
+          <xs:element name="chi" type="ContinuousReactionFilepath"/>
+      </xs:all>
+      </xs:complexType>
+    </xs:element>
   </xs:all>
 </xs:complexType>
 

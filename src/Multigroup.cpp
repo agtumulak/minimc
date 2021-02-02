@@ -12,13 +12,13 @@
 //// public
 
 Multigroup::Multigroup(const pugi::xml_node& particle_node)
-    : nubar{particle_node.child("nubar")
+    : nubar{particle_node.child("fission").child("nubar")
               ? std::make_optional<OneDimensional>(
-                  particle_node.child("nubar"))
+                  particle_node.child("fission").child("nubar"))
               : std::nullopt},
-      chi{particle_node.child("chi")
+      chi{particle_node.child("fission").child("chi")
               ? std::make_optional<NormalizedTwoDimensional>(
-                  particle_node.child("chi"))
+                  particle_node.child("fission").child("chi"))
               : std::nullopt},
       scatter_probs{particle_node.child("scatter")
               ? std::make_optional<NormalizedTwoDimensional>(
@@ -233,14 +233,13 @@ Multigroup::ReactionsMap
 Multigroup::CreateReactions(const pugi::xml_node& particle_node) {
   Multigroup::ReactionsMap reactions;
   for (const auto& reaction_node : particle_node) {
-    std::string reaction_name{reaction_node.name()};
-    // nuclear data which aren't reactions are handled elsewhere
-    if (reaction_name == "nubar" || reaction_name == "chi") {
-      continue;
-    }
-    const auto reaction{NuclearData::ToReaction(reaction_name)};
+    const auto reaction{NuclearData::ToReaction(reaction_node.name())};
     if (reaction == NuclearData::Reaction::scatter) {
       reactions.emplace(reaction, CreateScatterXS(reaction_node));
+    }
+    else if (reaction == NuclearData::Reaction::fission){
+      // fission cross sections "xs" are bundled along with "chi" and "nubar"
+      reactions.emplace(reaction, reaction_node.child("xs"));
     }
     else {
       reactions.emplace(reaction, reaction_node);
