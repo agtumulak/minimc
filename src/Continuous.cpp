@@ -1,5 +1,7 @@
 #include "Continuous.hpp"
 
+#include "Constants.hpp"
+
 #include <algorithm>
 #include <fstream>
 #include <iterator>
@@ -49,6 +51,8 @@ Continuous::Fission(RNG& rng, Particle& p) const noexcept {
     const auto energy{Energy{ContinuousEnergy{chi.value().Sample(rng)}}};
     fission_neutrons.emplace_back(
         p.GetPosition(), direction, energy, Particle::Type::neutron);
+    fission_neutrons.back().SetCell(p.GetCell());
+    fission_neutrons.back().seed = p.seed + (i + 1) * constants::seed_stride;
   }
   assert(fission_neutrons.size() == fission_yield);
   return fission_neutrons;

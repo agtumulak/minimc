@@ -4,6 +4,7 @@
 #include "Point.hpp"
 #include "Statistics.hpp"
 #include "XMLDocument.hpp"
+#include "World.hpp"
 #include "catch2/catch.hpp"
 
 #include <algorithm>
@@ -49,10 +50,13 @@ TEST_CASE("Nuclide member methods work properly") {
   };
   SECTION("Multigroup methods") {
     XMLDocument doc{"simple_multigroup.xml"};
-    const Particle neutron_group1{
+    World w{doc.root};
+    Particle neutron_group1{
         Point{}, Direction{1, 0, 0}, Group{1}, Particle::Type::neutron};
-    const Particle neutron_group2{
+    neutron_group1.SetCell(w.FindCellContaining(neutron_group1.GetPosition()));
+    Particle neutron_group2{
         Point{}, Direction{1, 0, 0}, Group{2}, Particle::Type::neutron};
+    neutron_group2.SetCell(w.FindCellContaining(neutron_group2.GetPosition()));
     const Nuclide hydrogen{doc.root, "hydrogen"};
     const Nuclide oxygen{doc.root, "oxygen"};
     const Nuclide uranium235{doc.root, "uranium235"};
@@ -182,9 +186,11 @@ TEST_CASE("Nuclide member methods work properly") {
   }
   SECTION("Continuous methods") {
     XMLDocument doc{"simple_continuous.xml"};
-    const Particle neutron{
+    World w{doc.root};
+    Particle neutron{
         Point{}, Direction{1, 0, 0}, ContinuousEnergy{0.999e-6},
         Particle::Type::neutron};
+    neutron.SetCell(w.FindCellContaining(neutron.GetPosition()));
     const Nuclide hydrogen{doc.root, "hydrogen"};
     const Nuclide oxygen{doc.root, "oxygen"};
     const Nuclide uranium235{doc.root, "uranium235"};

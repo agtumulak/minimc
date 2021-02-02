@@ -1,5 +1,7 @@
 #include "Multigroup.hpp"
 
+#include "Constants.hpp"
+
 #include <algorithm>
 #include <functional>
 #include <numeric>
@@ -68,6 +70,11 @@ Multigroup::Fission(RNG& rng, Particle& p) const noexcept {
         fission_neutrons.emplace_back(
             p.GetPosition(), Direction::CreateIsotropic(rng), Energy{Group{g}},
             Particle::Type::neutron);
+        fission_neutrons.back().SetCell(p.GetCell());
+        // Each secondary produced by this fission must have a completely
+        // deterministic history. Setting their seed here accomplishes this.
+        fission_neutrons.back().seed =
+            p.seed + (i + 1) * constants::seed_stride;
         break;
       }
     }

@@ -1,7 +1,7 @@
 #include "FixedSource.hpp"
 
 #include "Constants.hpp"
-#include "History.hpp"
+#include "Transport.hpp"
 
 #include <future>
 #include <iostream>
@@ -34,23 +34,26 @@ void FixedSource::Solve() {
 }
 
 Estimator FixedSource::StartWorker() {
-  Estimator worker_estimator;
+  TransportOutcome worker_outcome;
   while (const auto range = chunk_giver.Next()) {
     if (!range) {
       break;
     }
     for (auto h = range->first; h < range->second; h++) {
-      auto source_particle{Sample(h)};
-      worker_estimator += History{source_particle, world}.Transport().estimator;
+      worker_outcome.banked.push_back(Sample(h));
+      while (!(worker_outcome.banked.empty())) {
+        worker_outcome = TransportAndBank(worker_outcome, world);
+      }
     }
   }
-  return worker_estimator;
+  return worker_outcome.estimator;
 }
 
 //// private
 
 Particle FixedSource::Sample(RNG::result_type history) const noexcept {
-  RNG rng{(history + 1) * constants::seed_stride}; // avoid zero seed with +1
+  // avoid zero seed with +1
+  RNG rng{(history + 1) * constants::seed_stride};
   auto p = source.Sample(rng);
   p.SetCell(world.FindCellContaining(p.GetPosition()));
   return p;
