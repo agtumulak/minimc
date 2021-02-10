@@ -116,13 +116,12 @@ Continuous::CDF::CDF(const std::filesystem::path& datapath)
         "In file " + datapath.string() +
         ": at least two entries required to define a CDF");
   }
-  // Multiply each probability density by bin width. Use previous left value
-  // as height as this is a left Riemann sum
+  // Multiply each probability density by bin width. Use trapezoid rule.
   for (auto it = scratch.rbegin(); it != std::prev(scratch.rend()); it++) {
     // multiplication by 1e6 is because energies were stored as MeV and
     // datafile PDF is given in per eV and
-    it->second =
-        (it->first - std::next(it)->first) * std::next(it)->second * 1e6;
+    it->second = (it->first - std::next(it)->first) * 0.5 *
+                 (it->second + std::next(it)->second) * 1e6;
   }
   // set first element to zero to make accumulation pass look clean af
   scratch.begin()->second = 0;
