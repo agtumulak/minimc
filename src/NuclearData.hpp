@@ -32,9 +32,11 @@ public:
   /// @brief Virtual destructor (C++ Core Guidelines C.127)
   virtual ~NuclearData() noexcept;
   /// @brief Returns the total cross section for a given Particle
-  /// @details The polymorphism here shall be where multigroup and continuous
-  ///          energy cross sections are resolved.
   virtual CrossSection GetTotal(const Particle& p) const noexcept = 0;
+  /// @brief Returns the fission cross section for a given Particle
+  virtual CrossSection GetFission(const Particle& p) const noexcept = 0;
+  /// @brief Returns the average fission neutron yield for a given Particle
+  virtual Real GetNuBar(const Particle& p) const noexcept = 0;
   /// @brief Scatters the Particle and updates its energy and direction
   /// @exception std::runtime_error Most likely cause is that the scattering
   ///            cross section is zero so an outgoing Energy cannot be sampled

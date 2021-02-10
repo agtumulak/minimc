@@ -20,6 +20,8 @@ std::string Estimator::ToString(const Event e) noexcept {
     return "collision";
   case Estimator::Event::fission:
     return "fission";
+  case Estimator::Event::implicit_fission:
+    return "implicit fission";
   case Estimator::Event::scatter:
     return "scatter";
   case Estimator::Event::surface_crossing:
@@ -27,11 +29,11 @@ std::string Estimator::ToString(const Event e) noexcept {
   }
 }
 
-size_t& Estimator::at(Event e) { return elements.at(e); }
+Real& Estimator::at(Event e) { return elements.at(e); }
 
-const size_t& Estimator::at(Event e) const { return elements.at(e); }
+const Real& Estimator::at(Event e) const { return elements.at(e); }
 
-Estimator& Estimator::operator+=(const Estimator& rhs) {
+Estimator& Estimator::operator+=(const Estimator& rhs) noexcept {
   for (const auto& [event, score] : rhs) {
     elements.at(event) += score;
   }

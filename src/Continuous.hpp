@@ -17,6 +17,10 @@ public:
   Continuous(const pugi::xml_node& particle_node);
   /// @brief Returns the total cross section for a given Particle
   CrossSection GetTotal(const Particle& p) const noexcept override;
+  /// @brief Returns the fission cross section for a given Particle
+  CrossSection GetFission(const Particle& p) const noexcept override;
+  /// @brief Returns the average fission neutron yield for a given Particle
+  Real GetNuBar(const Particle& p) const noexcept override;
   /// @brief Scatters the Particle and updates its ContinuousEnergy and
   ///        direction
   void Scatter(RNG& rng, Particle& p) const noexcept override;

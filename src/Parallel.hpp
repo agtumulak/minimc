@@ -22,10 +22,12 @@ public:
   ///        chunks left to give.
   /// @return A pair of `[start, end)` integers representing a subrange.
   std::optional<std::pair<size_t, size_t>> Next();
+  /// @brief Resets chunkgiver with a new size
+  void Reset(size_t new_size) noexcept;
 
 private:
   std::mutex m;
-  const size_t size;
+  size_t size;
   const size_t chunk;
   size_t begin{0};
   size_t end{0};

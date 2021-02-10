@@ -11,6 +11,15 @@ NuclearData::CrossSection Nuclide::GetTotal(const Particle& p) const noexcept {
   return xs.at(p.type)->GetTotal(p);
 }
 
+NuclearData::CrossSection
+Nuclide::GetFission(const Particle& p) const noexcept {
+  return xs.at(p.type)->GetFission(p);
+}
+
+Real Nuclide::GetNuBar(const Particle& p) const noexcept {
+  return xs.at(p.type)->GetNuBar(p);
+}
+
 void Nuclide::Scatter(RNG& rng, Particle& p) const {
   xs.at(p.type)->Scatter(rng, p);
 }

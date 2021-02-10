@@ -14,6 +14,8 @@ set(MINIMC_SOURCES
   Constants.hpp
   FixedSource.cpp
   FixedSource.hpp
+  KEigenvalue.cpp
+  KEigenvalue.hpp
   Material.cpp
   Material.hpp
   Multigroup.cpp

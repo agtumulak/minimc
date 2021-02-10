@@ -35,6 +35,26 @@ Multigroup::GetTotal(const Particle& p) const noexcept {
   return total.at(std::get<Group>(p.GetEnergy()));
 }
 
+NuclearData::CrossSection
+Multigroup::GetFission(const Particle& p) const noexcept {
+  try {
+    return reactions.at(NuclearData::Reaction::fission)
+        .at(std::get<Group>(p.GetEnergy()));
+  }
+  catch (const std::out_of_range& e) {
+    return 0;
+  }
+}
+
+Real Multigroup::GetNuBar(const Particle& p) const noexcept {
+  if (nubar) {
+    return nubar->at(std::get<Group>(p.GetEnergy()));
+  }
+  else {
+    return 0;
+  }
+}
+
 void Multigroup::Scatter(RNG& rng, Particle& p) const noexcept {
   const Real threshold = std::uniform_real_distribution{}(rng);
   Real accumulated{0};
@@ -74,7 +94,7 @@ Multigroup::Fission(RNG& rng, Particle& p) const noexcept {
         // Each secondary produced by this fission must have a completely
         // deterministic history. Setting their seed here accomplishes this.
         fission_neutrons.back().seed =
-            p.seed + (i + 1) * constants::seed_stride;
+            std::uniform_int_distribution<RNG::result_type>{1}(rng);
         break;
       }
     }

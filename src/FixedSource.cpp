@@ -3,8 +3,10 @@
 #include "Constants.hpp"
 #include "Transport.hpp"
 
+#include <algorithm>
 #include <future>
 #include <iostream>
+#include <iterator>
 #include <numeric>
 #include <optional>
 
@@ -34,19 +36,21 @@ void FixedSource::Solve() {
 }
 
 Estimator FixedSource::StartWorker() {
-  TransportOutcome worker_outcome;
+  Estimator worker_estimator;
   while (const auto range = chunk_giver.Next()) {
-    if (!range) {
-      break;
-    }
     for (auto h = range->first; h < range->second; h++) {
-      worker_outcome.banked.push_back(Sample(h));
-      while (!(worker_outcome.banked.empty())) {
-        worker_outcome = TransportAndBank(worker_outcome, world);
+      Bank source(1, Sample(h));
+      while (!source.empty()) {
+        auto result = TransportAndBank(source, world);
+        worker_estimator += result.estimator;
+        source.clear();
+        std::move(
+            result.banked.begin(), result.banked.end(),
+            std::back_insert_iterator(source));
       }
     }
   }
-  return worker_outcome.estimator;
+  return worker_estimator;
 }
 
 //// private
@@ -54,7 +58,5 @@ Estimator FixedSource::StartWorker() {
 Particle FixedSource::Sample(RNG::result_type history) const noexcept {
   // avoid zero seed with +1
   RNG rng{(history + 1) * constants::seed_stride};
-  auto p = source.Sample(rng);
-  p.SetCell(world.FindCellContaining(p.GetPosition()));
-  return p;
+  return source.Sample(rng);
 }

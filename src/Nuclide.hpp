@@ -21,6 +21,10 @@ public:
   Nuclide(const pugi::xml_node& root, const std::string& nuclide_name);
   /// @brief Returns the total cross section for a given Particle
   NuclearData::CrossSection GetTotal(const Particle& p) const noexcept;
+  /// @brief Returns the fission cross section for a given Particle
+  NuclearData::CrossSection GetFission(const Particle& p) const noexcept;
+  /// @brief Returns the average fission neutron yield for a given Particle
+  Real GetNuBar(const Particle& p) const noexcept;
   /// @brief Scatters the Particle and updates its state
   /// @exception std::runtime_error Sampling outgoing Energy failed
   void Scatter(RNG& rng, Particle& p) const;

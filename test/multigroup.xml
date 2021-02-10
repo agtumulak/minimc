@@ -11,11 +11,19 @@
   <multigroup groups="2">
     <nuclide name="hydrogen">
       <neutron>
-        <capture>0.5 0.5</capture>
+        <capture>1 0</capture>
         <scatter>
           0 1
-          1 1
+          0 1
         </scatter>
+        <fission>
+          <xs>1 0</xs>
+          <nubar>1.1 0</nubar>
+          <chi>
+            1.0 0.5
+            0.0 0.5
+          </chi>
+        </fission>
       </neutron>
     </nuclide>
   </multigroup>

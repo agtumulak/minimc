@@ -32,6 +32,26 @@ Continuous::GetTotal(const Particle& p) const noexcept {
   return total.at(std::get<ContinuousEnergy>(p.GetEnergy()));
 }
 
+Continuous::CrossSection
+Continuous::GetFission(const Particle& p) const noexcept {
+  try {
+    return reactions.at(NuclearData::Reaction::fission)
+        .at(std::get<ContinuousEnergy>(p.GetEnergy()));
+  }
+  catch (const std::out_of_range& e) {
+    return 0;
+  }
+}
+
+Real Continuous::GetNuBar(const Particle& p) const noexcept {
+  if (nubar) {
+    return nubar->at(std::get<ContinuousEnergy>(p.GetEnergy()));
+  }
+  else {
+    return 0;
+  }
+}
+
 void Continuous::Scatter(RNG& rng, Particle& p) const noexcept {
   p.SetDirectionIsotropic(rng);
   return;
@@ -52,7 +72,8 @@ Continuous::Fission(RNG& rng, Particle& p) const noexcept {
     fission_neutrons.emplace_back(
         p.GetPosition(), direction, energy, Particle::Type::neutron);
     fission_neutrons.back().SetCell(p.GetCell());
-    fission_neutrons.back().seed = p.seed + (i + 1) * constants::seed_stride;
+    fission_neutrons.back().seed =
+        std::uniform_int_distribution<RNG::result_type>{1}(rng);
   }
   assert(fission_neutrons.size() == fission_yield);
   return fission_neutrons;

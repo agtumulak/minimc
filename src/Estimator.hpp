@@ -1,5 +1,7 @@
 #pragma once
 
+#include "BasicTypes.hpp"
+
 #include <iostream>
 #include <map>
 #include <string>
@@ -16,6 +18,7 @@ public:
     capture,
     collision,
     fission,
+    implicit_fission,
     scatter,
     surface_crossing,
   };
@@ -23,16 +26,16 @@ public:
   static std::string ToString(const Event e) noexcept;
 
 private:
-  using elements_type = std::map<Event, size_t>;
+  using elements_type = std::map<Event, Real>;
 
 public:
   /// @brief Returns a reference to a given Event
-  size_t& at(Event e);
+  Real& at(Event e);
   /// @brief Returns a const reference to a given Event
-  const size_t& at(Event e) const;
+  const Real& at(Event e) const;
   /// @brief Adds the contents of rhs to the Estimator
   /// @details Only keys which exist in this Estimator are added to
-  Estimator& operator+=(const Estimator& rhs);
+  Estimator& operator+=(const Estimator& rhs) noexcept;
 
 private:
   // Used by ranged-based for loops
@@ -44,6 +47,7 @@ private:
       {Event::capture, 0},
       {Event::collision, 0},
       {Event::fission, 0},
+      {Event::implicit_fission, 0},
       {Event::scatter, 0},
       {Event::surface_crossing, 0},
   };

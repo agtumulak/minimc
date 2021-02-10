@@ -1,6 +1,7 @@
 #include "Driver.hpp"
 
 #include "FixedSource.hpp"
+#include "KEigenvalue.hpp"
 #include "XMLDocument.hpp"
 
 // Driver
@@ -17,7 +18,7 @@ Driver::Create(const std::filesystem::path& xml_filepath) {
     return std::make_unique<FixedSource>(doc->root);
   }
   else if (problem_type == "keigenvalue") {
-    assert(false); // to be implemented
+    return std::make_unique<KEigenvalue>(doc->root);
   }
   else {
     assert(false); // this should have been caught by the validator

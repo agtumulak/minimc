@@ -9,28 +9,34 @@
 </general>
 <nuclides>
   <continuous>
-    <nuclide name="hydrogen">
+    <nuclide name="uranium235">
       <neutron>
-        <total file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-total.csv"/>
-        <capture file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-gamma.csv"/>
-        <scatter file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-elastic.csv"/>
+        <total file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-total.csv"/>
+        <capture file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-gamma.csv"/>
+        <scatter file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-elastic.csv"/>
+
+        <fission>
+          <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-fission.csv"/>
+          <nubar file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-nubar.csv"/>
+          <chi file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-chi.csv"/>
+        </fission>
       </neutron>
     </nuclide>
   </continuous>
 </nuclides>
 <materials>
-  <material name="hydrogen" aden="1">
-    <nuclide name="hydrogen" afrac="0.1"/>
+  <material name="uranium235" aden="0.048204188">
+    <nuclide name="uranium235" afrac="1.0"/>
   </material>
 </materials>
 <surfaces>
   <sphere name="sphere">
     <center x="0" y="0" z="0"/>
-    <radius r="1"/>
+    <radius r="8.66"/>
   </sphere>
 </surfaces>
 <cells>
-  <cell name="sphere" material="hydrogen">
+  <cell name="sphere" material="uranium235">
     <surface name="sphere" sense="-1"/>
   </cell>
   <void>
@@ -38,19 +44,21 @@
   </void>
 </cells>
 <problemtype>
-  <fixedsource>
-    <position>
-      <constant x="0" y="0" z="0"/>
-    </position>
-    <direction>
-      <isotropic/>
-    </direction>
-    <energy>
-      <constant energy="1e-6"/>
-    </energy>
-    <particletype>
-      <constant type="neutron"/>
-    </particletype>
-  </fixedsource>
+  <keigenvalue inactive="100" active="10">
+    <initialsource>
+      <position>
+        <constant x="0" y="0" z="0"/>
+      </position>
+      <direction>
+        <isotropic/>
+      </direction>
+      <energy>
+        <constant energy="1"/>
+      </energy>
+      <particletype>
+        <constant type="neutron"/>
+      </particletype>
+    </initialsource>
+  </keigenvalue>
 </problemtype>
 </minimc>

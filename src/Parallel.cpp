@@ -18,3 +18,9 @@ std::optional<std::pair<size_t, size_t>> ChunkGiver::Next() {
   }
   return std::make_pair(begin, end);
 }
+
+void ChunkGiver::Reset(size_t new_size) noexcept {
+  size = new_size;
+  begin = 0;
+  end = 0;
+}
