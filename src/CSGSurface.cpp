@@ -59,8 +59,13 @@ Real CSGSurface::SolveQuadratic(Real a, Real b, Real c) noexcept {
     // discriminant == 0: grazing, considered no intersection
     return std::numeric_limits<Real>::infinity();
   }
-  const Real lesser{(-b - std::sqrtf(discriminant)) / (2 * a)};
-  const Real greater{(-b + std::sqrtf(discriminant)) / (2 * a)};
+  // avoid catastrophic cancellation by using different expressions
+  const Real lesser{
+      b > 0 ? (-b - std::sqrtf(discriminant)) / (2 * a)
+            : (2 * c) / (-b + std::sqrtf(discriminant))};
+  const Real greater{
+      b > 0 ? (2 * c) / (-b - std::sqrtf(discriminant))
+            : (-b + std::sqrtf(discriminant)) / (2 * a)};
   if (lesser > 0) {
     // Outside sphere; headed towards sphere
     return lesser;
