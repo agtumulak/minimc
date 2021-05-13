@@ -1,13 +1,15 @@
 #pragma once
 
 #include "BasicTypes.hpp"
-#include "Nuclide.hpp"
 #include "pugixml.hpp"
 
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
+
+class Nuclide;
+class Particle;
 
 /// @brief Aggregates nuclear and physical properties
 /// @details Nuclear properties are in NuclearData objects

@@ -6,7 +6,9 @@
 #include "pugixml.hpp"
 
 #include <map>
+#include <memory>
 #include <string>
+#include <vector>
 
 /// @brief Nuclear cross sections in multigroup or continuous energy for a
 ///        given Nuclide

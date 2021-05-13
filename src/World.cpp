@@ -1,6 +1,12 @@
 #include "World.hpp"
 
+#include "CSGSurface.hpp"
+#include "Material.hpp"
+#include "Nuclide.hpp"
+
 #include <algorithm>
+#include <stdexcept>
+#include <string>
 
 // World
 

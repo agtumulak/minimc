@@ -2,6 +2,7 @@
 
 #include "BasicTypes.hpp"
 #include "Driver.hpp"
+#include "Estimator.hpp"
 #include "Parallel.hpp"
 #include "Particle.hpp"
 #include "Source.hpp"

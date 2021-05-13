@@ -1,4 +1,8 @@
+#include "BasicTypes.hpp"
+#include "CSGSurface.hpp"
 #include "Cell.hpp"
+#include "Particle.hpp"
+#include "Point.hpp"
 #include "World.hpp"
 #include "XMLDocument.hpp"
 #include "catch2/catch.hpp"

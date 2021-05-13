@@ -2,7 +2,7 @@
 
 #include "BasicTypes.hpp"
 
-#include <iostream>
+#include <iosfwd>
 #include <map>
 #include <string>
 

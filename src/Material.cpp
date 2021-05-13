@@ -1,7 +1,11 @@
 #include "Material.hpp"
 
+#include "Nuclide.hpp"
+
 #include <algorithm>
+#include <cassert>
 #include <numeric>
+#include <stdexcept>
 
 // Cell
 

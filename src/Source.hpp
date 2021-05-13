@@ -1,5 +1,6 @@
 #pragma once
 
+#include "BasicTypes.hpp"
 #include "Particle.hpp"
 #include "Point.hpp"
 #include "pugixml.hpp"

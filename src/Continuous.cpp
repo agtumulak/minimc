@@ -1,12 +1,18 @@
 #include "Continuous.hpp"
 
-#include "Constants.hpp"
+#include "Particle.hpp"
+#include "Point.hpp"
 
 #include <algorithm>
+#include <cassert>
+#include <cstddef>
 #include <fstream>
 #include <iterator>
 #include <limits>
+#include <random>
+#include <stdexcept>
 #include <string>
+#include <utility>
 #include <variant>
 
 // Continuous

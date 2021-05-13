@@ -5,6 +5,7 @@
 #include "Point.hpp"
 #include "Reaction.hpp"
 
+#include <string>
 #include <vector>
 
 class Cell;

@@ -1,6 +1,10 @@
 #include "Cell.hpp"
 
+#include "CSGSurface.hpp"
+#include "Material.hpp"
+
 #include <algorithm>
+#include <cassert>
 #include <stdexcept>
 
 // Cell

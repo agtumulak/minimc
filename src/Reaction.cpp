@@ -1,5 +1,7 @@
 #include "Reaction.hpp"
 
+#include <cassert>
+
 Reaction ToReaction(const std::string& name) noexcept {
   if (name == "capture") {
     return Reaction::capture;

@@ -1,15 +1,17 @@
 #pragma once
 
-#include "CSGSurface.hpp"
-#include "Material.hpp"
+#include "BasicTypes.hpp"
+#include "Point.hpp"
 #include "pugixml.hpp"
 
 #include <map>
 #include <memory>
 #include <string>
 #include <tuple>
+#include <vector>
 
-class Particle;
+class CSGSurface;
+class Material;
 
 /// @brief A subset of @f$ \mathbb{R}^{3} @f$ defined by constructive solid
 ///        geometry (CSG) surfaces

@@ -1,10 +1,11 @@
+#include "BasicTypes.hpp"
 #include "CSGSurface.hpp"
 #include "Point.hpp"
 #include "XMLDocument.hpp"
 #include "catch2/catch.hpp"
 
+#include <limits>
 #include <memory>
-#include <numeric>
 
 TEST_CASE("nonexistent surface name throws exception") {
   XMLDocument doc{"simple_multigroup.xml"};

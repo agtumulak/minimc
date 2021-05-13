@@ -2,12 +2,15 @@
 
 #include "BasicTypes.hpp"
 #include "NuclearData.hpp"
-#include "Particle.hpp"
+#include "Reaction.hpp"
 #include "pugixml.hpp"
 
 #include <filesystem>
 #include <map>
 #include <optional>
+#include <vector>
+
+class Particle;
 
 /// @brief Contains cross sections which are indexed by continuous energy values
 class Continuous : public NuclearData {

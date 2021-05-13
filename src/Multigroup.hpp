@@ -2,13 +2,14 @@
 
 #include "BasicTypes.hpp"
 #include "NuclearData.hpp"
-#include "Particle.hpp"
+#include "Reaction.hpp"
 #include "pugixml.hpp"
 
 #include <map>
 #include <optional>
-#include <random>
 #include <vector>
+
+class Particle;
 
 /// @brief Contains cross sections which are indexed by discrete energy groups
 /// @details Groups are integers in `[1,G]`. Group `1` corresponds to the

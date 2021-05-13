@@ -5,6 +5,7 @@
 #include "World.hpp"
 #include "pugixml.hpp"
 
+#include <cstddef>
 #include <filesystem>
 #include <memory>
 

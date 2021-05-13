@@ -1,5 +1,7 @@
 #include "Estimator.hpp"
 
+#include <ostream>
+
 // Estimator
 
 std::ostream& operator<<(std::ostream& os, const Estimator& e) noexcept {

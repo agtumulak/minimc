@@ -3,11 +3,15 @@
 #include "Constants.hpp"
 
 #include <algorithm>
+#include <cstddef>
 #include <future>
+#include <string>
 #include <iostream>
 #include <iterator>
 #include <numeric>
 #include <optional>
+#include <utility>
+#include <vector>
 
 // FixedSource
 

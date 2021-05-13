@@ -1,13 +1,16 @@
 #include "Particle.hpp"
 
+#include "Cell.hpp"
 #include "Constants.hpp"
+#include "Material.hpp"
+#include "Nuclide.hpp"
 #include "World.hpp"
 
 #include <algorithm>
-#include <numeric>
+#include <cassert>
+#include <iterator>
 #include <random>
 #include <stdexcept>
-#include <iterator>
 
 // Particle::TransportOutcome
 

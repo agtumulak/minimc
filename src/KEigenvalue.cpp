@@ -1,14 +1,19 @@
 #include "KEigenvalue.hpp"
 
 #include "Constants.hpp"
+#include "Estimator.hpp"
 #include "Parallel.hpp"
+#include "Source.hpp"
 
 #include <algorithm>
-#include <cstdint>
 #include <future>
+#include <iostream>
 #include <iterator>
 #include <map>
+#include <optional>
 #include <random>
+#include <string>
+#include <utility>
 
 // KEigenvalue
 

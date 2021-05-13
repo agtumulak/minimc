@@ -3,6 +3,7 @@
 #include "Continuous.hpp"
 #include "Multigroup.hpp"
 
+#include <cassert>
 #include <numeric>
 #include <sstream>
 #include <stdexcept>

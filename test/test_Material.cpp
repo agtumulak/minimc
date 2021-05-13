@@ -1,10 +1,6 @@
 #include "Material.hpp"
-#include "Statistics.hpp"
-#include "World.hpp"
 #include "XMLDocument.hpp"
 #include "catch2/catch.hpp"
-
-#include <random>
 
 TEST_CASE("nonexistent material name throws exception") {
   XMLDocument doc{"simple_multigroup.xml"};

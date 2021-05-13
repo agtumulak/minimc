@@ -1,12 +1,18 @@
 #include "Multigroup.hpp"
 
 #include "Constants.hpp"
+#include "Particle.hpp"
+#include "Point.hpp"
 
 #include <algorithm>
+#include <cassert>
+#include <cstddef>
 #include <functional>
 #include <numeric>
+#include <random>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 #include <variant>
 
 // Multigroup
