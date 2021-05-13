@@ -14,18 +14,7 @@ class World;
 /// @brief The primary entity performing random walks in a World.
 /// @details Particles are characterized by their position, direction, energy,
 ///          type, and an alive flag. The awkward declaration order of member
-///          variables is meant to improve alignment. On Apple clang version
-///          12.0.0 the members are as follows:
-///          Member        | Size (bytes)  | Total (bytes)
-///          ------------- | ------------- | -------------
-///          position      |            24 |            24
-///          direction     |            24 |            48
-///          energy        |            16 |            64
-///          cell*         |             8 |            72
-///          type          |             4 |            76
-///          seed          |             4 |            80
-///          alive         |             1 |            81
-///          padding       |             7 |            88
+///          variables is meant to improve alignment.
 /// @note All users of this class should assume that the direction member is
 ///       normalized to one to avoid extra computation. Maintainers of this
 ///       class must take care care to keep direction normalized.
