@@ -1,21 +1,22 @@
 #pragma once
 
 #include "BasicTypes.hpp"
-#include "Nuclide.hpp"
 #include "pugixml.hpp"
 
 #include <map>
 #include <memory>
-#include <random>
 #include <string>
 #include <vector>
 
+class Nuclide;
+class Particle;
+
 /// @brief Aggregates nuclear and physical properties
-/// @details Nuclear properties are in CrossSection objects
+/// @details Nuclear properties are in NuclearData objects
 class Material {
 public:
-  /// @brief Cross sections are Real numbers
-  using CrossSection = Real;
+  /// @brief Nuclide objects and their associated atom fractions
+  using AtomFractions = std::map<std::shared_ptr<const Nuclide>, Real>;
   /// @brief Find `material` node with given name in XML document
   /// @param root Root node of existing XML document
   /// @param material_name Value of `name` attribute of `material` node
@@ -30,27 +31,23 @@ public:
   Material(
       const pugi::xml_node& root, const std::string& name,
       const std::vector<std::shared_ptr<const Nuclide>>& all_nuclides);
-  /// @brief Sample the distance a Particle will travel before colliding
-  Real SampleCollisionDistance(RNG& rng, const Particle& p) const noexcept;
-  /// @brief Sample a Nuclide given that a Particle has collided inside this
-  ///        Material
-  const Nuclide& SampleNuclide(RNG& rng, const Particle& p) const noexcept;
+
+  /// @brief Return the total <em>microscopic</em> cross section
+  MicroscopicCrossSection GetMicroscopicTotal(const Particle& p) const noexcept;
   /// @brief Unique, user-defined identifier (C++ Core Guidelines C.131)
   const std::string name;
-  /// @brief Atomic number density
+  /// @brief All Nuclide objects which make up this Material and their
+  ///        associated atom fractions (C++ Core Guidelines C.131)
+  const AtomFractions afracs;
+  /// @brief Atomic number density (C++ Core Guidelines C.131)
   const Real number_density;
 
 private:
-  using AtomFractionMap = std::map<std::shared_ptr<const Nuclide>, Real>;
   // Helper function to assign all Nuclide objects which make up Material with
   // the given name. Nuclide objects from all_nuclides are shared between all
   // Material objects.
-  static AtomFractionMap AssignNuclides(
+  static AtomFractions AssignNuclides(
       const pugi::xml_node& root, const std::string& name,
       const std::vector<std::shared_ptr<const Nuclide>>& all_nuclides);
-  // Return the total <em>microscopic</em> cross section
-  CrossSection GetMicroscopicTotal(const Particle& p) const noexcept;
-  // All Nuclide objects which make up this Material and their associated atom
-  // fractions
-  const AtomFractionMap afracs;
+
 };

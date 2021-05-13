@@ -8,6 +8,10 @@
 
 /// @brief Real number @f$ \mathbb{R} @f$ (C++ Core Guidelines P.1)
 using Real = double;
+/// @brief Microscopic cross section in barns
+using MicroscopicCrossSection = Real;
+/// @brief Macroscopic cross section in inverse cm
+using MacroscopicCrossSection = Real;
 /// @brief Energy in MeV
 using ContinuousEnergy = Real;
 /// @brief Group number for multigroup calculations. Group 1 corresponds to the

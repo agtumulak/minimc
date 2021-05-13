@@ -21,6 +21,20 @@ Sources for information herein come primarily from
 to be the definitive guide for writing "modern" C++. Occasionally, matters of
 opinion refer to <a href="https://stackoverflow.com">Stack Overflow</a>.
 
+@section developer_guide_particle The Particle
+
+Fundamentally, a Monte Carlo radiation transport code is a simulation of a
+discrete random process @f$ \Omega = \left( X_{0}, X_{1}, X_{2}, \ldots
+\right) @f$ for which we are interested in estimating the expected value of
+random variables @f$ S: \Omega \rightarrow \mathbb{R} @f$. At each step of a
+<em>history</em>, a Particle takes on some definite state in phase
+space @f$ X_{i} = x_{i} @f$. For this reason, the Particle class is heavily
+encapsulated and internally performs most of the operations required to update
+its state. Should other classes use a Particle object as a function paramter,
+they should only do so using a `const` qualifier. For instance,
+Material::GetMicroscopicTotal accepts a `const` Particle reference as a
+parameter to look up relevant cross sections.
+
 @section developer_guide_commenting Commenting
 
 Generally speaking, comments should avoid explaining <em>what</em> the code is

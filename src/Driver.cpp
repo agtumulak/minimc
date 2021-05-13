@@ -4,6 +4,9 @@
 #include "KEigenvalue.hpp"
 #include "XMLDocument.hpp"
 
+#include <cassert>
+#include <string>
+
 // Driver
 
 //// public

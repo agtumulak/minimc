@@ -1,3 +1,4 @@
+#include "CSGSurface.hpp"
 #include "World.hpp"
 #include "XMLDocument.hpp"
 #include "catch2/catch.hpp"

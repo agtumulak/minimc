@@ -1,12 +1,13 @@
 #pragma once
 
+#include "BasicTypes.hpp"
 #include "Driver.hpp"
 #include "Parallel.hpp"
 #include "Particle.hpp"
-#include "Source.hpp"
-#include "Transport.hpp"
 #include "pugixml.hpp"
 
+#include <cstddef>
+#include <map>
 #include <vector>
 
 class KEigenvalue : public Driver {
@@ -20,7 +21,7 @@ public:
   /// @brief Function executed by a worker on a single thread
   /// @details Chunks are kept separate as they will have to be sorted in order
   ///          to keep results deterministic
-  std::map<size_t, TransportOutcome> StartWorker();
+  std::map<size_t, Particle::TransportOutcome> StartWorker();
 
 private:
   using Cycle = size_t;

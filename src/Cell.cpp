@@ -1,7 +1,10 @@
 #include "Cell.hpp"
 
+#include "CSGSurface.hpp"
+#include "Material.hpp"
+
 #include <algorithm>
-#include <limits>
+#include <cassert>
 #include <stdexcept>
 
 // Cell
@@ -40,10 +43,6 @@ Cell::NearestSurface(const Point& p, const Direction& d) const {
   const auto& nearest_surface = (*nearest_it).first;
   // TODO: Cache result of nearest surface distance instead of computing again
   return std::make_tuple(nearest_surface, nearest_surface->Distance(p, d));
-}
-
-Real Cell::SampleCollisionDistance(RNG& rng, const Particle& p) const noexcept {
-  return material->SampleCollisionDistance(rng, p);
 }
 
 bool Cell::operator==(const Cell& rhs) const noexcept { return this == &rhs; }

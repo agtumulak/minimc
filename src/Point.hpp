@@ -3,8 +3,6 @@
 #include "BasicTypes.hpp"
 #include "pugixml.hpp"
 
-#include <random>
-
 /// @brief Point in @f$ \mathbb{R}^{3} @f$
 class Point {
   /// @brief Returns the vector sum of two Point objects

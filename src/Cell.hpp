@@ -1,16 +1,17 @@
 #pragma once
 
-#include "CSGSurface.hpp"
-#include "Material.hpp"
+#include "BasicTypes.hpp"
+#include "Point.hpp"
 #include "pugixml.hpp"
 
 #include <map>
 #include <memory>
-#include <random>
 #include <string>
 #include <tuple>
+#include <vector>
 
-class Particle;
+class CSGSurface;
+class Material;
 
 /// @brief A subset of @f$ \mathbb{R}^{3} @f$ defined by constructive solid
 ///        geometry (CSG) surfaces
@@ -46,8 +47,6 @@ public:
   /// @return Returns a tuple to nearest CSGSurface and distance to it
   std::tuple<std::shared_ptr<const CSGSurface>, Real>
   NearestSurface(const Point& p, const Direction& d) const;
-  /// @brief Sample the distance a particle will travel before colliding
-  Real SampleCollisionDistance(RNG& rng, const Particle& p) const noexcept;
   /// @brief Returns true if both Cell objects are the same object
   bool operator==(const Cell& rhs) const noexcept;
   /// @brief Unique, user-defined identifier (C++ Core Guidelines C.131)

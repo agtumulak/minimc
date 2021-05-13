@@ -1,13 +1,16 @@
 #pragma once
 
+#include "BasicTypes.hpp"
 #include "NuclearData.hpp"
-#include "Particle.hpp"
+#include "Reaction.hpp"
 #include "pugixml.hpp"
 
 #include <filesystem>
-#include <random>
 #include <map>
 #include <optional>
+#include <vector>
+
+class Particle;
 
 /// @brief Contains cross sections which are indexed by continuous energy values
 class Continuous : public NuclearData {
@@ -16,9 +19,10 @@ public:
   ///        an XML document
   Continuous(const pugi::xml_node& particle_node);
   /// @brief Returns the total cross section for a given Particle
-  CrossSection GetTotal(const Particle& p) const noexcept override;
-  /// @brief Returns the fission cross section for a given Particle
-  CrossSection GetFission(const Particle& p) const noexcept override;
+  MicroscopicCrossSection GetTotal(const Particle& p) const noexcept override;
+  /// @brief Returns the cross section for a given Particle and Reaction
+  MicroscopicCrossSection
+  GetReaction(const Particle& p, const Reaction r) const noexcept override;
   /// @brief Returns the average fission neutron yield for a given Particle
   Real GetNuBar(const Particle& p) const noexcept override;
   /// @brief Scatters the Particle and updates its ContinuousEnergy and
@@ -36,7 +40,7 @@ private:
   public:
     // Constructs Continuous::OneDimensional from a data file
     OneDimensional(const std::filesystem::path& datapath);
-    // Returns a const reference to the CrossSection at a given
+    // Returns a const reference to the MicroscopicCrossSection at a given
     // ContinuousEnergy
     const Real& at(const ContinuousEnergy e) const noexcept;
 
@@ -54,7 +58,7 @@ private:
     elements_type::key_type Sample(RNG& rng) const noexcept;
   };
 
-  using ReactionsMap = std::map<NuclearData::Reaction, OneDimensional>;
+  using ReactionsMap = std::map<Reaction, OneDimensional>;
 
   // Helper function for reaction cross section construction
   static ReactionsMap CreateReactions(const pugi::xml_node& particle_node);

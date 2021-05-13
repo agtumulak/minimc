@@ -1,5 +1,6 @@
 #include "CSGSurface.hpp"
 
+#include <cassert>
 #include <cmath>
 #include <limits>
 #include <numeric>

@@ -1,6 +1,30 @@
 #include "Particle.hpp"
 
+#include "Cell.hpp"
+#include "Constants.hpp"
+#include "Material.hpp"
+#include "Nuclide.hpp"
+#include "Reaction.hpp"
+#include "World.hpp"
+
+#include <algorithm>
+#include <cassert>
+#include <iterator>
+#include <random>
 #include <stdexcept>
+
+// Particle::TransportOutcome
+
+//// public
+
+Particle::TransportOutcome&
+Particle::TransportOutcome::operator+=(const TransportOutcome& rhs) noexcept {
+  estimator += rhs.estimator;
+  std::move(
+      rhs.banked.cbegin(), rhs.banked.cend(),
+      std::back_insert_iterator(banked));
+  return *this;
+}
 
 // Particle
 
@@ -23,7 +47,50 @@ Particle::Particle(
     const Type type) noexcept
     : position{position}, direction{direction}, energy{energy}, type{type} {}
 
-bool Particle::IsAlive() const noexcept { return alive; }
+Particle::TransportOutcome Particle::Transport(const World& w) noexcept {
+  TransportOutcome result;
+  SetCell(w.FindCellContaining(GetPosition()));
+  while (alive) {
+    const auto collision = SampleCollisionDistance();
+    const auto [nearest_surface, surface_crossing] =
+        cell->NearestSurface(position, direction);
+    if (collision < surface_crossing) {
+      result.estimator.at(Estimator::Event::collision) += 1;
+      Stream(collision);
+      const auto& nuclide = SampleNuclide();
+      result.estimator.at(Estimator::Event::implicit_fission) +=
+          nuclide.GetNuBar(*this) *
+          nuclide.GetReaction(*this, Reaction::fission) /
+          nuclide.GetTotal(*this);
+      switch (nuclide.SampleReaction(rng, *this)) {
+      case Reaction::capture:
+        result.estimator.at(Estimator::Event::capture) += 1;
+        Kill();
+        break;
+      case Reaction::scatter:
+        result.estimator.at(Estimator::Event::scatter) += 1;
+        nuclide.Scatter(rng, *this);
+        break;
+      case Reaction::fission:
+        result.estimator.at(Estimator::Event::fission) += 1;
+        auto fission_yield{nuclide.Fission(rng, *this)};
+        std::move(
+            fission_yield.begin(), fission_yield.end(),
+            std::back_insert_iterator(result.banked));
+        break;
+      }
+    }
+    else {
+      result.estimator.at(Estimator::Event::surface_crossing) += 1;
+      Stream(surface_crossing + constants::nudge);
+      SetCell(w.FindCellContaining(position));
+      if (!cell->material) {
+        Kill();
+      }
+    }
+  }
+  return result;
+}
 
 void Particle::Kill() noexcept { alive = false; }
 
@@ -32,8 +99,6 @@ void Particle::Stream(const Real distance) noexcept {
 }
 
 const Point& Particle::GetPosition() const noexcept { return position; };
-
-const Direction& Particle::GetDirection() const noexcept { return direction; };
 
 void Particle::SetDirectionIsotropic(RNG& rng) noexcept {
   direction = Direction::CreateIsotropic(rng);
@@ -51,3 +116,25 @@ const Cell& Particle::GetCell() const {
 }
 
 void Particle::SetCell(const Cell& c) noexcept { cell = &c; };
+
+Real Particle::SampleCollisionDistance() noexcept {
+  return std::exponential_distribution{
+      cell->material->number_density *
+      cell->material->GetMicroscopicTotal(*this)}(rng);
+}
+
+const Nuclide& Particle::SampleNuclide() noexcept {
+  const MicroscopicCrossSection threshold =
+      cell->material->GetMicroscopicTotal(*this) *
+      std::uniform_real_distribution{}(rng);
+  MicroscopicCrossSection accumulated = 0;
+  for (const auto& [nuclide_ptr, afrac] : cell->material->afracs) {
+    accumulated += afrac * nuclide_ptr->GetTotal(*this);
+    if (accumulated > threshold) {
+      return *nuclide_ptr;
+    }
+  }
+  // This should never be reached since Material total cross section is
+  // computed from constituent Nuclide total cross sections
+  assert(false);
+}

@@ -30,10 +30,10 @@ set(MINIMC_SOURCES
   Particle.hpp
   Point.cpp
   Point.hpp
+  Reaction.cpp
+  Reaction.hpp
   Source.cpp
   Source.hpp
-  Transport.cpp
-  Transport.hpp
   World.cpp
   World.hpp
   XMLDocument.cpp

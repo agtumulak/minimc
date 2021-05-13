@@ -1,15 +1,19 @@
 #include "KEigenvalue.hpp"
 
 #include "Constants.hpp"
+#include "Estimator.hpp"
 #include "Parallel.hpp"
+#include "Source.hpp"
 
 #include <algorithm>
-#include <cstdint>
 #include <future>
+#include <iostream>
 #include <iterator>
 #include <map>
-#include <numeric>
+#include <optional>
 #include <random>
+#include <string>
+#include <utility>
 
 // KEigenvalue
 
@@ -42,12 +46,13 @@ void KEigenvalue::Solve() {
     std::cout << "===== Cycle " << std::to_string(c) << " =====" << std::endl;
     std::cout << "source bank: " << std::to_string(source_bank.size())
               << std::endl;
-    std::vector<std::future<std::map<size_t, TransportOutcome>>> thread_results;
+    std::vector<std::future<std::map<size_t, Particle::TransportOutcome>>>
+        thread_results;
     chunk_giver.Reset(source_bank.size());
     for (size_t i = 0; i < threads; i++) {
       thread_results.push_back(std::async(&KEigenvalue::StartWorker, this));
     }
-    std::map<size_t, TransportOutcome> sorted_chunks;
+    std::map<size_t, Particle::TransportOutcome> sorted_chunks;
     for (auto& thread_result : thread_results) {
       sorted_chunks.merge(thread_result.get());
     }
@@ -73,16 +78,24 @@ void KEigenvalue::Solve() {
   }
 }
 
-std::map<size_t, TransportOutcome> KEigenvalue::StartWorker() {
-  std::map<size_t, TransportOutcome> chunk_outputs;
-  TransportOutcome chunk_output;
+std::map<size_t, Particle::TransportOutcome> KEigenvalue::StartWorker() {
+  std::map<size_t, Particle::TransportOutcome> chunk_outputs;
   while (const auto range = chunk_giver.Next()) {
-    Bank source;
+    Particle::TransportOutcome chunk_output;
+    std::vector<Particle> chunk_source_bank;
     std::move(
         std::next(source_bank.begin(), range->first),
         std::next(source_bank.begin(), range->second),
-        std::back_insert_iterator(source));
-    chunk_outputs[range->first] = TransportAndBank(source, world);
+        std::back_insert_iterator(chunk_source_bank));
+    while (!chunk_source_bank.empty()) {
+      auto result = chunk_source_bank.back().Transport(world);
+      chunk_source_bank.pop_back();
+      chunk_output.estimator += result.estimator;
+      std::move(
+          result.banked.begin(), result.banked.end(),
+          std::back_insert_iterator(chunk_output.banked));
+    }
+    chunk_outputs.insert({range->first, chunk_output});
   }
   return chunk_outputs;
 }

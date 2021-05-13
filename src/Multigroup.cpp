@@ -1,12 +1,17 @@
 #include "Multigroup.hpp"
 
-#include "Constants.hpp"
+#include "Particle.hpp"
+#include "Point.hpp"
 
 #include <algorithm>
+#include <cassert>
+#include <cstddef>
 #include <functional>
 #include <numeric>
+#include <random>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 #include <variant>
 
 // Multigroup
@@ -30,16 +35,14 @@ Multigroup::Multigroup(const pugi::xml_node& particle_node)
       total{CreateTotalXS(particle_node, reactions)},
       max_group{GroupStructureSize(particle_node.root())} {}
 
-NuclearData::CrossSection
-Multigroup::GetTotal(const Particle& p) const noexcept {
+MicroscopicCrossSection Multigroup::GetTotal(const Particle& p) const noexcept {
   return total.at(std::get<Group>(p.GetEnergy()));
 }
 
-NuclearData::CrossSection
-Multigroup::GetFission(const Particle& p) const noexcept {
+MicroscopicCrossSection
+Multigroup::GetReaction(const Particle& p, const Reaction r) const noexcept {
   try {
-    return reactions.at(NuclearData::Reaction::fission)
-        .at(std::get<Group>(p.GetEnergy()));
+    return reactions.at(r).at(std::get<Group>(p.GetEnergy()));
   }
   catch (const std::out_of_range& e) {
     return 0;
@@ -103,11 +106,11 @@ Multigroup::Fission(RNG& rng, Particle& p) const noexcept {
   return fission_neutrons;
 }
 
-NuclearData::Reaction
+Reaction
 Multigroup::SampleReaction(RNG& rng, const Particle& p) const noexcept {
-  const CrossSection threshold{
+  const MicroscopicCrossSection threshold{
       std::uniform_real_distribution{}(rng)*GetTotal(p)};
-  CrossSection accumulated{0};
+  MicroscopicCrossSection accumulated{0};
   for (const auto& [reaction, reaction_xs] : reactions) {
     accumulated += reaction_xs.at(std::get<Group>(p.GetEnergy()));
     if (accumulated > threshold) {
@@ -247,11 +250,11 @@ Group Multigroup::GroupStructureSize(const pugi::xml_node& root) noexcept {
 
 Multigroup::OneDimensional
 Multigroup::CreateScatterXS(const pugi::xml_node& scatter_node) {
-  std::vector<CrossSection> column_sums;
+  std::vector<MicroscopicCrossSection> column_sums;
   auto scatter_matrix = TwoDimensional{scatter_node};
   for (const auto& column : scatter_matrix) {
-    column_sums.push_back(
-        std::accumulate(column.begin(), column.end(), CrossSection{0}));
+    column_sums.push_back(std::accumulate(
+        column.begin(), column.end(), MicroscopicCrossSection{0}));
   }
   return column_sums;
 }
@@ -260,11 +263,11 @@ Multigroup::ReactionsMap
 Multigroup::CreateReactions(const pugi::xml_node& particle_node) {
   Multigroup::ReactionsMap reactions;
   for (const auto& reaction_node : particle_node) {
-    const auto reaction{NuclearData::ToReaction(reaction_node.name())};
-    if (reaction == NuclearData::Reaction::scatter) {
+    const auto reaction{ToReaction(reaction_node.name())};
+    if (reaction == Reaction::scatter) {
       reactions.emplace(reaction, CreateScatterXS(reaction_node));
     }
-    else if (reaction == NuclearData::Reaction::fission){
+    else if (reaction == Reaction::fission) {
       // fission cross sections "xs" are bundled along with "chi" and "nubar"
       reactions.emplace(reaction, reaction_node.child("xs"));
     }

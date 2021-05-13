@@ -3,6 +3,7 @@
 #include "Continuous.hpp"
 #include "Multigroup.hpp"
 
+#include <cassert>
 #include <numeric>
 #include <sstream>
 #include <stdexcept>
@@ -60,18 +61,3 @@ NuclearData::Map NuclearData::Create(
 
 NuclearData::~NuclearData() noexcept {}
 
-NuclearData::Reaction
-NuclearData::ToReaction(const std::string& name) noexcept {
-  if (name == "capture") {
-    return NuclearData::Reaction::capture;
-  }
-  else if (name == "scatter") {
-    return NuclearData::Reaction::scatter;
-  }
-  else if (name == "fission") {
-    return NuclearData::Reaction::fission;
-  }
-  else {
-    assert(false); // only mutually exclusive reactions are valid
-  };
-}

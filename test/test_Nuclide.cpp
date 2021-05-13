@@ -1,15 +1,17 @@
-#include "NuclearData.hpp"
+#include "BasicTypes.hpp"
 #include "Nuclide.hpp"
 #include "Particle.hpp"
 #include "Point.hpp"
+#include "Reaction.hpp"
 #include "Statistics.hpp"
-#include "XMLDocument.hpp"
 #include "World.hpp"
+#include "XMLDocument.hpp"
 #include "catch2/catch.hpp"
 
 #include <algorithm>
-#include <random>
+#include <cstddef>
 #include <variant>
+#include <vector>
 
 TEST_CASE("nonexistent nuclide name throws exception") {
   XMLDocument doc{"simple_multigroup.xml"};
@@ -36,13 +38,12 @@ TEST_CASE("poorly formed multigroup data for Nuclide throws exception") {
 }
 
 TEST_CASE("Nuclide member methods work properly") {
-  std::minstd_rand rng{42};
+  RNG rng{42};
   const size_t samples{1000};
-  auto ScatterProbability = [](std::minstd_rand& rng, const Nuclide& n,
-                               const Particle& p) {
+  auto ScatterProbability = [](RNG& rng, const Nuclide& n, const Particle& p) {
     size_t scatters{0};
     for (size_t i = 1; i <= samples; i++) {
-      if (n.SampleReaction(rng, p) == NuclearData::Reaction::scatter) {
+      if (n.SampleReaction(rng, p) == Reaction::scatter) {
         scatters++;
       }
     };
@@ -100,7 +101,7 @@ TEST_CASE("Nuclide member methods work properly") {
     }
     SECTION("Scatter() returns expected number of Particles in lower energy "
             "Group") {
-      auto LowerEnergyProbability = [](std::minstd_rand& rng, const Nuclide& n,
+      auto LowerEnergyProbability = [](RNG& rng, const Nuclide& n,
                                        const Particle& p) {
         size_t lower_energy{0};
         for (size_t i = 1; i <= samples; i++) {
@@ -196,9 +197,11 @@ TEST_CASE("Nuclide member methods work properly") {
     const Nuclide uranium235{doc.root, "uranium235"};
     REQUIRE_THROWS_WITH(
         Nuclide(doc.root, "badpath"), "File not found: /not/real");
+
     REQUIRE(hydrogen.GetTotal(neutron) == 20.74762);
     REQUIRE(oxygen.GetTotal(neutron) == 3.796956);
     REQUIRE(uranium235.GetTotal(neutron) == 92.60272);
+
     SECTION("SampleReaction() returns expected number of scatters") {
       // At 1.0 eV, for hydrogen,
       // capture: 0.05293893

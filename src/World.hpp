@@ -1,12 +1,15 @@
 #pragma once
 
-#include "CSGSurface.hpp"
 #include "Cell.hpp"
-#include "Material.hpp"
+#include "Point.hpp"
 #include "pugixml.hpp"
 
 #include <memory>
 #include <vector>
+
+class CSGSurface;
+class Material;
+class Nuclide;
 
 /// @brief Represents the state of a nuclear system
 /// @details Manages the construction of all Surface, Nuclide, Material, and
