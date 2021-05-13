@@ -10,7 +10,6 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <random>
 #include <variant>
 #include <vector>
 
@@ -39,10 +38,9 @@ TEST_CASE("poorly formed multigroup data for Nuclide throws exception") {
 }
 
 TEST_CASE("Nuclide member methods work properly") {
-  std::minstd_rand rng{42};
+  RNG rng{42};
   const size_t samples{1000};
-  auto ScatterProbability = [](std::minstd_rand& rng, const Nuclide& n,
-                               const Particle& p) {
+  auto ScatterProbability = [](RNG& rng, const Nuclide& n, const Particle& p) {
     size_t scatters{0};
     for (size_t i = 1; i <= samples; i++) {
       if (n.SampleReaction(rng, p) == Reaction::scatter) {
@@ -103,7 +101,7 @@ TEST_CASE("Nuclide member methods work properly") {
     }
     SECTION("Scatter() returns expected number of Particles in lower energy "
             "Group") {
-      auto LowerEnergyProbability = [](std::minstd_rand& rng, const Nuclide& n,
+      auto LowerEnergyProbability = [](RNG& rng, const Nuclide& n,
                                        const Particle& p) {
         size_t lower_energy{0};
         for (size_t i = 1; i <= samples; i++) {
