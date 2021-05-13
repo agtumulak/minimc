@@ -40,6 +40,9 @@ public:
   /// @brief Fissions the Nuclide and produces secondaries
   virtual std::vector<Particle>
   Fission(RNG& rng, Particle& p) const noexcept = 0;
+  /// @brief Samples a reaction
+  virtual Reaction
+  SampleReaction(RNG& rng, const Particle& p) const noexcept = 0;
 
 protected:
 };

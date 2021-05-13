@@ -36,6 +36,8 @@ public:
   /// @brief Fissions the Nuclide and produces secondaries
   /// @details Currently, only fission neutrons are produced
   std::vector<Particle> Fission(RNG& rng, Particle& p) const noexcept override;
+  /// @brief Samples a Reaction
+  Reaction SampleReaction(RNG& rng, const Particle& p) const noexcept override;
 
 private:
   // Groupwise cross sections indexed by one Group

@@ -30,6 +30,8 @@ public:
   void Scatter(RNG& rng, Particle& p) const noexcept override;
   /// @brief Fissions the Nuclide and produces secondaries
   std::vector<Particle> Fission(RNG& rng, Particle& p) const noexcept override;
+  /// @brief Samples a Reaction
+  Reaction SampleReaction(RNG& rng, const Particle& p) const noexcept override;
 
 private:
   using elements_type = std::map<ContinuousEnergy, Real>;

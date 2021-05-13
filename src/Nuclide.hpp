@@ -32,6 +32,8 @@ public:
   void Scatter(RNG& rng, Particle& p) const;
   /// @brief Fissions the Nuclide and produces secondaries
   std::vector<Particle> Fission(RNG& rng, Particle& p) const noexcept;
+  /// @brief Samples a reaction
+  Reaction SampleReaction(RNG& rng, const Particle& p) const noexcept;
   /// @brief Unique, user-defined identifier (C++ Core Guidelines C.131)
   const std::string name;
 

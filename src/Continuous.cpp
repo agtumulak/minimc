@@ -83,6 +83,21 @@ Continuous::Fission(RNG& rng, Particle& p) const noexcept {
   return fission_neutrons;
 }
 
+Reaction
+Continuous::SampleReaction(RNG& rng, const Particle& p) const noexcept {
+  const MicroscopicCrossSection threshold =
+      std::uniform_real_distribution{}(rng)*GetTotal(p);
+  MicroscopicCrossSection accumulated{0};
+  for (const auto& [reaction, xs] : reactions) {
+    accumulated += xs.at(std::get<ContinuousEnergy>(p.GetEnergy()));
+    if (accumulated > threshold) {
+      return reaction;
+    }
+  }
+  // If no reaction found, resample tail-recursively
+  return SampleReaction(rng, p);
+}
+
 // Continuous::OneDimensional
 
 //// public

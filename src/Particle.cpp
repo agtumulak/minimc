@@ -4,6 +4,7 @@
 #include "Constants.hpp"
 #include "Material.hpp"
 #include "Nuclide.hpp"
+#include "Reaction.hpp"
 #include "World.hpp"
 
 #include <algorithm>
@@ -61,7 +62,7 @@ Particle::TransportOutcome Particle::Transport(const World& w) noexcept {
           nuclide.GetNuBar(*this) *
           nuclide.GetReaction(*this, Reaction::fission) /
           nuclide.GetTotal(*this);
-      switch (SampleReaction(nuclide)) {
+      switch (nuclide.SampleReaction(rng, *this)) {
       case Reaction::capture:
         result.estimator.at(Estimator::Event::capture) += 1;
         Kill();
@@ -136,17 +137,4 @@ const Nuclide& Particle::SampleNuclide() noexcept {
   // This should never be reached since Material total cross section is
   // computed from constituent Nuclide total cross sections
   assert(false);
-}
-
-Reaction Particle::SampleReaction(const Nuclide& nuclide) noexcept {
-  const MicroscopicCrossSection threshold =
-      nuclide.GetTotal(*this) * std::uniform_real_distribution{}(rng);
-  MicroscopicCrossSection accumulated = 0;
-  for (const auto r :
-       {Reaction::capture, Reaction::fission, Reaction::scatter}) {
-    accumulated += nuclide.GetReaction(*this, r);
-    if (accumulated > threshold) {
-      return r;
-    }
-  }
 }

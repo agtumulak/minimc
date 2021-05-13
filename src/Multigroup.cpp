@@ -1,6 +1,5 @@
 #include "Multigroup.hpp"
 
-#include "Constants.hpp"
 #include "Particle.hpp"
 #include "Point.hpp"
 
@@ -105,6 +104,22 @@ Multigroup::Fission(RNG& rng, Particle& p) const noexcept {
   }
   assert(fission_neutrons.size() == fission_yield);
   return fission_neutrons;
+}
+
+Reaction
+Multigroup::SampleReaction(RNG& rng, const Particle& p) const noexcept {
+  const MicroscopicCrossSection threshold{
+      std::uniform_real_distribution{}(rng)*GetTotal(p)};
+  MicroscopicCrossSection accumulated{0};
+  for (const auto& [reaction, reaction_xs] : reactions) {
+    accumulated += reaction_xs.at(std::get<Group>(p.GetEnergy()));
+    if (accumulated > threshold) {
+      return reaction;
+    }
+  }
+  // TODO: Check each Nuclide has nonzero total cross section so this never
+  //       happens
+  assert(false);
 }
 
 // Multigroup::OneDimensional

@@ -3,7 +3,6 @@
 #include "BasicTypes.hpp"
 #include "Estimator.hpp"
 #include "Point.hpp"
-#include "Reaction.hpp"
 
 #include <string>
 #include <vector>
@@ -75,8 +74,6 @@ private:
   Real SampleCollisionDistance() noexcept;
   // Sample a Nuclide given that the Particle has collided inside its Cell
   const Nuclide& SampleNuclide() noexcept;
-  // Samples a Reaction given that the particle has collided with given Nuclide
-  Reaction SampleReaction(const Nuclide& nuclide) noexcept;
   // Random number generator
   RNG rng{0};
   // Position may be anywhere in @f$ \mathbb{R}^3 @f$

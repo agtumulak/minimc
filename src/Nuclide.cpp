@@ -1,6 +1,7 @@
 #include "Nuclide.hpp"
 
 #include "Particle.hpp"
+#include "Reaction.hpp"
 
 // Nuclide
 
@@ -28,4 +29,7 @@ void Nuclide::Scatter(RNG& rng, Particle& p) const {
 
 std::vector<Particle> Nuclide::Fission(RNG& rng, Particle& p) const noexcept {
   return xs.at(p.type)->Fission(rng, p);
+}
+Reaction Nuclide::SampleReaction(RNG& rng, const Particle& p) const noexcept {
+  return xs.at(p.type)->SampleReaction(rng, p);
 }
