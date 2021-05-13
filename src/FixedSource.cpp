@@ -1,7 +1,6 @@
 #include "FixedSource.hpp"
 
 #include "Constants.hpp"
-#include "Transport.hpp"
 
 #include <algorithm>
 #include <future>
@@ -39,14 +38,14 @@ Estimator FixedSource::StartWorker() {
   Estimator worker_estimator;
   while (const auto range = chunk_giver.Next()) {
     for (auto h = range->first; h < range->second; h++) {
-      Bank source(1, Sample(h));
-      while (!source.empty()) {
-        auto result = TransportAndBank(source, world);
+      std::vector<Particle> bank(1, Sample(h));
+      while (!bank.empty()) {
+        auto result = bank.back().Transport(world);
+        bank.pop_back();
         worker_estimator += result.estimator;
-        source.clear();
         std::move(
             result.banked.begin(), result.banked.end(),
-            std::back_insert_iterator(source));
+            std::back_insert_iterator(bank));
       }
     }
   }

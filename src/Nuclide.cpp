@@ -1,5 +1,7 @@
 #include "Nuclide.hpp"
 
+#include "Particle.hpp"
+
 // Nuclide
 
 //// public
@@ -7,13 +9,13 @@
 Nuclide::Nuclide(const pugi::xml_node& root, const std::string& nuclide_name)
     : name{nuclide_name}, xs{NuclearData::Create(root, nuclide_name)} {}
 
-NuclearData::CrossSection Nuclide::GetTotal(const Particle& p) const noexcept {
+MicroscopicCrossSection Nuclide::GetTotal(const Particle& p) const noexcept {
   return xs.at(p.type)->GetTotal(p);
 }
 
-NuclearData::CrossSection
-Nuclide::GetFission(const Particle& p) const noexcept {
-  return xs.at(p.type)->GetFission(p);
+MicroscopicCrossSection
+Nuclide::GetReaction(const Particle& p, const Reaction r) const noexcept {
+  return xs.at(p.type)->GetReaction(p, r);
 }
 
 Real Nuclide::GetNuBar(const Particle& p) const noexcept {
@@ -26,9 +28,4 @@ void Nuclide::Scatter(RNG& rng, Particle& p) const {
 
 std::vector<Particle> Nuclide::Fission(RNG& rng, Particle& p) const noexcept {
   return xs.at(p.type)->Fission(rng, p);
-}
-
-NuclearData::Reaction
-Nuclide::SampleReaction(RNG& rng, const Particle& p) const noexcept {
-  return xs.at(p.type)->SampleReaction(rng, p);
 }

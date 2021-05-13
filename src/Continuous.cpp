@@ -27,16 +27,14 @@ Continuous::Continuous(const pugi::xml_node& particle_node)
       reactions{CreateReactions(particle_node)},
       total{particle_node.child("total").attribute("file").as_string()} {}
 
-Continuous::CrossSection
-Continuous::GetTotal(const Particle& p) const noexcept {
+MicroscopicCrossSection Continuous::GetTotal(const Particle& p) const noexcept {
   return total.at(std::get<ContinuousEnergy>(p.GetEnergy()));
 }
 
-Continuous::CrossSection
-Continuous::GetFission(const Particle& p) const noexcept {
+MicroscopicCrossSection
+Continuous::GetReaction(const Particle& p, const Reaction r) const noexcept {
   try {
-    return reactions.at(NuclearData::Reaction::fission)
-        .at(std::get<ContinuousEnergy>(p.GetEnergy()));
+    return reactions.at(r).at(std::get<ContinuousEnergy>(p.GetEnergy()));
   }
   catch (const std::out_of_range& e) {
     return 0;
@@ -79,21 +77,6 @@ Continuous::Fission(RNG& rng, Particle& p) const noexcept {
   return fission_neutrons;
 }
 
-NuclearData::Reaction
-Continuous::SampleReaction(RNG& rng, const Particle& p) const noexcept {
-  const CrossSection threshold =
-      std::uniform_real_distribution{}(rng)*GetTotal(p);
-  CrossSection accumulated{0};
-  for (const auto& [reaction, xs] : reactions) {
-    accumulated += xs.at(std::get<ContinuousEnergy>(p.GetEnergy()));
-    if (accumulated > threshold) {
-      return reaction;
-    }
-  }
-  // If no reaction found, resample tail-recursively
-  return SampleReaction(rng, p);
-}
-
 // Continuous::OneDimensional
 
 //// public
@@ -109,7 +92,7 @@ Continuous::OneDimensional::OneDimensional(
     datafile.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
   }
   ContinuousEnergy energy;
-  NuclearData::CrossSection xs;
+  MicroscopicCrossSection xs;
   while (datafile >> energy) {
     datafile.ignore(
         std::numeric_limits<std::streamsize>::max(), ';'); // delimiter
@@ -182,8 +165,8 @@ Continuous::CreateReactions(const pugi::xml_node& particle_node) {
     if (reaction_name == "total") {
       continue; // skip total cross section
     }
-    const auto reaction{NuclearData::ToReaction(reaction_name)};
-    if (reaction == NuclearData::Reaction::fission) {
+    const auto reaction{ToReaction(reaction_name)};
+    if (reaction == Reaction::fission) {
       reactions.emplace(
           reaction,
           OneDimensional{
@@ -191,7 +174,7 @@ Continuous::CreateReactions(const pugi::xml_node& particle_node) {
     }
     else {
       reactions.emplace(
-          NuclearData::ToReaction(reaction_name),
+          ToReaction(reaction_name),
           OneDimensional{reaction_node.attribute("file").as_string()});
     }
   }

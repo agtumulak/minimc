@@ -20,10 +20,4 @@ inline Real Bernoulli(Real p, size_t samples) {
   return 3 * std::sqrt((1 - p) / (p * samples));
 }
 
-/// @brief Returns epsilon for exponential distribution
-/// @param samples Epsilon only depends on the number of samples
-inline Real Exponential(size_t samples){
-  return 3 * std::sqrt(1. / samples);
-}
-
 } // namespace epsilon

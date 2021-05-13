@@ -38,16 +38,6 @@ TEST_CASE("poorly formed multigroup data for Nuclide throws exception") {
 TEST_CASE("Nuclide member methods work properly") {
   std::minstd_rand rng{42};
   const size_t samples{1000};
-  auto ScatterProbability = [](std::minstd_rand& rng, const Nuclide& n,
-                               const Particle& p) {
-    size_t scatters{0};
-    for (size_t i = 1; i <= samples; i++) {
-      if (n.SampleReaction(rng, p) == NuclearData::Reaction::scatter) {
-        scatters++;
-      }
-    };
-    return static_cast<double>(scatters) / samples;
-  };
   SECTION("Multigroup methods") {
     XMLDocument doc{"simple_multigroup.xml"};
     World w{doc.root};
@@ -68,36 +58,6 @@ TEST_CASE("Nuclide member methods work properly") {
     REQUIRE(uranium235.GetTotal(neutron_group1) == 1.33);
     REQUIRE(uranium235.GetTotal(neutron_group2) == 2.67);
 
-    SECTION("SampleReaction() returns expected number of scatters") {
-      // purely scattering for Group 1
-      REQUIRE(
-          ScatterProbability(rng, hydrogen, neutron_group1) ==
-          Approx(1).epsilon(epsilon::Bernoulli(1, samples)));
-      // purely absorbing for Group 2
-      REQUIRE(
-          ScatterProbability(rng, hydrogen, neutron_group2) ==
-          Approx(0).epsilon(epsilon::Bernoulli(0, samples)));
-      // total microscopic cross section is 1.5
-      // scattering cross section is 1.0
-      REQUIRE(
-          ScatterProbability(rng, oxygen, neutron_group1) ==
-          Approx(1. / 1.5).epsilon(epsilon::Bernoulli(1. / 1.5, samples)));
-      // total microscopic cross section is 1.0
-      // scattering cross section is 0.5
-      REQUIRE(
-          ScatterProbability(rng, oxygen, neutron_group2) ==
-          Approx(0.5).epsilon(epsilon::Bernoulli(0.5, samples)));
-      // total microscopic cross section is 1.33
-      // scattering cross section is 1
-      REQUIRE(
-          ScatterProbability(rng, uranium235, neutron_group1) ==
-          Approx(1. / 1.33).epsilon(epsilon::Bernoulli(1. / 1.33, samples)));
-      // total microscopic cross section is 2.67
-      // scattering cross section is 1
-      REQUIRE(
-          ScatterProbability(rng, uranium235, neutron_group2) ==
-          Approx(1. / 2.67).epsilon(epsilon::Bernoulli(1. / 2.67, samples)));
-    }
     SECTION("Scatter() returns expected number of Particles in lower energy "
             "Group") {
       auto LowerEnergyProbability = [](std::minstd_rand& rng, const Nuclide& n,
@@ -199,32 +159,6 @@ TEST_CASE("Nuclide member methods work properly") {
     REQUIRE(hydrogen.GetTotal(neutron) == 20.74762);
     REQUIRE(oxygen.GetTotal(neutron) == 3.796956);
     REQUIRE(uranium235.GetTotal(neutron) == 92.60272);
-    SECTION("SampleReaction() returns expected number of scatters") {
-      // At 1.0 eV, for hydrogen,
-      // capture: 0.05293893
-      // elastic: 20.69468
-      // total: 20.74762
-      constexpr auto h_expected = 20.69468 / 20.74762;
-      REQUIRE(
-          ScatterProbability(rng, hydrogen, neutron) ==
-          Approx(h_expected).epsilon(epsilon::Bernoulli(h_expected, samples)));
-      // At 1.0 eV, for oxygen,
-      // capture: 2.715658E-5
-      // elastic: 3.796929
-      // total: 3.796956
-      constexpr auto o_expected = 3.796929 / 3.796956;
-      REQUIRE(
-          ScatterProbability(rng, oxygen, neutron) ==
-          Approx(o_expected).epsilon(epsilon::Bernoulli(o_expected, samples)));
-      // At 1.0 eV, for uranium-235,
-      // capture: 12.51272
-      // elastic: 12.63409
-      // total: 92.60272
-      constexpr auto u_expected = 12.63409 / 92.60272;
-      REQUIRE(
-          ScatterProbability(rng, uranium235, neutron) ==
-          Approx(u_expected).epsilon(epsilon::Bernoulli(u_expected, samples)));
-    }
     SECTION("Fission() returns expected number and spectrum of Particles") {
       struct FissionStatisticsResult {
         double ceil_nu_prob;

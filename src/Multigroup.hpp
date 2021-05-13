@@ -24,9 +24,10 @@ public:
   ///            number of groups
   Multigroup(const pugi::xml_node& particle_node);
   /// @brief Returns the total cross section for a given Particle
-  CrossSection GetTotal(const Particle& p) const noexcept override;
-  /// @brief Returns the fission cross section for a given Particle
-  CrossSection GetFission(const Particle& p) const noexcept override;
+  MicroscopicCrossSection GetTotal(const Particle& p) const noexcept override;
+  /// @brief Returns the cross section for a given Particle and Reaction
+  MicroscopicCrossSection
+  GetReaction(const Particle& p, const Reaction r) const noexcept override;
   /// @brief Returns the average fission neutron yield for a given Particle
   Real GetNuBar(const Particle& p) const noexcept override;
   /// @brief Scatters the Particle and updates its group and direction
@@ -34,8 +35,6 @@ public:
   /// @brief Fissions the Nuclide and produces secondaries
   /// @details Currently, only fission neutrons are produced
   std::vector<Particle> Fission(RNG& rng, Particle& p) const noexcept override;
-  /// @brief Samples a Reaction
-  Reaction SampleReaction(RNG& rng, const Particle& p) const noexcept override;
 
 private:
   // Groupwise cross sections indexed by one Group
@@ -94,7 +93,7 @@ private:
     // to XML schema for structure of `GroupXS` type node.
     NormalizedTwoDimensional(const pugi::xml_node& groupxs_node);
   };
-  using ReactionsMap = std::map<NuclearData::Reaction, OneDimensional>;
+  using ReactionsMap = std::map<Reaction, OneDimensional>;
   // Returns the user-specified number of groups under the `multigroup` node
   static Group GroupStructureSize(const pugi::xml_node& root) noexcept;
   // Creates scatter cross section from a scatter matrix by summing each column

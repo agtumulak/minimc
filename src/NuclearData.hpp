@@ -1,10 +1,11 @@
 #pragma once
 
+#include "BasicTypes.hpp"
 #include "Particle.hpp"
+#include "Reaction.hpp"
 #include "pugixml.hpp"
 
 #include <map>
-#include <random>
 #include <string>
 
 /// @brief Nuclear cross sections in multigroup or continuous energy for a
@@ -13,15 +14,6 @@
 ///          energy cross sections are resolved.
 class NuclearData {
 public:
-  /// @brief Cross section values are double
-  using CrossSection = double;
-  /// @brief All possible (mutually-exclusive, so no total) reactions
-  ///        regardless of incident particle type
-  enum class Reaction {
-    capture,
-    scatter,
-    fission,
-  };
   /// @brief Associates a Particle::Type with a polymorphic pointer to
   ///        NuclearData
   using Map = std::map<Particle::Type, std::unique_ptr<const NuclearData>>;
@@ -32,9 +24,11 @@ public:
   /// @brief Virtual destructor (C++ Core Guidelines C.127)
   virtual ~NuclearData() noexcept;
   /// @brief Returns the total cross section for a given Particle
-  virtual CrossSection GetTotal(const Particle& p) const noexcept = 0;
-  /// @brief Returns the fission cross section for a given Particle
-  virtual CrossSection GetFission(const Particle& p) const noexcept = 0;
+  virtual MicroscopicCrossSection
+  GetTotal(const Particle& p) const noexcept = 0;
+  /// @brief Returns the cross section for a given Particle and Reaction
+  virtual MicroscopicCrossSection
+  GetReaction(const Particle& p, const Reaction r) const noexcept = 0;
   /// @brief Returns the average fission neutron yield for a given Particle
   virtual Real GetNuBar(const Particle& p) const noexcept = 0;
   /// @brief Scatters the Particle and updates its energy and direction
@@ -44,11 +38,6 @@ public:
   /// @brief Fissions the Nuclide and produces secondaries
   virtual std::vector<Particle>
   Fission(RNG& rng, Particle& p) const noexcept = 0;
-  /// @brief Samples a reaction
-  virtual Reaction
-  SampleReaction(RNG& rng, const Particle& p) const noexcept = 0;
 
 protected:
-  /// @brief Helper function to convert from std::string to Reaction
-  static Reaction ToReaction(const std::string& name) noexcept;
 };

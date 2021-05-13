@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <numeric>
-#include <random>
 
 // Cell
 
@@ -30,49 +29,26 @@ pugi::xml_node Material::FindNode(
 Material::Material(
     const pugi::xml_node& root, const std::string& name,
     const std::vector<std::shared_ptr<const Nuclide>>& all_nuclides)
-    : name{name},
-      number_density{FindNode(root, name).attribute("aden").as_double()},
-      afracs{AssignNuclides(root, name, all_nuclides)} {}
+    : name{name}, afracs{AssignNuclides(root, name, all_nuclides)},
+      number_density{FindNode(root, name).attribute("aden").as_double()} {}
 
-Material::CrossSection
+MicroscopicCrossSection
 Material::GetMicroscopicTotal(const Particle& p) const noexcept {
   // TODO: Memoize this call for performance
   return std::accumulate(
-      afracs.cbegin(), afracs.cend(), CrossSection{0},
+      afracs.cbegin(), afracs.cend(), MicroscopicCrossSection{0},
       [&p](const auto& accumulated, const auto& nuclide_afrac_pair) {
         const auto& [nuclide, afrac] = nuclide_afrac_pair;
         return accumulated + afrac * nuclide->GetTotal(p);
       });
 }
 
-Real Material::SampleCollisionDistance(
-    RNG& rng, const Particle& p) const noexcept {
-  return std::exponential_distribution{number_density * GetMicroscopicTotal(p)}(
-      rng);
-}
-
-const Nuclide&
-Material::SampleNuclide(RNG& rng, const Particle& p) const noexcept {
-  const CrossSection threshold{
-      std::uniform_real_distribution{}(rng)*GetMicroscopicTotal(p)};
-  CrossSection accumulated{0};
-  for (const auto& [nuclide_ptr, afrac] : afracs) {
-    accumulated += afrac * nuclide_ptr->GetTotal(p);
-    if (accumulated > threshold) {
-      return *nuclide_ptr;
-    }
-  }
-  // This should never be reached since Material total cross section is
-  // computed from constituent Nuclide total cross sections
-  assert(false);
-}
-
 //// private
 
-Material::AtomFractionMap Material::AssignNuclides(
+Material::AtomFractions Material::AssignNuclides(
     const pugi::xml_node& root, const std::string& name,
     const std::vector<std::shared_ptr<const Nuclide>>& all_nuclides) {
-  AtomFractionMap material_atom_fractions;
+  AtomFractions material_atom_fractions;
   const auto& material_node = Material::FindNode(root, name);
   for (const auto& nuclide_node : material_node) {
     const auto nuclide_name = nuclide_node.attribute("name").as_string();

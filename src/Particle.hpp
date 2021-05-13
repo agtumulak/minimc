@@ -1,9 +1,15 @@
 #pragma once
 
 #include "BasicTypes.hpp"
+#include "Estimator.hpp"
 #include "Point.hpp"
+#include "Reaction.hpp"
+
+#include <vector>
 
 class Cell;
+class Nuclide;
+class World;
 
 /// @brief The primary entity performing random walks in a World.
 /// @details Particles are characterized by their position, direction, energy,
@@ -25,6 +31,12 @@ class Cell;
 ///       class must take care care to keep direction normalized.
 class Particle {
 public:
+  /// @brief The result of a Transport call
+  struct TransportOutcome {
+    TransportOutcome& operator+=(const TransportOutcome& rhs) noexcept;
+    Estimator estimator;
+    std::vector<Particle> banked;
+  };
   /// @brief Affects which cross section data is used during transport, among
   ///        other things
   enum class Type {
@@ -37,16 +49,14 @@ public:
   Particle(
       const Point& position, const Direction& direction, const Energy& energy,
       const Type type) noexcept;
-  /// @brief Checks if Particle can still produce history
-  bool IsAlive() const noexcept;
+  /// @brief Moves the Particle through each state until it dies.
+  TransportOutcome Transport(const World& w) noexcept;
   /// @brief Kill the Particle, stopping the history
   void Kill() noexcept;
   /// @brief Moves the particle along its current direction a given distance
   void Stream(const Real distance) noexcept;
   /// @brief Return the current position of the Particle
   const Point& GetPosition() const noexcept;
-  /// @brief Return the current direction of the Particle
-  const Direction& GetDirection() const noexcept;
   /// @brief Sets the direction to a random isotropic direction
   /// @note This should be replaced by a method which accepts scattering cosine
   void SetDirectionIsotropic(RNG& rng) noexcept;
@@ -60,6 +70,14 @@ public:
   void SetCell(const Cell& c) noexcept;
 
 private:
+  // Returns the distance the Particle will travel before colliding
+  Real SampleCollisionDistance() noexcept;
+  // Sample a Nuclide given that the Particle has collided inside its Cell
+  const Nuclide& SampleNuclide() noexcept;
+  // Samples a Reaction given that the particle has collided with given Nuclide
+  Reaction SampleReaction(const Nuclide& nuclide) noexcept;
+  // Random number generator
+  RNG rng{0};
   // Position may be anywhere in @f$ \mathbb{R}^3 @f$
   Point position{0, 0, 0};
   // Direction must be constrained to @f$ \lVert v \rVert = 1 @f$
