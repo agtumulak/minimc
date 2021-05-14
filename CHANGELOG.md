@@ -5,7 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-- Implemented basic fission physics
+
+## [0.0.2] - 2021-05-13
+- Implemented k-eigenvalue criticality solver
+- Implemented fission physics and data
+- Add continuous energy physics support
 
 ## [0.0.1] - 2021-01-16
 ### Added
@@ -21,3 +25,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [Unreleased]: https://github.com/agtumulak/minimc/compare/v0.0.1...develop
 [0.0.1]: https://github.com/agtumulak/minimc/releases/tag/v0.0.1
+[0.0.2]: https://github.com/agtumulak/minimc/releases/tag/v0.0.2
