@@ -2,6 +2,7 @@
 
 #include "BasicTypes.hpp"
 #include "Interaction.hpp"
+#include "Reaction.hpp"
 #include "pugixml.hpp"
 
 #include <random>
