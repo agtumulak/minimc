@@ -11,7 +11,6 @@
 /// @tparam T Returned type of the distribution
 template <typename T> class Distribution {
 public:
-  using return_type = T;
   /// @brief Factory method to create a new Distribution from an XML document
   /// @param property_node Either a `position`, `direction`, `energy`, or
   ///        `particletype` node
