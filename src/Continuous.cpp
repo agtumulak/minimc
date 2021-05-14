@@ -4,7 +4,6 @@
 #include "Point.hpp"
 
 #include <algorithm>
-#include <cassert>
 #include <cstddef>
 #include <fstream>
 #include <iterator>
@@ -14,6 +13,7 @@
 #include <string>
 #include <utility>
 #include <variant>
+#include <vector>
 
 // Continuous
 
@@ -56,46 +56,29 @@ Real Continuous::GetNuBar(const Particle& p) const noexcept {
   }
 }
 
-void Continuous::Scatter(RNG& rng, Particle& p) const noexcept {
-  p.SetDirectionIsotropic(rng);
-  return;
-}
-
-std::vector<Particle>
-Continuous::Fission(RNG& rng, Particle& p) const noexcept {
-  std::vector<Particle> fission_neutrons;
-  p.Kill();
-  // rely on the fact that double to int conversions essentially do a floor()
-  size_t fission_yield(
-      nubar.value().at(std::get<ContinuousEnergy>(p.GetEnergy())) +
-      std::uniform_real_distribution{}(rng));
-  for (size_t i = 0; i < fission_yield; i++) {
-    // evaluation order of arguments is undefined so do evaluation here
-    const auto direction{Direction::CreateIsotropic(rng)};
-    const auto energy{Energy{ContinuousEnergy{chi.value().Sample(rng)}}};
-    fission_neutrons.emplace_back(
-        p.GetPosition(), direction, energy, Particle::Type::neutron);
-    fission_neutrons.back().SetCell(p.GetCell());
-    fission_neutrons.back().seed =
-        std::uniform_int_distribution<RNG::result_type>{1}(rng);
-  }
-  assert(fission_neutrons.size() == fission_yield);
-  return fission_neutrons;
-}
-
-Reaction
-Continuous::SampleReaction(RNG& rng, const Particle& p) const noexcept {
+void Continuous::Interact(Particle& p) const noexcept {
   const MicroscopicCrossSection threshold =
-      std::uniform_real_distribution{}(rng)*GetTotal(p);
+      std::uniform_real_distribution{}(p.rng) * GetTotal(p);
   MicroscopicCrossSection accumulated{0};
   for (const auto& [reaction, xs] : reactions) {
     accumulated += xs.at(std::get<ContinuousEnergy>(p.GetEnergy()));
     if (accumulated > threshold) {
-      return reaction;
+      switch (reaction) {
+      case Reaction::capture:
+        Capture(p);
+        break;
+      case Reaction::scatter:
+        Scatter(p);
+        break;
+      case Reaction::fission:
+        Fission(p);
+        break;
+      }
+      return;
     }
   }
   // If no reaction found, resample tail-recursively
-  return SampleReaction(rng, p);
+  return Interact(p);
 }
 
 // Continuous::OneDimensional
@@ -200,4 +183,29 @@ Continuous::CreateReactions(const pugi::xml_node& particle_node) {
     }
   }
   return reactions;
+}
+
+void Continuous::Capture(Particle& p) const noexcept { p.Kill(); }
+
+void Continuous::Scatter(Particle& p) const noexcept {
+  p.SetDirectionIsotropic();
+  return;
+}
+
+void Continuous::Fission(Particle& p) const noexcept {
+  p.Kill();
+  // rely on the fact that double to int conversions essentially do a floor()
+  size_t fission_yield(
+      nubar.value().at(std::get<ContinuousEnergy>(p.GetEnergy())) +
+      std::uniform_real_distribution{}(p.rng));
+  for (size_t i = 0; i < fission_yield; i++) {
+    // evaluation order of arguments is undefined so do evaluation here
+    const auto direction{Direction::CreateIsotropic(p.rng)};
+    const auto energy{Energy{ContinuousEnergy{chi.value().Sample(p.rng)}}};
+    p.secondaries.emplace_back(
+        p.GetPosition(), direction, energy, Particle::Type::neutron);
+    p.secondaries.back().SetCell(p.GetCell());
+    p.secondaries.back().seed =
+        std::uniform_int_distribution<RNG::result_type>{1}(p.rng);
+  }
 }

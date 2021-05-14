@@ -58,63 +58,25 @@ Real Multigroup::GetNuBar(const Particle& p) const noexcept {
   }
 }
 
-void Multigroup::Scatter(RNG& rng, Particle& p) const noexcept {
-  const Real threshold = std::uniform_real_distribution{}(rng);
-  Real accumulated{0};
-  const auto& group_probs{
-      scatter_probs.value().at(std::get<Group>(p.GetEnergy()))};
-  for (Group g = 1; g <= max_group; g++) {
-    accumulated += group_probs.at(g);
+void Multigroup::Interact(Particle& p) const noexcept {
+  const MicroscopicCrossSection threshold{
+      std::uniform_real_distribution{}(p.rng) * GetTotal(p)};
+  MicroscopicCrossSection accumulated{0};
+  for (const auto& [reaction, xs] : reactions) {
+    accumulated += xs.at(std::get<Group>(p.GetEnergy()));
     if (accumulated > threshold) {
-      p.SetEnergy(g);
-      p.SetDirectionIsotropic(rng);
-      return;
-    }
-  }
-  // scatter_probs is a NormalizedTwoDimensional so this shouldn't ever happen
-  assert(false);
-}
-
-std::vector<Particle>
-Multigroup::Fission(RNG& rng, Particle& p) const noexcept {
-  std::vector<Particle> fission_neutrons;
-  p.Kill();
-  auto incident_group{std::get<Group>(p.GetEnergy())};
-  // rely on the fact that double to int conversions essentially do a floor()
-  size_t fission_yield(
-      nubar.value().at(incident_group) + std::uniform_real_distribution{}(rng));
-  const auto& group_probs{chi.value().at(incident_group)};
-  for (size_t i = 0; i < fission_yield; i++) {
-    const Real threshold = std::uniform_real_distribution{}(rng);
-    Real accumulated{0};
-    for (Group g = 1; g <= max_group; g++) {
-      accumulated += group_probs.at(g);
-      if (accumulated > threshold) {
-        fission_neutrons.emplace_back(
-            p.GetPosition(), Direction::CreateIsotropic(rng), Energy{Group{g}},
-            Particle::Type::neutron);
-        fission_neutrons.back().SetCell(p.GetCell());
-        // Each secondary produced by this fission must have a completely
-        // deterministic history. Setting their seed here accomplishes this.
-        fission_neutrons.back().seed =
-            std::uniform_int_distribution<RNG::result_type>{1}(rng);
+      switch (reaction) {
+      case Reaction::capture:
+        Capture(p);
+        break;
+      case Reaction::scatter:
+        Scatter(p);
+        break;
+      case Reaction::fission:
+        Fission(p);
         break;
       }
-    }
-  }
-  assert(fission_neutrons.size() == fission_yield);
-  return fission_neutrons;
-}
-
-Reaction
-Multigroup::SampleReaction(RNG& rng, const Particle& p) const noexcept {
-  const MicroscopicCrossSection threshold{
-      std::uniform_real_distribution{}(rng)*GetTotal(p)};
-  MicroscopicCrossSection accumulated{0};
-  for (const auto& [reaction, reaction_xs] : reactions) {
-    accumulated += reaction_xs.at(std::get<Group>(p.GetEnergy()));
-    if (accumulated > threshold) {
-      return reaction;
+      return;
     }
   }
   // TODO: Check each Nuclide has nonzero total cross section so this never
@@ -290,4 +252,52 @@ Multigroup::OneDimensional Multigroup::CreateTotalXS(
             accumulated.begin(), std::plus<Real>{});
         return accumulated;
       });
+}
+
+void Multigroup::Capture(Particle& p) const noexcept { p.Kill(); }
+
+void Multigroup::Scatter(Particle& p) const noexcept {
+  const Real threshold = std::uniform_real_distribution{}(p.rng);
+  Real accumulated{0};
+  const auto& group_probs{
+      scatter_probs.value().at(std::get<Group>(p.GetEnergy()))};
+  for (Group g = 1; g <= max_group; g++) {
+    accumulated += group_probs.at(g);
+    if (accumulated > threshold) {
+      p.SetEnergy(g);
+      p.SetDirectionIsotropic();
+      return;
+    }
+  }
+  // scatter_probs is a NormalizedTwoDimensional so this shouldn't ever happen
+  assert(false);
+}
+
+void Multigroup::Fission(Particle& p) const noexcept {
+  std::vector<Particle> fission_neutrons;
+  p.Kill();
+  auto incident_group{std::get<Group>(p.GetEnergy())};
+  // rely on the fact that double to int conversions essentially do a floor()
+  size_t fission_yield(
+      nubar.value().at(incident_group) +
+      std::uniform_real_distribution{}(p.rng));
+  const auto& group_probs{chi.value().at(incident_group)};
+  for (size_t i = 0; i < fission_yield; i++) {
+    const Real threshold = std::uniform_real_distribution{}(p.rng);
+    Real accumulated{0};
+    for (Group g = 1; g <= max_group; g++) {
+      accumulated += group_probs.at(g);
+      if (accumulated > threshold) {
+        p.secondaries.emplace_back(
+            p.GetPosition(), Direction::CreateIsotropic(p.rng),
+            Energy{Group{g}}, Particle::Type::neutron);
+        p.secondaries.back().SetCell(p.GetCell());
+        // Each secondary produced by this fission must have a completely
+        // deterministic history. Setting their seed here accomplishes this.
+        p.secondaries.back().seed =
+            std::uniform_int_distribution<RNG::result_type>{1}(p.rng);
+        break;
+      }
+    }
+  }
 }

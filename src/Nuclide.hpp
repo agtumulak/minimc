@@ -5,9 +5,7 @@
 #include "Reaction.hpp"
 #include "pugixml.hpp"
 
-#include <random>
 #include <string>
-#include <vector>
 
 class Particle;
 
@@ -28,13 +26,8 @@ public:
   GetReaction(const Particle& p, const Reaction r) const noexcept;
   /// @brief Returns the average fission neutron yield for a given Particle
   Real GetNuBar(const Particle& p) const noexcept;
-  /// @brief Scatters the Particle and updates its state
-  /// @exception std::runtime_error Sampling outgoing Energy failed
-  void Scatter(RNG& rng, Particle& p) const;
-  /// @brief Fissions the Nuclide and produces secondaries
-  std::vector<Particle> Fission(RNG& rng, Particle& p) const noexcept;
-  /// @brief Samples a reaction
-  Reaction SampleReaction(RNG& rng, const Particle& p) const noexcept;
+  /// @brief Interact with a Particle, updating its state
+  void Interact(Particle& p) const noexcept;
   /// @brief Unique, user-defined identifier (C++ Core Guidelines C.131)
   const std::string name;
 

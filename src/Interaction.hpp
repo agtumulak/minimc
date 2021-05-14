@@ -8,7 +8,6 @@
 #include <map>
 #include <memory>
 #include <string>
-#include <vector>
 
 /// @brief Models the interaction between a Particle and a Nuclide
 /// @details The polymorphism here shall be where multigroup and continuous
@@ -32,11 +31,6 @@ public:
   GetReaction(const Particle& p, const Reaction r) const noexcept = 0;
   /// @brief Returns the average fission neutron yield for a given Particle
   virtual Real GetNuBar(const Particle& p) const noexcept = 0;
-  /// @brief Scatters the Particle and updates its energy and direction
-  /// @exception std::runtime_error Most likely cause is that the scattering
-  ///            cross section is zero so an outgoing Energy cannot be sampled
-  virtual void Scatter(RNG& rng, Particle& p) const = 0;
-  /// @brief Fissions the Nuclide and produces secondaries
-  virtual std::vector<Particle>
-  Fission(RNG& rng, Particle& p) const noexcept = 0;
+  /// @brief Interact with a Particle, updating its state
+  virtual void Interact(Particle& p) const noexcept = 0;
 };

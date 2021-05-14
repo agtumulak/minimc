@@ -8,7 +8,6 @@
 #include <filesystem>
 #include <map>
 #include <optional>
-#include <vector>
 
 class Particle;
 
@@ -25,13 +24,8 @@ public:
   GetReaction(const Particle& p, const Reaction r) const noexcept override;
   /// @brief Returns the average fission neutron yield for a given Particle
   Real GetNuBar(const Particle& p) const noexcept override;
-  /// @brief Scatters the Particle and updates its ContinuousEnergy and
-  ///        direction
-  void Scatter(RNG& rng, Particle& p) const noexcept override;
-  /// @brief Fissions the Nuclide and produces secondaries
-  std::vector<Particle> Fission(RNG& rng, Particle& p) const noexcept override;
-  /// @brief Samples a Reaction
-  Reaction SampleReaction(RNG& rng, const Particle& p) const noexcept override;
+  /// @brief Interact with a Particle, updating its state
+  void Interact(Particle& p) const noexcept override;
 
 private:
   using elements_type = std::map<ContinuousEnergy, Real>;
@@ -62,6 +56,12 @@ private:
 
   // Helper function for reaction cross section construction
   static ReactionsMap CreateReactions(const pugi::xml_node& particle_node);
+  // Captures the Particle, killing it
+  void Capture(Particle& p) const noexcept;
+  // Scatters the Particle and updates its ContinuousEnergy and Direction
+  void Scatter(Particle& p) const noexcept;
+  /// @brief Fissions the Nuclide and produces secondaries
+  void Fission(Particle& p) const noexcept;
   // Average number of secondary particles produced per fission
   const std::optional<OneDimensional> nubar;
   // Outgoing energy distribution of fission neutrons

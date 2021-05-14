@@ -49,7 +49,7 @@ Particle::Particle(
 
 Particle::TransportOutcome Particle::Transport(const World& w) noexcept {
   TransportOutcome result;
-  SetCell(w.FindCellContaining(GetPosition()));
+  SetCell(w.FindCellContaining(position));
   while (alive) {
     const auto collision = SampleCollisionDistance();
     const auto [nearest_surface, surface_crossing] =
@@ -62,23 +62,7 @@ Particle::TransportOutcome Particle::Transport(const World& w) noexcept {
           nuclide.GetNuBar(*this) *
           nuclide.GetReaction(*this, Reaction::fission) /
           nuclide.GetTotal(*this);
-      switch (nuclide.SampleReaction(rng, *this)) {
-      case Reaction::capture:
-        result.estimator.at(Estimator::Event::capture) += 1;
-        Kill();
-        break;
-      case Reaction::scatter:
-        result.estimator.at(Estimator::Event::scatter) += 1;
-        nuclide.Scatter(rng, *this);
-        break;
-      case Reaction::fission:
-        result.estimator.at(Estimator::Event::fission) += 1;
-        auto fission_yield{nuclide.Fission(rng, *this)};
-        std::move(
-            fission_yield.begin(), fission_yield.end(),
-            std::back_insert_iterator(result.banked));
-        break;
-      }
+      nuclide.Interact(*this);
     }
     else {
       result.estimator.at(Estimator::Event::surface_crossing) += 1;
@@ -100,7 +84,7 @@ void Particle::Stream(const Real distance) noexcept {
 
 const Point& Particle::GetPosition() const noexcept { return position; };
 
-void Particle::SetDirectionIsotropic(RNG& rng) noexcept {
+void Particle::SetDirectionIsotropic() noexcept {
   direction = Direction::CreateIsotropic(rng);
 }
 

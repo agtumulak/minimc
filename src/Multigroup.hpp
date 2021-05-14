@@ -31,13 +31,8 @@ public:
   GetReaction(const Particle& p, const Reaction r) const noexcept override;
   /// @brief Returns the average fission neutron yield for a given Particle
   Real GetNuBar(const Particle& p) const noexcept override;
-  /// @brief Scatters the Particle and updates its group and direction
-  void Scatter(RNG& rng, Particle& p) const noexcept override;
-  /// @brief Fissions the Nuclide and produces secondaries
-  /// @details Currently, only fission neutrons are produced
-  std::vector<Particle> Fission(RNG& rng, Particle& p) const noexcept override;
-  /// @brief Samples a Reaction
-  Reaction SampleReaction(RNG& rng, const Particle& p) const noexcept override;
+  /// @brief Interact with a Particle, updating its state
+  void Interact(Particle& p) const noexcept override;
 
 private:
   // Groupwise cross sections indexed by one Group
@@ -110,6 +105,12 @@ private:
   static OneDimensional CreateTotalXS(
       const pugi::xml_node& particle_node,
       const ReactionsMap& reactions) noexcept;
+  // Captures the Particle, killing it
+  void Capture(Particle& p) const noexcept;
+  // Scatters the Particle and updates its Group and Direction
+  void Scatter(Particle& p) const noexcept;
+  // Fissions the Nuclide and produces secondaries
+  void Fission(Particle& p) const noexcept;
   // Average number of secondary particles produced per fission
   const std::optional<OneDimensional> nubar;
   // Outgoing energy distribution of fission neutrons

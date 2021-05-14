@@ -51,7 +51,7 @@ public:
   const Point& GetPosition() const noexcept;
   /// @brief Sets the direction to a random isotropic direction
   /// @note This should be replaced by a method which accepts scattering cosine
-  void SetDirectionIsotropic(RNG& rng) noexcept;
+  void SetDirectionIsotropic() noexcept;
   /// @brief Returns the current energy of the Particle
   const Energy& GetEnergy() const noexcept;
   /// @brief Updates the current energy of the Particle
@@ -60,14 +60,12 @@ public:
   const Cell& GetCell() const;
   /// @brief Sets the current Cell occupied by the Particle
   void SetCell(const Cell& c) noexcept;
+  /// @brief Secondaries produced
+  std::vector<Particle> secondaries;
+  /// @brief Random number generator
+  RNG rng{0};
 
 private:
-  // Returns the distance the Particle will travel before colliding
-  Real SampleCollisionDistance() noexcept;
-  // Sample a Nuclide given that the Particle has collided inside its Cell
-  const Nuclide& SampleNuclide() noexcept;
-  // Random number generator
-  RNG rng{0};
   // Position may be anywhere in @f$ \mathbb{R}^3 @f$
   Point position{0, 0, 0};
   // Direction must be constrained to @f$ \lVert v \rVert = 1 @f$
@@ -92,6 +90,10 @@ public:
   RNG::result_type seed {0};
 
 private:
+  // Returns the distance the Particle will travel before colliding
+  Real SampleCollisionDistance() noexcept;
+  // Sample a Nuclide given that the Particle has collided inside its Cell
+  const Nuclide& SampleNuclide() noexcept;
   // Flag for determining if this Particle is still alive
   bool alive{true};
 };
