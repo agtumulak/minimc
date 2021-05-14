@@ -10,9 +10,10 @@
 #include <map>
 #include <vector>
 
+/// @brief Creates and executes a k-eigenvalue calculation
 class KEigenvalue : public Driver {
 public:
-  /// @brief Creates and executes a k-eigenvalue calculation
+  /// @brief Creates objects necessary for a k-eigenvalue calculation
   /// @param root Root node of existing XML document
   KEigenvalue(const pugi::xml_node& root);
   /// @brief Solve sequential fixed-source calculations using a fission bank
