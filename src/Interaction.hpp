@@ -10,21 +10,20 @@
 #include <string>
 #include <vector>
 
-/// @brief Nuclear cross sections in multigroup or continuous energy for a
-///        given Nuclide
+/// @brief Models the interaction between a Particle and a Nuclide
 /// @details The polymorphism here shall be where multigroup and continuous
 ///          energy cross sections are resolved.
-class NuclearData {
+class Interaction {
 public:
   /// @brief Associates a Particle::Type with a polymorphic pointer to
-  ///        NuclearData
-  using Map = std::map<Particle::Type, std::unique_ptr<const NuclearData>>;
-  /// @brief Factory method to create multigroup or continuous NuclearData
+  ///        Interaction
+  using Map = std::map<Particle::Type, std::unique_ptr<const Interaction>>;
+  /// @brief Factory method to create multigroup or continuous Interaction
   ///        from a nuclide node
   static Map
   Create(const pugi::xml_node& root, const std::string& nuclide_name);
   /// @brief Virtual destructor (C++ Core Guidelines C.127)
-  virtual ~NuclearData() noexcept;
+  virtual ~Interaction() noexcept;
   /// @brief Returns the total cross section for a given Particle
   virtual MicroscopicCrossSection
   GetTotal(const Particle& p) const noexcept = 0;

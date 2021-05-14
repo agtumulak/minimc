@@ -1,7 +1,7 @@
 #pragma once
 
 #include "BasicTypes.hpp"
-#include "NuclearData.hpp"
+#include "Interaction.hpp"
 #include "Reaction.hpp"
 #include "pugixml.hpp"
 
@@ -13,7 +13,7 @@
 class Particle;
 
 /// @brief Contains cross sections which are indexed by continuous energy values
-class Continuous : public NuclearData {
+class Continuous : public Interaction {
 public:
   /// @brief Constructs continuous energy nuclear data from a particle node of
   ///        an XML document

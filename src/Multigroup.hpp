@@ -1,7 +1,7 @@
 #pragma once
 
 #include "BasicTypes.hpp"
-#include "NuclearData.hpp"
+#include "Interaction.hpp"
 #include "Reaction.hpp"
 #include "pugixml.hpp"
 
@@ -14,7 +14,7 @@ class Particle;
 /// @brief Contains cross sections which are indexed by discrete energy groups
 /// @details Groups are integers in `[1,G]`. Group `1` corresponds to the
 ///          highest energy. Group `G` corresponds to the lowest energy.
-class Multigroup : public NuclearData {
+class Multigroup : public Interaction {
 public:
   /// @brief Constructs multigroup nuclear data from a particle node of an XML
   ///        document

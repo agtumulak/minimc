@@ -1,7 +1,7 @@
 #pragma once
 
 #include "BasicTypes.hpp"
-#include "NuclearData.hpp"
+#include "Interaction.hpp"
 #include "pugixml.hpp"
 
 #include <random>
@@ -38,6 +38,6 @@ public:
   const std::string name;
 
 private:
-  // Aggregates (polymorphic) NuclearData objects for each Particle::Type
-  const NuclearData::Map xs;
+  // Aggregates (polymorphic) Interaction objects for each Particle::Type
+  const Interaction::Map xs;
 };

@@ -1,4 +1,4 @@
-#include "NuclearData.hpp"
+#include "Interaction.hpp"
 
 #include "Continuous.hpp"
 #include "Multigroup.hpp"
@@ -8,11 +8,11 @@
 #include <sstream>
 #include <stdexcept>
 
-// NuclearData
+// Interaction
 
 //// public
 
-NuclearData::Map NuclearData::Create(
+Interaction::Map Interaction::Create(
     const pugi::xml_node& root, const std::string& nuclide_name) {
   Map xs;
   const auto& energy_type_node{root.child("nuclides").first_child()};
@@ -59,5 +59,4 @@ NuclearData::Map NuclearData::Create(
 
 //// protected
 
-NuclearData::~NuclearData() noexcept {}
-
+Interaction::~Interaction() noexcept {}

@@ -14,14 +14,14 @@ set(MINIMC_SOURCES
   Constants.hpp
   FixedSource.cpp
   FixedSource.hpp
+  Interaction.cpp
+  Interaction.hpp
   KEigenvalue.cpp
   KEigenvalue.hpp
   Material.cpp
   Material.hpp
   Multigroup.cpp
   Multigroup.hpp
-  NuclearData.cpp
-  NuclearData.hpp
   Nuclide.cpp
   Nuclide.hpp
   Parallel.cpp
