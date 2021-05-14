@@ -18,11 +18,9 @@
 //// public
 
 Particle::TransportOutcome&
-Particle::TransportOutcome::operator+=(const TransportOutcome& rhs) noexcept {
+Particle::TransportOutcome::operator+=(TransportOutcome&& rhs) noexcept {
   estimator += rhs.estimator;
-  std::move(
-      rhs.banked.cbegin(), rhs.banked.cend(),
-      std::back_insert_iterator(banked));
+  banked.splice(banked.begin(), rhs.banked);
   return *this;
 }
 

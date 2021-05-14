@@ -7,8 +7,8 @@
 #include "pugixml.hpp"
 
 #include <cstddef>
+#include <list>
 #include <map>
-#include <vector>
 
 /// @brief Creates and executes a k-eigenvalue calculation
 class KEigenvalue : public Driver {
@@ -26,7 +26,7 @@ public:
 
 private:
   using Cycle = size_t;
-  std::vector<Particle> source_bank{};
+  std::list<Particle> source_bank{};
   Real k;
   ChunkGiver chunk_giver{batchsize, chunksize};
   const Cycle last_inactive;

@@ -14,6 +14,7 @@
 #include <random>
 #include <string>
 #include <utility>
+#include <vector>
 
 // KEigenvalue
 
@@ -56,7 +57,7 @@ void KEigenvalue::Solve() {
     for (auto& thread_result : thread_results) {
       sorted_chunks.merge(thread_result.get());
     }
-    std::vector<Particle> sorted_fission_bank;
+    std::list<Particle> sorted_fission_bank;
     for (const auto& chunk_result : sorted_chunks) {
       const auto& [index, outcome] = chunk_result;
       std::move(
@@ -73,7 +74,8 @@ void KEigenvalue::Solve() {
     std::uniform_int_distribution<size_t> sample_index{
         0, sorted_fission_bank.size() - 1};
     for (size_t i = 0; i < new_bank_size; i++) {
-      source_bank.push_back(sorted_fission_bank.at(sample_index(rng)));
+      auto it = std::next(sorted_fission_bank.begin(), sample_index(rng));
+      source_bank.push_back(*it);
     }
   }
 }
@@ -88,12 +90,8 @@ std::map<size_t, Particle::TransportOutcome> KEigenvalue::StartWorker() {
         std::next(source_bank.begin(), range->second),
         std::back_insert_iterator(chunk_source_bank));
     while (!chunk_source_bank.empty()) {
-      auto result = chunk_source_bank.back().Transport(world);
+      chunk_output += chunk_source_bank.back().Transport(world);
       chunk_source_bank.pop_back();
-      chunk_output.estimator += result.estimator;
-      std::move(
-          result.banked.begin(), result.banked.end(),
-          std::back_insert_iterator(chunk_output.banked));
     }
     chunk_outputs.insert({range->first, chunk_output});
   }

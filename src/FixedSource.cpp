@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <list>
 #include <future>
 #include <string>
 #include <iostream>
@@ -42,14 +43,13 @@ Estimator FixedSource::StartWorker() {
   Estimator worker_estimator;
   while (const auto range = chunk_giver.Next()) {
     for (auto h = range->first; h < range->second; h++) {
-      std::vector<Particle> bank(1, Sample(h));
+      // we choose a list because list::splice is constant time
+      std::list<Particle> bank(1, Sample(h));
       while (!bank.empty()) {
         auto result = bank.back().Transport(world);
         bank.pop_back();
         worker_estimator += result.estimator;
-        std::move(
-            result.banked.begin(), result.banked.end(),
-            std::back_insert_iterator(bank));
+        bank.splice(bank.begin(), result.banked);
       }
     }
   }

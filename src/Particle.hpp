@@ -5,6 +5,7 @@
 #include "Point.hpp"
 
 #include <string>
+#include <list>
 #include <vector>
 
 class Cell;
@@ -23,11 +24,11 @@ public:
   /// @brief The result of a Transport call
   struct TransportOutcome {
     /// @brief Adds the result of another transport result to this result
-    TransportOutcome& operator+=(const TransportOutcome& rhs) noexcept;
+    TransportOutcome& operator+=(TransportOutcome&& rhs) noexcept;
     /// @brief Estimators scored during transport
     Estimator estimator;
     /// @brief Secondary particles banked during transport
-    std::vector<Particle> banked;
+    std::list<Particle> banked;
   };
   /// @brief Affects which cross section data is used during transport, among
   ///        other things
