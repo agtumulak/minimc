@@ -1,5 +1,6 @@
 #include "Estimator.hpp"
 
+#include <algorithm>
 #include <ostream>
 
 // Estimator
@@ -29,6 +30,12 @@ std::string Estimator::ToString(const Event e) noexcept {
   case Estimator::Event::surface_crossing:
     return "surface crossing";
   }
+}
+
+void Estimator::Normalize(Real total_weight) noexcept {
+  std::for_each(elements.begin(), elements.end(), [total_weight](auto& pair) {
+    pair.second /= total_weight;
+  });
 }
 
 Real& Estimator::at(Event e) { return elements.at(e); }

@@ -34,6 +34,7 @@ Estimator FixedSource::Solve() {
       [](auto& accumulated, auto& future) {
         return accumulated += future.get();
       });
+  estimators.Normalize(batchsize);
   return estimators;
 }
 
