@@ -2,16 +2,9 @@
 #include "Nuclide.hpp"
 #include "Particle.hpp"
 #include "Point.hpp"
-#include "Reaction.hpp"
-#include "Statistics.hpp"
 #include "World.hpp"
 #include "XMLDocument.hpp"
 #include "catch2/catch.hpp"
-
-#include <algorithm>
-#include <cstddef>
-#include <variant>
-#include <vector>
 
 TEST_CASE("nonexistent nuclide name throws exception") {
   XMLDocument doc{"simple_multigroup.xml"};
