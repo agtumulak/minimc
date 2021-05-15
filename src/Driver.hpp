@@ -1,6 +1,5 @@
 #pragma once
 
-#include "BasicTypes.hpp"
 #include "Estimator.hpp"
 #include "World.hpp"
 #include "pugixml.hpp"
@@ -28,7 +27,7 @@ protected:
   /// @brief Global, read-only description of geometric and material properties
   const World world;
   /// @brief Total histories for fixed-source; per-cycle for k-eigenvalue
-  const RNG::result_type batchsize;
+  const size_t batchsize;
   /// @brief Number of threads dedicated to particle transport
   const size_t threads;
   /// @brief Used as a parameter for thread-safe classes such as ChunkGiver
