@@ -1,0 +1,54 @@
+<minimc
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="minimc.xsd">
+<general>
+  <particles>neutron</particles>
+  <histories>10000</histories>
+  <threads>2</threads>
+  <chunksize>1000</chunksize>
+</general>
+<nuclides>
+  <multigroup groups="1">
+    <nuclide name="absorber">
+      <neutron>
+        <capture>1</capture>
+      </neutron>
+    </nuclide>
+  </multigroup>
+</nuclides>
+<materials>
+  <material name="absorber" aden="1">
+    <nuclide name="absorber" afrac="1"/>
+  </material>
+</materials>
+<surfaces>
+  <sphere name="sphere">
+    <center x="0" y="0" z="0"/>
+    <radius r="1"/>
+  </sphere>
+</surfaces>
+<cells>
+  <cell name="sphere" material="absorber">
+    <surface name="sphere" sense="-1"/>
+  </cell>
+  <void>
+    <surface name="sphere" sense="+1"/>
+  </void>
+</cells>
+<problemtype>
+  <fixedsource>
+    <position>
+      <constant x="0" y="0" z="0"/>
+    </position>
+    <direction>
+      <isotropic/>
+    </direction>
+    <energy>
+      <constant energy="1"/>
+    </energy>
+    <particletype>
+      <constant type="neutron"/>
+    </particletype>
+  </fixedsource>
+</problemtype>
+</minimc>

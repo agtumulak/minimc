@@ -11,6 +11,7 @@ FetchContent_MakeAvailable(catch_download)
 set(UNIT_TEST_SOURCES
   test_CSGSurface.cpp
   test_Cell.cpp
+  test_FixedSource.cpp
   test_Parallel.cpp
   test_Material.cpp
   test_Nuclide.cpp
@@ -27,6 +28,7 @@ target_link_libraries(all_tests Catch2::Catch2 minimc)
 set(UNIT_TEST_INPUTS
   minimc.xsd
   minimc_basictypes.xsd
+  point_source_leakage.xml
   simple_continuous.xml
   simple_multigroup.xml
   test_XMLDocument.xsd

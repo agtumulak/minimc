@@ -1,5 +1,6 @@
 #pragma once
 
+#include "BasicTypes.hpp"
 #include "Driver.hpp"
 #include "Estimator.hpp"
 #include "Parallel.hpp"
