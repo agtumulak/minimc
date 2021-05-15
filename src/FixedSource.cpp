@@ -1,12 +1,14 @@
 #include "FixedSource.hpp"
 
+#include "Particle.hpp"
+
 #include <cstddef>
-#include <list>
 #include <future>
-#include <string>
 #include <iostream>
+#include <list>
 #include <numeric>
 #include <optional>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -35,12 +37,17 @@ Estimator FixedSource::Solve() {
   return estimators;
 }
 
+//// private
+
 Estimator FixedSource::StartWorker() {
   Estimator worker_estimator;
   while (const auto range = chunk_giver.Next()) {
     for (auto h = range->first; h < range->second; h++) {
+      // a single integer `h` uniquely determines the history of a particle
+      // avoid zero seed with h + 1
+      auto p{source.Sample(h + 1)};
       // we choose a list because list::splice is constant time
-      std::list<Particle> bank(1, Sample(h));
+      std::list<Particle> bank(1, p);
       while (!bank.empty()) {
         auto result = bank.back().Transport(world);
         bank.pop_back();
@@ -50,11 +57,4 @@ Estimator FixedSource::StartWorker() {
     }
   }
   return worker_estimator;
-}
-
-//// private
-
-Particle FixedSource::Sample(RNG::result_type history) const noexcept {
-  // avoid zero seed with +1
-  return source.Sample(history + 1);
 }
