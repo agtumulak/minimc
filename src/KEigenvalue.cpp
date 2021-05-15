@@ -7,6 +7,7 @@
 #include <future>
 #include <iostream>
 #include <iterator>
+#include <list>
 #include <map>
 #include <optional>
 #include <random>
@@ -27,13 +28,11 @@ KEigenvalue::KEigenvalue(const pugi::xml_node& root)
                       .child("keigenvalue")
                       .attribute("active")
                       .as_uint()} {
-  RNG rng;
   Source source{
       root.child("problemtype").child("keigenvalue").child("initialsource")};
-  for (RNG::result_type s = 1; s <= batchsize; s++) {
+  for (size_t s = 1; s <= batchsize; s++) {
     source_bank.push_back(source.Sample(s));
   }
-  k = 1.0;
 }
 
 Estimator KEigenvalue::Solve() {
@@ -44,8 +43,7 @@ Estimator KEigenvalue::Solve() {
     std::cout << "===== Cycle " << std::to_string(c) << " =====" << std::endl;
     std::cout << "source bank: " << std::to_string(source_bank.size())
               << std::endl;
-    std::vector<std::future<std::map<size_t, Particle::TransportOutcome>>>
-        thread_results;
+    std::vector<std::future<Particle::TransportOutcome>> thread_results;
     chunk_giver.Reset(source_bank.size());
     for (size_t i = 0; i < threads; i++) {
       thread_results.push_back(std::async(&KEigenvalue::StartWorker, this));
@@ -78,11 +76,11 @@ Estimator KEigenvalue::Solve() {
   return Estimator{};
 }
 
-std::map<size_t, Particle::TransportOutcome> KEigenvalue::StartWorker() {
-  std::map<size_t, Particle::TransportOutcome> chunk_outputs;
+Particle::TransportOutcome KEigenvalue::StartWorker() {
+  Particle::TransportOutcome worker_result;
   while (const auto range = chunk_giver.Next()) {
-    Particle::TransportOutcome chunk_output;
-    std::vector<Particle> chunk_source_bank;
+    Particle::TransportOutcome chunk_result;
+
     std::move(
         std::next(source_bank.begin(), range->first),
         std::next(source_bank.begin(), range->second),

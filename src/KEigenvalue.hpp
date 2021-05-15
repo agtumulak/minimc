@@ -21,14 +21,12 @@ public:
   ///        passed between cycles
   Estimator Solve() override;
   /// @brief Function executed by a worker on a single thread
-  /// @details Chunks are kept separate as they will have to be sorted in order
-  ///          to keep results deterministic
-  std::map<size_t, Particle::TransportOutcome> StartWorker();
+  Particle::TransportOutcome StartWorker();
 
 private:
   using Cycle = size_t;
   std::list<Particle> source_bank{};
-  Real k;
+  Real k {1};
   ChunkGiver chunk_giver{batchsize, chunksize};
   const Cycle last_inactive;
   const Cycle last_active;
