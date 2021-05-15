@@ -2,6 +2,7 @@
 
 #include "BasicTypes.hpp"
 #include "Driver.hpp"
+#include "Estimator.hpp"
 #include "Parallel.hpp"
 #include "Particle.hpp"
 #include "pugixml.hpp"
@@ -18,7 +19,7 @@ public:
   KEigenvalue(const pugi::xml_node& root);
   /// @brief Solve sequential fixed-source calculations using a fission bank
   ///        passed between cycles
-  void Solve() override;
+  Estimator Solve() override;
   /// @brief Function executed by a worker on a single thread
   /// @details Chunks are kept separate as they will have to be sorted in order
   ///          to keep results deterministic

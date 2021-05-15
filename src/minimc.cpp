@@ -9,6 +9,7 @@ int main(int argc, char* argv[]) {
     throw std::runtime_error("MiniMC accepts exactly one argument");
   }
   auto driver = Driver::Create(argv[1]);
-  driver->Solve();
+  auto estimators{driver->Solve()};
+  std::cout << estimators << std::endl;
   return 0;
 }

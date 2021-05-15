@@ -17,7 +17,7 @@
 FixedSource::FixedSource(const pugi::xml_node& root)
     : Driver{root}, source{root.child("problemtype").child("fixedsource")} {};
 
-void FixedSource::Solve() {
+Estimator FixedSource::Solve() {
   std::vector<std::future<Estimator>> results;
   std::cout << "Spawning " << std::to_string(threads) << " threads working on "
             << std::to_string(batchsize) << " histories split into "
@@ -32,7 +32,7 @@ void FixedSource::Solve() {
       [](auto& accumulated, auto& future) {
         return accumulated += future.get();
       });
-  std::cout << estimators;
+  return estimators;
 }
 
 Estimator FixedSource::StartWorker() {

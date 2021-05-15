@@ -20,7 +20,7 @@ public:
   /// @brief Virtual destructor (C++ Core Guidelines C.127)
   virtual ~Driver() noexcept;
   /// @brief Solves the problem
-  virtual void Solve() = 0;
+  virtual Estimator Solve() = 0;
 
 protected:
   /// @brief Accumulates all counts produced by the simulation

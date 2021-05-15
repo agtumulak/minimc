@@ -1,6 +1,5 @@
 #include "KEigenvalue.hpp"
 
-#include "Estimator.hpp"
 #include "Parallel.hpp"
 #include "Source.hpp"
 
@@ -37,7 +36,7 @@ KEigenvalue::KEigenvalue(const pugi::xml_node& root)
   k = 1.0;
 }
 
-void KEigenvalue::Solve() {
+Estimator KEigenvalue::Solve() {
   RNG rng{};
   // Perform inactive cycles
   for (Cycle c = 0; c < last_inactive; c++) {
@@ -76,6 +75,7 @@ void KEigenvalue::Solve() {
       source_bank.push_back(*it);
     }
   }
+  return Estimator{};
 }
 
 std::map<size_t, Particle::TransportOutcome> KEigenvalue::StartWorker() {
