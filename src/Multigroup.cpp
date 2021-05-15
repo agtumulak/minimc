@@ -274,7 +274,6 @@ void Multigroup::Scatter(Particle& p) const noexcept {
 }
 
 void Multigroup::Fission(Particle& p) const noexcept {
-  std::vector<Particle> fission_neutrons;
   p.Kill();
   auto incident_group{std::get<Group>(p.GetEnergy())};
   // rely on the fact that double to int conversions essentially do a floor()
@@ -285,17 +284,12 @@ void Multigroup::Fission(Particle& p) const noexcept {
   for (size_t i = 0; i < fission_yield; i++) {
     const Real threshold = std::uniform_real_distribution{}(p.rng);
     Real accumulated{0};
+
     for (Group g = 1; g <= max_group; g++) {
       accumulated += group_probs.at(g);
       if (accumulated > threshold) {
-        p.secondaries.emplace_back(
-            p.GetPosition(), Direction::CreateIsotropic(p.rng),
-            Energy{Group{g}}, Particle::Type::neutron);
-        p.secondaries.back().SetCell(p.GetCell());
-        // Each secondary produced by this fission must have a completely
-        // deterministic history. Setting their seed here accomplishes this.
-        p.secondaries.back().seed =
-            std::uniform_int_distribution<RNG::result_type>{1}(p.rng);
+        auto direction{Direction::CreateIsotropic(p.rng)};
+        p.Bank(direction, g);
         break;
       }
     }

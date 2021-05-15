@@ -1,14 +1,10 @@
 #include "FixedSource.hpp"
 
-#include "Constants.hpp"
-
-#include <algorithm>
 #include <cstddef>
 #include <list>
 #include <future>
 #include <string>
 #include <iostream>
-#include <iterator>
 #include <numeric>
 #include <optional>
 #include <utility>
@@ -60,6 +56,5 @@ Estimator FixedSource::StartWorker() {
 
 Particle FixedSource::Sample(RNG::result_type history) const noexcept {
   // avoid zero seed with +1
-  RNG rng{(history + 1) * constants::seed_stride};
-  return source.Sample(rng);
+  return source.Sample(history + 1);
 }

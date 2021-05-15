@@ -202,10 +202,6 @@ void Continuous::Fission(Particle& p) const noexcept {
     // evaluation order of arguments is undefined so do evaluation here
     const auto direction{Direction::CreateIsotropic(p.rng)};
     const auto energy{Energy{ContinuousEnergy{chi.value().Sample(p.rng)}}};
-    p.secondaries.emplace_back(
-        p.GetPosition(), direction, energy, Particle::Type::neutron);
-    p.secondaries.back().SetCell(p.GetCell());
-    p.secondaries.back().seed =
-        std::uniform_int_distribution<RNG::result_type>{1}(p.rng);
+    p.Bank(direction, energy);
   }
 }

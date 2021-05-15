@@ -1,6 +1,5 @@
 #include "KEigenvalue.hpp"
 
-#include "Constants.hpp"
 #include "Estimator.hpp"
 #include "Parallel.hpp"
 #include "Source.hpp"
@@ -33,8 +32,7 @@ KEigenvalue::KEigenvalue(const pugi::xml_node& root)
   Source source{
       root.child("problemtype").child("keigenvalue").child("initialsource")};
   for (RNG::result_type s = 1; s <= batchsize; s++) {
-    rng.seed(s * constants::seed_stride);
-    source_bank.push_back(source.Sample(rng));
+    source_bank.push_back(source.Sample(s));
   }
   k = 1.0;
 }

@@ -42,8 +42,9 @@ Particle::Type Particle::ToType(const std::string& name) noexcept {
 
 Particle::Particle(
     const Point& position, const Direction& direction, const Energy& energy,
-    const Type type) noexcept
-    : position{position}, direction{direction}, energy{energy}, type{type} {}
+    const Type type, RNG::result_type seed, const Cell* cell) noexcept
+    : position{position}, direction{direction}, energy{energy}, cell{cell},
+      rng{seed}, type{type} {}
 
 Particle::TransportOutcome Particle::Transport(const World& w) noexcept {
   TransportOutcome result;
@@ -90,6 +91,8 @@ const Energy& Particle::GetEnergy() const noexcept { return energy; };
 
 void Particle::SetEnergy(const Energy& e) noexcept { energy = e; };
 
+Particle::Type Particle::GetType() const noexcept { return type; }
+
 const Cell& Particle::GetCell() const {
   if (cell) {
     return *cell;
@@ -98,6 +101,11 @@ const Cell& Particle::GetCell() const {
 }
 
 void Particle::SetCell(const Cell& c) noexcept { cell = &c; };
+
+void Particle::Bank(const Direction& direction, const Energy& energy) noexcept {
+  secondaries.emplace_back(
+      position, direction, energy, Type::neutron, rng(), cell);
+}
 
 Real Particle::SampleCollisionDistance() noexcept {
   return std::exponential_distribution{

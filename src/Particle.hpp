@@ -6,7 +6,6 @@
 
 #include <string>
 #include <list>
-#include <vector>
 
 class Cell;
 class Nuclide;
@@ -41,7 +40,8 @@ public:
   /// @brief Member constructor. Explicitly assigns phase-space members.
   Particle(
       const Point& position, const Direction& direction, const Energy& energy,
-      const Type type) noexcept;
+      const Type type, RNG::result_type seed,
+      const Cell* cell = nullptr) noexcept;
   /// @brief Moves the Particle through each state until it dies.
   TransportOutcome Transport(const World& w) noexcept;
   /// @brief Kill the Particle, stopping the history
@@ -57,16 +57,23 @@ public:
   const Energy& GetEnergy() const noexcept;
   /// @brief Updates the current energy of the Particle
   void SetEnergy(const Energy& e) noexcept;
+  /// @brief Returns the Type of the Particle
+  Type GetType() const noexcept;
   /// @brief Returns a reference to the current Cell the Particle is within
   const Cell& GetCell() const;
   /// @brief Sets the current Cell occupied by the Particle
   void SetCell(const Cell& c) noexcept;
-  /// @brief Secondaries produced
-  std::vector<Particle> secondaries;
-  /// @brief Random number generator
-  RNG rng{0};
+  /// @brief Banks secondaries produced during transport using an outgoing
+  ///        Direction and outgoing Energy
+  void Bank(const Direction& direction, const Energy& energy) noexcept;
 
 private:
+  // Returns the distance the Particle will travel before colliding
+  Real SampleCollisionDistance() noexcept;
+  // Sample a Nuclide given that the Particle has collided inside its Cell
+  const Nuclide& SampleNuclide() noexcept;
+  // Secondaries produced
+  std::list<Particle> secondaries;
   // Position may be anywhere in @f$ \mathbb{R}^3 @f$
   Point position{0, 0, 0};
   // Direction must be constrained to @f$ \lVert v \rVert = 1 @f$
@@ -77,24 +84,16 @@ private:
   const Cell* cell{nullptr};
 
 public:
+  /// @brief Random number generator (C++ Core Guidelines C.131)
+  /// @details This Particle contains its own random number generator. Any
+  ///          Particle initialized with the same member variables and provided
+  ///          with the same World should return the same result after calling
+  ///          Transport();
+  RNG rng;
   /// @brief Type of the Particle (C++ Core Guidelines C.131)
   const Type type{Type::neutron};
-  /// @brief Seed used to initialize rng once this Particle is constructed
-  /// @details In monte carlo methods, there is a paradoxical requirement that
-  ///          results are completely deterministic. In k-eigenvalue
-  ///          calculations, a given fixed-source cycle must yield the same
-  ///          result every time the simulation is run. To do this, we note
-  ///          that the outcome of sampling a history depends entirely on two
-  ///          things: the initial state of the source particle, and the
-  ///          initial state of the random number generator (rng) used to
-  ///          sample the sequence of events that follow.
-  RNG::result_type seed {0};
 
 private:
-  // Returns the distance the Particle will travel before colliding
-  Real SampleCollisionDistance() noexcept;
-  // Sample a Nuclide given that the Particle has collided inside its Cell
-  const Nuclide& SampleNuclide() noexcept;
   // Flag for determining if this Particle is still alive
   bool alive{true};
 };

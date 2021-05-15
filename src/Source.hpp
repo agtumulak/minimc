@@ -49,7 +49,7 @@ public:
   ///          minimc XML schema
   Source(const pugi::xml_node& source_node);
   /// @brief Samples a source Particle
-  Particle Sample(RNG& rng) const noexcept;
+  Particle Sample(RNG::result_type seed) const noexcept;
 
 private:
   std::unique_ptr<const Distribution<Point>> position;
