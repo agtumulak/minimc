@@ -24,8 +24,6 @@ set(MINIMC_SOURCES
   Multigroup.hpp
   Nuclide.cpp
   Nuclide.hpp
-  Parallel.cpp
-  Parallel.hpp
   Particle.cpp
   Particle.hpp
   Point.cpp

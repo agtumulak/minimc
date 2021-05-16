@@ -7,9 +7,7 @@
 #include <iostream>
 #include <list>
 #include <numeric>
-#include <optional>
 #include <string>
-#include <utility>
 #include <vector>
 
 // FixedSource
@@ -22,10 +20,7 @@ FixedSource::FixedSource(const pugi::xml_node& root)
 Estimator FixedSource::Solve() {
   std::vector<std::future<Estimator>> results;
   std::cout << "Spawning " << std::to_string(threads) << " threads working on "
-            << std::to_string(batchsize) << " histories split into "
-            << std::to_string(
-                   batchsize / chunksize + (batchsize % chunksize != 0))
-            << " chunks... " << std::endl;
+            << std::to_string(batchsize) << " histories..." << std::endl;
   for (size_t i = 0; i < threads; i++) {
     results.push_back(std::async(&FixedSource::StartWorker, this));
   }
@@ -42,19 +37,22 @@ Estimator FixedSource::Solve() {
 
 Estimator FixedSource::StartWorker() {
   Estimator worker_estimator;
-  while (const auto range = chunk_giver.Next()) {
-    for (auto h = range->first; h < range->second; h++) {
-      // a single integer `h` uniquely determines the history of a particle
-      // avoid zero seed with h + 1
-      auto p{source.Sample(h + 1)};
-      // we choose a list because list::splice is constant time
-      std::list<Particle> bank(1, p);
-      while (!bank.empty()) {
-        auto result = bank.back().Transport(world);
-        bank.pop_back();
-        worker_estimator += result.estimator;
-        bank.splice(bank.begin(), result.banked);
-      }
+  while (true) {
+    // atomically update thread-local count of histories started
+    auto elapsed = histories_elapsed++;
+    if (elapsed >= batchsize) {
+      break;
+    }
+    // Use the remaining number of histories remaining as the seed. This is
+    // guaranteed to be greater than one.
+    auto p{source.Sample(batchsize - seed)};
+    // we choose a list because list::splice is constant time
+    std::list<Particle> bank(1, p);
+    while (!bank.empty()) {
+      auto result = bank.back().Transport(world);
+      bank.pop_back();
+      worker_estimator += result.estimator;
+      bank.splice(bank.begin(), result.banked);
     }
   }
   return worker_estimator;

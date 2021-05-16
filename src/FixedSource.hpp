@@ -1,11 +1,12 @@
 #pragma once
 
-#include "BasicTypes.hpp"
 #include "Driver.hpp"
 #include "Estimator.hpp"
-#include "Parallel.hpp"
 #include "Source.hpp"
 #include "pugixml.hpp"
+
+#include <atomic>
+#include <cstddef>
 
 /// @brief Creates and executes a fixed-source calculation
 class FixedSource : public Driver {
@@ -18,8 +19,9 @@ public:
 private:
   // function executed by a worker on a single thread
   Estimator StartWorker();
-  // returns a subset of all histores in a thread-safe manner
-  ChunkGiver chunk_giver{batchsize, chunksize};
   // fixed source from which new Particle objects can be sampled from
   const Source source;
+  // Number of histories completed or initiated by all threads. May exceed
+  // batchsize since each thread will call it once before ending.
+  std::atomic<size_t> histories_elapsed{0};
 };
