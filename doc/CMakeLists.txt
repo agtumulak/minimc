@@ -10,5 +10,9 @@ if(Doxygen_FOUND)
   set(DOXYGEN_MATHJAX_EXTENSIONS "TeX/AMSmath")
   set(DOXYGEN_QUIET YES)
   set(DOXYGEN_EXCLUDE_PATTERNS "*.cpp")
+  set(DOXYGEN_GENERATE_TREEVIEW YES)
+  set(DOXYGEN_HTML_EXTRA_STYLESHEET
+    ${CMAKE_CURRENT_SOURCE_DIR}/doxygen-awesome-css/doxygen-awesome.css
+    ${CMAKE_CURRENT_SOURCE_DIR}/doxygen-awesome-css/doxygen-awesome-sidebar-only.css)
   doxygen_add_docs(doc ${DOXYGEN_SOURCES} ${CMAKE_SOURCE_DIR}/src)
 endif()
