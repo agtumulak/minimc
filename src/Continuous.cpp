@@ -21,7 +21,7 @@
 
 Continuous::Continuous(const pugi::xml_node& particle_node)
     : nubar{particle_node.child("fission").child("nubar")
-              ? std::make_optional<OneDimensional>(
+              ? std::make_optional<Map>(
                   particle_node.child("fission").child("nubar")
                   .attribute("file").as_string())
               : std::nullopt},
@@ -81,11 +81,11 @@ void Continuous::Interact(Particle& p) const noexcept {
   return Interact(p);
 }
 
-// Continuous::OneDimensional
+// Continuous::Map
 
 //// public
 
-Continuous::OneDimensional::OneDimensional(
+Continuous::Map::Map(
     const std::filesystem::path& datapath) {
   std::ifstream datafile{datapath};
   if (!datafile) {
@@ -106,7 +106,7 @@ Continuous::OneDimensional::OneDimensional(
 }
 
 const Real&
-Continuous::OneDimensional::at(const ContinuousEnergy e) const noexcept {
+Continuous::Map::at(const ContinuousEnergy e) const noexcept {
   // TODO: Interpolate and handle edge cases
   return (*elements.upper_bound(e)).second;
 }
@@ -116,7 +116,7 @@ Continuous::OneDimensional::at(const ContinuousEnergy e) const noexcept {
 //// public
 
 Continuous::CDF::CDF(const std::filesystem::path& datapath)
-    : OneDimensional{datapath} {
+    : Map{datapath} {
   elements_type scratch = std::move(elements);
   elements.clear(); // the final map will use CDF values as keys
   if (scratch.size() < 2) {
@@ -152,7 +152,7 @@ Continuous::CDF::CDF(const std::filesystem::path& datapath)
   }
 }
 
-Continuous::elements_type::mapped_type
+Continuous::CDF::elements_type::mapped_type
 Continuous::CDF::Sample(RNG& rng) const noexcept {
   return elements.upper_bound(std::uniform_real_distribution{}(rng))->second;
 }
@@ -173,13 +173,12 @@ Continuous::CreateReactions(const pugi::xml_node& particle_node) {
     if (reaction == Reaction::fission) {
       reactions.emplace(
           reaction,
-          OneDimensional{
-              reaction_node.child("xs").attribute("file").as_string()});
+          Map{reaction_node.child("xs").attribute("file").as_string()});
     }
     else {
       reactions.emplace(
           ToReaction(reaction_name),
-          OneDimensional{reaction_node.attribute("file").as_string()});
+          Map{reaction_node.attribute("file").as_string()});
     }
   }
   return reactions;

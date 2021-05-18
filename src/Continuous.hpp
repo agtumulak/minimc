@@ -28,12 +28,14 @@ public:
   void Interact(Particle& p) const noexcept override;
 
 private:
-  using elements_type = std::map<ContinuousEnergy, Real>;
-  // Continuous cross sections indexed by one ContinuousEnergy
-  class OneDimensional {
+  // Continuously maps elements from a domain to a range, provided a limited
+  // set of points, by interpolating
+  class Map {
   public:
-    // Constructs Continuous::OneDimensional from a data file
-    OneDimensional(const std::filesystem::path& datapath);
+    // Continuous cross sections indexed by one ContinuousEnergy
+    using elements_type = std::map<ContinuousEnergy, Real>;
+    // Constructs Continuous::Map from a data file
+    Map(const std::filesystem::path& datapath);
     // Returns a const reference to the MicroscopicCrossSection at a given
     // ContinuousEnergy
     const Real& at(const ContinuousEnergy e) const noexcept;
@@ -41,10 +43,10 @@ private:
   protected:
     elements_type elements;
   };
-  // Like OneDimensional, but stores elements as the CDF of some random
+  // Like Map, but stores elements as the CDF of some random
   // variable. Stores CDF values as keys so that std::map::upper_bound() can be
   // used.
-  class CDF : public OneDimensional {
+  class CDF : public Map {
   public:
     // Constructs a Continuous::CDF from a data file
     CDF(const std::filesystem::path& datapath);
@@ -52,7 +54,7 @@ private:
     elements_type::key_type Sample(RNG& rng) const noexcept;
   };
 
-  using ReactionsMap = std::map<Reaction, OneDimensional>;
+  using ReactionsMap = std::map<Reaction, Map>;
 
   // Helper function for reaction cross section construction
   static ReactionsMap CreateReactions(const pugi::xml_node& particle_node);
@@ -63,11 +65,11 @@ private:
   /// @brief Fissions the Nuclide and produces secondaries
   void Fission(Particle& p) const noexcept;
   // Average number of secondary particles produced per fission
-  const std::optional<OneDimensional> nubar;
+  const std::optional<Map> nubar;
   // Outgoing energy distribution of fission neutrons
   const std::optional<CDF> chi;
   // Cross section data for each Reaction
   const ReactionsMap reactions;
   // Total cross section provided in nuclear data files
-  const OneDimensional total;
+  const Map total;
 };
