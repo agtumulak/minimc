@@ -13,7 +13,6 @@
 #include <string>
 #include <utility>
 #include <variant>
-#include <vector>
 
 // Continuous
 
@@ -21,17 +20,20 @@
 
 Continuous::Continuous(const pugi::xml_node& particle_node)
     : nubar{particle_node.child("fission").child("nubar")
-              ? std::make_optional<Map>(
+              ? std::make_optional(
+                  ReadJanisWeb(
                   particle_node.child("fission").child("nubar")
-                  .attribute("file").as_string())
+                  .attribute("file").as_string()))
               : std::nullopt},
       chi{particle_node.child("fission").child("chi")
-              ? std::make_optional<CDF>(
+              ? std::make_optional<Continuous::CDF<ContinuousEnergy>>(
+                  ReadJanisWebCDF(
                   particle_node.child("fission").child("chi").attribute("file")
-                  .as_string())
+                  .as_string()))
               : std::nullopt},
       reactions{CreateReactions(particle_node)},
-      total{particle_node.child("total").attribute("file").as_string()} {}
+      total{ReadJanisWeb(
+          particle_node.child("total").attribute("file").as_string())} {}
 
 MicroscopicCrossSection Continuous::GetTotal(const Particle& p) const noexcept {
   return total.at(std::get<ContinuousEnergy>(p.GetEnergy()));
@@ -85,8 +87,37 @@ void Continuous::Interact(Particle& p) const noexcept {
 
 //// public
 
-Continuous::Map::Map(
-    const std::filesystem::path& datapath) {
+template <typename Key, typename T>
+Continuous::Map<Key, T>::Map(elements_type&& other)
+    : elements{std::move(other)} {}
+
+template <typename Key, typename T>
+const T& Continuous::Map<Key, T>::at(const Key k) const noexcept {
+  // TODO: Interpolate and handle edge cases
+  return elements.upper_bound(k)->second;
+}
+
+// Continuous::CDF
+
+//// public
+
+template <typename T>
+Continuous::CDF<T>::CDF(typename Map<Real, T>::elements_type&& other)
+    : Map<Real, T>{std::move(other)} {};
+
+template <typename T>
+const T& Continuous::CDF<T>::Sample(RNG& rng) const noexcept {
+  return this->elements.upper_bound(std::uniform_real_distribution{}(rng))
+      ->second;
+}
+
+//  Continuous
+
+//// private
+
+Continuous::CE_XS::elements_type
+Continuous::ReadJanisWeb(const std::filesystem::path& datapath) {
+  CE_XS::elements_type map;
   std::ifstream datafile{datapath};
   if (!datafile) {
     throw std::runtime_error("File not found: " + datapath.string());
@@ -101,24 +132,15 @@ Continuous::Map::Map(
     datafile.ignore(
         std::numeric_limits<std::streamsize>::max(), ';'); // delimiter
     datafile >> xs;
-    elements[energy / 1e6] = xs; // datafile is given in eV
+    map[energy / 1e6] = xs; // datafile is given in eV
   }
+  return map;
 }
 
-const Real&
-Continuous::Map::at(const ContinuousEnergy e) const noexcept {
-  // TODO: Interpolate and handle edge cases
-  return (*elements.upper_bound(e)).second;
-}
-
-// Continuous::CDF
-
-//// public
-
-Continuous::CDF::CDF(const std::filesystem::path& datapath)
-    : Map{datapath} {
-  elements_type scratch = std::move(elements);
-  elements.clear(); // the final map will use CDF values as keys
+Continuous::CDF<ContinuousEnergy>::elements_type
+Continuous::ReadJanisWebCDF(const std::filesystem::path& datapath) {
+  // scratch contains PDF values
+  auto scratch = ReadJanisWeb(datapath);
   if (scratch.size() < 2) {
     throw std::runtime_error(
         "In file " + datapath.string() +
@@ -127,7 +149,7 @@ Continuous::CDF::CDF(const std::filesystem::path& datapath)
   // Multiply each probability density by bin width. Use trapezoid rule.
   for (auto it = scratch.rbegin(); it != std::prev(scratch.rend()); it++) {
     // multiplication by 1e6 is because energies were stored as MeV and
-    // datafile PDF is given in per eV and
+    // datafile PDF is given in per eV
     it->second = (it->first - std::next(it)->first) * 0.5 *
                  (it->second + std::next(it)->second) * 1e6;
   }
@@ -147,23 +169,16 @@ Continuous::CDF::CDF(const std::filesystem::path& datapath)
     element.second /= total_weight;
   });
   // swap keys and values, this will remove any zero probability values
+  Continuous::CDF<ContinuousEnergy>::elements_type swapped;
   for (const auto& element : scratch) {
-    elements.emplace(element.second, element.first);
+    swapped.emplace(element.second, element.first);
   }
+  return swapped;
 }
 
-Continuous::CDF::elements_type::mapped_type
-Continuous::CDF::Sample(RNG& rng) const noexcept {
-  return elements.upper_bound(std::uniform_real_distribution{}(rng))->second;
-}
-
-//  Continuous
-
-//// private
-
-Continuous::ReactionsMap
+std::map<Reaction, Continuous::CE_XS>
 Continuous::CreateReactions(const pugi::xml_node& particle_node) {
-  Continuous::ReactionsMap reactions;
+  std::map<Reaction, Continuous::CE_XS> reactions;
   for (const auto& reaction_node : particle_node) {
     const std::string reaction_name = reaction_node.name();
     if (reaction_name == "total") {
@@ -173,12 +188,12 @@ Continuous::CreateReactions(const pugi::xml_node& particle_node) {
     if (reaction == Reaction::fission) {
       reactions.emplace(
           reaction,
-          Map{reaction_node.child("xs").attribute("file").as_string()});
+          ReadJanisWeb(reaction_node.child("xs").attribute("file").as_string()));
     }
     else {
       reactions.emplace(
           ToReaction(reaction_name),
-          Map{reaction_node.attribute("file").as_string()});
+          ReadJanisWeb(reaction_node.attribute("file").as_string()));
     }
   }
   return reactions;
