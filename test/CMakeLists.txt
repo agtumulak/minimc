@@ -30,6 +30,8 @@ set(UNIT_TEST_INPUTS
   point_source_leakage.xml
   simple_continuous.xml
   simple_multigroup.xml
+  test_HDF5_valid.hdf5
+  test_HDF5_invalid.hdf5
   test_XMLDocument.xsd
   test_XMLDocument_valid.xml
   test_XMLDocument_invalid.xml
