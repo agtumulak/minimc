@@ -185,15 +185,16 @@ Continuous::CreateReactions(const pugi::xml_node& particle_node) {
       continue; // skip total cross section
     }
     const auto reaction{ToReaction(reaction_name)};
-    if (reaction == Reaction::fission) {
-      reactions.emplace(
-          reaction,
-          ReadJanisWeb(reaction_node.child("xs").attribute("file").as_string()));
-    }
-    else {
+    if (reaction == Reaction::capture) {
       reactions.emplace(
           ToReaction(reaction_name),
           ReadJanisWeb(reaction_node.attribute("file").as_string()));
+    }
+    else {
+      reactions.emplace(
+          reaction,
+          ReadJanisWeb(
+              reaction_node.child("xs").attribute("file").as_string()));
     }
   }
   return reactions;

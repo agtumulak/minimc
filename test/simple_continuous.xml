@@ -13,21 +13,27 @@
       <neutron>
         <total file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-total.csv"/>
         <capture file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-gamma.csv"/>
-        <scatter file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-elastic.csv"/>
+        <scatter>
+          <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-elastic.csv"/>
+        </scatter>
       </neutron>
     </nuclide>
     <nuclide name="oxygen">
       <neutron>
         <total file="/Users/atumulak/Developer/minimc/data/endfb8/n-O16_0-total.csv"/>
         <capture file="/Users/atumulak/Developer/minimc/data/endfb8/n-O16_0-gamma.csv"/>
-        <scatter file="/Users/atumulak/Developer/minimc/data/endfb8/n-O16_0-elastic.csv"/>
+        <scatter>
+          <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-O16_0-elastic.csv"/>
+        </scatter>
       </neutron>
     </nuclide>
     <nuclide name="uranium235">
       <neutron>
         <total file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-total.csv"/>
         <capture file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-gamma.csv"/>
-        <scatter file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-elastic.csv"/>
+        <scatter>
+          <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-elastic.csv"/>
+        </scatter>
         <fission>
           <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-fission.csv"/>
           <nubar file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-nubar.csv"/>
@@ -39,7 +45,9 @@
       <neutron>
         <total file="/not/real"/>
         <capture file="/not/real"/>
-        <scatter file="/not/real"/>
+        <scatter>
+          <xs file="/not/real"/>
+        </scatter>
       </neutron>
     </nuclide>
   </continuous>

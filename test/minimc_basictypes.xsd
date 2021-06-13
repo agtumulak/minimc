@@ -81,7 +81,14 @@
   <xs:all>
     <xs:element name="total" type="ContinuousReactionFilepath" minOccurs="0"/>
     <xs:element name="capture" type="ContinuousReactionFilepath" minOccurs="0"/>
-    <xs:element name="scatter" type="ContinuousReactionFilepath" minOccurs="0"/>
+    <xs:element name="scatter" minOccurs="0">
+      <xs:complexType>
+        <xs:all>
+          <xs:element name="xs" type="ContinuousReactionFilepath"/>
+          <xs:element name="tsl" type="ContinuousReactionFilepath" minOccurs="0"/>
+        </xs:all>
+      </xs:complexType>
+    </xs:element>
     <xs:element name="fission" minOccurs="0">
       <xs:complexType>
         <xs:all>
