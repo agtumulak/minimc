@@ -26,7 +26,7 @@ Continuous::Continuous(const pugi::xml_node& particle_node)
                   .attribute("file").as_string()))
               : std::nullopt},
       chi{particle_node.child("fission").child("chi")
-              ? std::make_optional<Continuous::CDF<ContinuousEnergy>>(
+              ? std::make_optional(
                   ReadJanisWebCDF(
                   particle_node.child("fission").child("chi").attribute("file")
                   .as_string()))
