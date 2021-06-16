@@ -2,6 +2,8 @@
 
 #include "H5Cpp.h"
 
+#include <functional>
+#include <numeric>
 #include <string>
 
 // HDF5DataSet
@@ -10,8 +12,9 @@
 
 // https://support.hdfgroup.org/HDF5/doc/cpplus_RM/readdata_8cpp-example.html
 HDF5DataSet::HDF5DataSet(const std::filesystem::path& hdf5_filepath)
-    : axes{ReadPandasAxis(hdf5_filepath)}, values{ReadPandasValues(
-                                               hdf5_filepath)} {}
+    : axes{ReadPandasAxis(hdf5_filepath)},
+      values{ReadPandasValues(hdf5_filepath)}, strides{
+                                                   ComputeAxisStrides(axes)} {}
 
 //// private
 
@@ -21,8 +24,7 @@ HDF5DataSet::ReadPandasAxis(const std::filesystem::path& hdf5_filepath) {
   const H5::H5File file{hdf5_filepath, H5F_ACC_RDONLY};
   // Read number of levels in pandas MultiIndex
   const auto pandas_group = file.openGroup("/pandas");
-  size_t levels;
-  pandas_group.openAttribute("axis1_nlevels")
+  size_t levels; pandas_group.openAttribute("axis1_nlevels")
       .read(H5::PredType::NATIVE_ULONG, &levels);
   // Read each axis into result
   for (size_t i = 0; i < levels; i++) {
@@ -47,5 +49,23 @@ HDF5DataSet::ReadPandasValues(const std::filesystem::path& hdf5_filepath) {
       static_cast<size_t>(block_dataset.getSpace().getSimpleExtentNpoints()),
       0);
   block_dataset.read(result.data(), H5::PredType::NATIVE_DOUBLE);
+  return result;
+}
+
+std::vector<size_t> HDF5DataSet::ComputeAxisStrides(
+    const std::vector<std::vector<double>>& axes) noexcept {
+  // Initialize result. `axes` is assumed to have size one or greater.
+  std::vector<size_t> result(axes.size());
+  // Element `i` in `result` contains the size of axis `i+1`
+  std::transform(
+      std::next(axes.cbegin(), 1), axes.cend(), result.begin(),
+      [](const auto& axis) { return axis.size(); });
+  // Last element is 1 since the stride at the innermost axis (level `N`) will
+  // be one.
+  result.back() = 1;
+  // Element `i` in `result` contains the product of the sizes of axes `i+1`,
+  // `i+1`, ..., `N`.
+  std::partial_sum(
+      result.crbegin(), result.crend(), result.rbegin(), std::multiplies());
   return result;
 }
