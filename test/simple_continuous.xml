@@ -15,6 +15,7 @@
         <capture file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-gamma.csv"/>
         <scatter>
           <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-elastic.csv"/>
+          <tsl file="/Users/atumulak/Developer/minimc/data/H_in_H2O_sab.hdf5"/>
         </scatter>
       </neutron>
     </nuclide>

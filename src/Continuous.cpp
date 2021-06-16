@@ -31,6 +31,7 @@ Continuous::Continuous(const pugi::xml_node& particle_node)
                   particle_node.child("fission").child("chi").attribute("file")
                   .as_string()))
               : std::nullopt},
+      sab{ReadPandasSAB(particle_node.child("scatter").child("tsl"))},
       reactions{CreateReactions(particle_node)},
       total{ReadJanisWeb(
           particle_node.child("total").attribute("file").as_string())} {}
@@ -174,6 +175,20 @@ Continuous::ReadJanisWebCDF(const std::filesystem::path& datapath) {
     swapped.emplace(element.second, element.first);
   }
   return swapped;
+}
+
+std::optional<HDF5DataSet>
+Continuous::ReadPandasSAB(const pugi::xml_node& tsl_node) {
+  if (!tsl_node) {
+    return std::nullopt;
+  }
+  if (Particle::ToType(tsl_node.parent().parent().name()) !=
+      Particle::Type::neutron) {
+    throw std::runtime_error(
+        tsl_node.path() +
+        ": Only neutrons may have a thermal scattering library node");
+  }
+  return HDF5DataSet{tsl_node.attribute("file").as_string()};
 }
 
 std::map<Reaction, Continuous::CE_XS>

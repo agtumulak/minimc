@@ -1,6 +1,7 @@
 #pragma once
 
 #include "BasicTypes.hpp"
+#include "HDF5DataSet.hpp"
 #include "Interaction.hpp"
 #include "Reaction.hpp"
 #include "pugixml.hpp"
@@ -52,7 +53,7 @@ private:
     // Samples a value from the CDF and returns the sampled key
     const T& Sample(RNG& rng) const noexcept;
   };
-  // continuous energy cross sections
+  // Continuous energy cross sections
   using CE_XS = Map<ContinuousEnergy, MicroscopicCrossSection>;
   // Helper function for constructing CE_XS from JANIS Web data file
   static CE_XS::elements_type
@@ -61,6 +62,9 @@ private:
   // file
   static CDF<ContinuousEnergy>::elements_type
   ReadJanisWebCDF(const std::filesystem::path& datapath);
+  // Helper function for constructing thermal scattering data S(a,b,T) if found
+  static std::optional<HDF5DataSet>
+  ReadPandasSAB(const pugi::xml_node& tsl_node);
   // Helper function for reaction cross section construction
   static std::map<Reaction, CE_XS>
   CreateReactions(const pugi::xml_node& particle_node);
@@ -74,6 +78,8 @@ private:
   const std::optional<Map<ContinuousEnergy, Real>> nubar;
   // Outgoing energy distribution of fission neutrons
   const std::optional<CDF<ContinuousEnergy>> chi;
+  // Neutron thermal scattering law S(a,b,T)
+  const std::optional<HDF5DataSet> sab;
   // Cross section data for each Reaction
   const std::map<Reaction, CE_XS> reactions;
   // Total cross section provided in nuclear data files
