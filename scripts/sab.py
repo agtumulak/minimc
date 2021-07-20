@@ -105,18 +105,10 @@ def process_E_T(args):
         [max_beta]))
     alpha_cdfs = {}
     alpha_pdfs = {}
-    E_independent_alpha_cdfs = {} # redundancy in E in storing this
     beta_pdf = pd.Series(0, index=betas) # pdf is zero at min_beta and max_beta
     for beta in betas[1:-1]:
         # energy-independent alpha distribution
         S_values = df.xs((beta if beta > 0 else -beta, T), level=('beta', 'T'))['S']
-        E_independent_alpha_cdf = pd.Series(
-                np.concatenate((
-                    [0],
-                    integrate.cumulative_trapezoid(S_values, S_values.index))),
-                index=S_values.index)
-        E_independent_alpha_integral = E_independent_alpha_cdf.iloc[-1]
-        E_independent_alpha_cdfs[beta] = E_independent_alpha_cdf / E_independent_alpha_integral
         # energy-dependent alpha distribution, valid alpha values
         min_alpha = np.square(np.sqrt(E) - np.sqrt(E + beta * k * T)) / (A * k * T)
         max_alpha = np.square(np.sqrt(E) + np.sqrt(E + beta * k * T)) / (A * k * T)
@@ -146,11 +138,23 @@ def process_E_T(args):
     beta_integral = beta_cdf.iloc[-1]
     beta_cdf /= beta_integral
     beta_pdf /= beta_integral
-    return beta_pdf, alpha_pdfs, beta_cdf, alpha_cdfs, E_independent_alpha_cdfs
+    return beta_pdf, alpha_pdfs, beta_cdf, alpha_cdfs
+
+
+def process_b_T(args):
+    beta, T = args
+    S_values = df.xs((beta, T), level=('beta', 'T'))['S']
+    E_independent_alpha_cdf = pd.Series(
+            np.concatenate((
+                [0],
+                integrate.cumulative_trapezoid(S_values, S_values.index))),
+                index=S_values.index)
+    E_independent_alpha_integral = E_independent_alpha_cdf.iloc[-1]
+    return (E_independent_alpha_cdf / E_independent_alpha_integral).values
 
 
 def plot_beta_pdf(E, T):
-    beta_pdf_pdos, _, _, _, _ = process_E_T((E, T))
+    beta_pdf_pdos, _, _, _ = process_E_T((E, T))
     beta_alpha_pdf_mcnp = pd.read_hdf('~/Downloads/MCNP6/hockey_stick_E_mu.hdf5', 'hockey_stick_E_mu')
     beta_alpha_pdf_mcnp['absolute error'] = (
             beta_alpha_pdf_mcnp['estimate'] * beta_alpha_pdf_mcnp['relative error'])
@@ -291,7 +295,7 @@ def vary_T():
     max_cdf = 0
     # for T in df_Ts:
     for T in [273.6]:
-        beta, beta_cdf, _, _, _ = process_E_T((1.0, T))
+        beta, beta_cdf, _, _ = process_E_T((1.0, T))
         max_cdf = max(max_cdf, beta_cdf.max())
         plt.plot(beta, beta_cdf, label=f'{T} K')
     plt.ylim(0, max_cdf)
@@ -345,9 +349,9 @@ def alpha_functional_expansion(x):
             0,
             index=pd.Index(F, name='CDF'),
             columns=pd.MultiIndex.from_product((betas, df_Ts), names=('beta', 'T')))
-    for T, x_T in zip(df_Ts, x[-1, :, 1]): # choose any E, we choose [-1] since it has most beta values
-        for beta in betas: # alpha CDFS are symmetric about beta=0
-            alpha_df.loc[:, (beta, T)] = np.interp(F, x_T[beta], x_T[beta].index)
+    for beta, x_beta in zip(betas, x):
+        for T, alpha_cdf in zip(df_Ts, x_beta):
+            alpha_df.loc[:, (beta, T)] = np.interp(F, alpha_cdf, df_alphas)
     def fitting_function(T, c0, c1, c2):
         # clamp T to be within [min_val, max_val]
         min_val = 0.5
@@ -380,11 +384,25 @@ def alpha_functional_expansion(x):
 
 def process_all_E_T():
     with Pool(processes=10) as pool:
-      # incident energy, temperature pairs
-      E_T_values = np.array([(E, T) for E in E_grid for T in df_Ts])
-      return (
-              np.array(
-                  [[x[2], x[4]] for x in tqdm(
-                      pool.imap(func=process_E_T, iterable=E_T_values),
-                      total=len(E_T_values))],
-                  dtype=object).reshape(len(E_grid), len(df_Ts), 2))
+        # incident energy, temperature pairs
+        E_T_values = np.array([(E, T) for E in E_grid for T in df_Ts])
+        return (
+                np.array(
+                    [[x[2], x[4]] for x in tqdm(
+                        pool.imap(func=process_E_T, iterable=E_T_values),
+                        total=len(E_T_values))],
+                    dtype=object).reshape(len(E_grid), len(df_Ts), 2))
+
+
+def process_all_b_T():
+    with Pool(processes=10) as pool:
+        # largest possible beta value
+        max_beta = max(20, E_grid[-1] / (k * df_Ts[0]))
+        betas = df_betas[:np.searchsorted(df_betas, max_beta)] # will never include max_beta
+        b_T_values = np.array([(b, T) for b in betas for T in df_Ts])
+        return (
+                np.vstack([
+                    x for x in tqdm(
+                        pool.imap(func=process_b_T, iterable=b_T_values),
+                        total=len(b_T_values))])
+                    .reshape(len(betas), len(df_Ts), -1))
