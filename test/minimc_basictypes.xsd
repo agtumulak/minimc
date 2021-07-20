@@ -85,7 +85,14 @@
       <xs:complexType>
         <xs:all>
           <xs:element name="xs" type="ContinuousReactionFilepath"/>
-          <xs:element name="tsl" type="ContinuousReactionFilepath" minOccurs="0"/>
+          <xs:element name="tsl" minOccurs="0">
+            <xs:complexType>
+              <xs:attribute name="beta_cdf_file" type="xs:anyURI" use="required"/>
+              <xs:attribute name="alpha_cdf_file" type="xs:anyURI" use="required"/>
+              <xs:attribute name="min_temperature" type="NonNegativeDouble" use="required"/>
+              <xs:attribute name="max_temperature" type="NonNegativeDouble" use="required"/>
+            </xs:complexType>
+          </xs:element>
         </xs:all>
       </xs:complexType>
     </xs:element>
