@@ -30,9 +30,9 @@ df = (
         .drop('Realization', axis='columns')
         .set_index(['beta', 'alpha', 'T']))
 # df = pd.read_hdf('../data/H_in_H2O_sab.hdf5')
-df_betas = np.array(sorted(df.index.get_level_values('beta').unique()))
-df_alphas = np.array(sorted(df.index.get_level_values('alpha').unique()))
-df_Ts = np.array(sorted(df.index.get_level_values('T').unique()))
+df_betas = np.array(sorted(df.index.unique(level='beta')))
+df_alphas = np.array(sorted(df.index.unique(level='alpha')))
+df_Ts = np.array(sorted(df.index.unique(level='T')))
 
 df_interpolator = interpolate.RegularGridInterpolator(
         (df_betas, df_alphas, df_Ts),
@@ -217,15 +217,15 @@ def get_alpha_pdf_mcnp(E, T, b_lower=None, b_upper=None):
     df = pd.read_hdf('~/Downloads/MCNP6/hockey_stick_E_mu.hdf5', 'hockey_stick_E_mu')
     df['absolute error'] = df['estimate'] * df['relative error']
     df.index = df.index.set_levels(
-            df.index.get_level_values('energy').unique() * 1e6, level='energy')
+            df.index.unique(level='energy') * 1e6, level='energy')
     # compute bin widths
-    cosines = np.array(sorted(df.index.get_level_values('cosine').unique()))
+    cosines = np.array(sorted(df.index.unique(level='cosine')))
     cosine_widths = cosines - np.concatenate(([-1.0], cosines[:-1]))
-    Es = np.array(sorted(df.index.get_level_values('energy').unique()))
+    Es = np.array(sorted(df.index.unique(level='energy')))
     E_widths = Es - np.concatenate(([0.0], Es[:-1]))
     # compute probability densities
-    df['cosine'] = df.index.get_level_values('cosine')
-    df['energy'] = df.index.get_level_values('energy')
+    df['cosine'] = df.index.unique(level='cosine')
+    df['energy'] = df.index.unique(level='energy')
     df['cosine widths'] = df['cosine']
     df['energy widths'] = df['energy']
     df = df.replace(to_replace={
@@ -321,7 +321,7 @@ def beta_functional_expansion(x):
         return c0 + c1 / np.sqrt(x) + c2 / x
     beta_df_fit = beta_df.unstack().groupby(level=['E', 'CDF']).apply(
             lambda s: pd.Series(
-                coeffs := optimize.curve_fit(fitting_function, s.index.get_level_values('T'), s)[0],
+                coeffs := optimize.curve_fit(fitting_function, s.index.unique(level='T'), s)[0],
                 index=pd.Index(range(len(coeffs)), name='coefficient')))
     # check that CDFS are monotonic for certain T values
     test_T = np.linspace(df_Ts.min(), df_Ts.max(), 100)
@@ -360,7 +360,7 @@ def alpha_functional_expansion(x):
         return c0 + c1 / x + c2 / x ** 2
     alpha_df_fit = alpha_df.unstack().groupby(level=['beta', 'CDF']).apply(
             lambda s: pd.Series(
-                coeffs := optimize.curve_fit(fitting_function, s.index.get_level_values('T'), s)[0],
+                coeffs := optimize.curve_fit(fitting_function, s.index.unique(level='T'), s)[0],
                 index=pd.Index(range(len(coeffs)), name='coefficient')))
     # check that CDFS are monotonic for certain T values
     test_T = np.linspace(df_Ts.min(), df_Ts.max(), 100)
