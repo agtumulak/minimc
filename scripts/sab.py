@@ -339,6 +339,11 @@ def beta_functional_expansion(x):
             beta_df_reconstructed
             .reorder_levels(['E', 'T', 'CDF'])[~is_monotonic]
             .unstack('E').unstack('T')))
+    # set energy units to MeV
+    beta_df_fit.index = (
+            beta_df_fit.index
+            .set_levels(beta_df_fit.index.unique(level='E') * 1e-6, level='E'))
+    # return minimc-style array
     return beta_df_fit.to_frame('coefficients').sort_index(level=['E', 'CDF', 'coefficient'])
 
 
