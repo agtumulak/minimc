@@ -311,7 +311,7 @@ def beta_functional_expansion(x):
             index=pd.Index(F, name='CDF'),
             columns=pd.MultiIndex.from_product((E_grid, df_Ts), names=('E', 'T')))
     for E, x_E in zip(E_grid, x):
-        for T, beta_cdf in zip(df_Ts, x_E[:, 0]):
+        for T, beta_cdf in zip(df_Ts, x_E):
             beta_df.loc[:, (E, T)] = np.interp(F, beta_cdf, beta_cdf.index)
     def fitting_function(T, c0, c1, c2):
         # clamp T to be within [min_val, max_val]
@@ -388,10 +388,10 @@ def process_all_E_T():
         E_T_values = np.array([(E, T) for E in E_grid for T in df_Ts])
         return (
                 np.array(
-                    [[x[2], x[4]] for x in tqdm(
+                    [x[2] for x in tqdm(
                         pool.imap(func=process_E_T, iterable=E_T_values),
                         total=len(E_T_values))],
-                    dtype=object).reshape(len(E_grid), len(df_Ts), 2))
+                    dtype=object).reshape(len(E_grid), len(df_Ts)))
 
 
 def process_all_b_T():
