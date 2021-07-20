@@ -328,10 +328,13 @@ def beta_functional_expansion(x):
     is_monotonic = (
             beta_df_reconstructed
             .groupby(level=['E', 'T'])
-            .apply(lambda s: s.is_monotonic)
-            .all())
-    if not is_monotonic:
-        print("beta CDFs are not all monotonic!")
+            .apply(lambda s: s.is_monotonic))
+    if not is_monotonic.all():
+        print("The following CDFs are not monotonic:")
+        print((
+            beta_df_reconstructed
+            .reorder_levels(['E', 'T', 'CDF'])[~is_monotonic]
+            .unstack('E').unstack('T')))
     return beta_df_fit.to_frame('coefficients').sort_index(level=['E', 'CDF', 'coefficient'])
 
 
@@ -367,7 +370,11 @@ def alpha_functional_expansion(x):
             .apply(lambda s: s.is_monotonic)
             .all())
     if not is_monotonic:
-        print("alpha CDFs are not all monotonic!")
+        print("The following CDFs are not monotonic:")
+        print((
+            alpha_df_reconstructed
+            .reorder_levels(['beta', 'T', 'CDF'])[~is_monotonic]
+            .unstack('beta').unstack('T')))
     return alpha_df_fit.to_frame('coefficients').sort_index(level=['beta', 'CDF', 'coefficient'])
 
 
