@@ -2,11 +2,10 @@
 
 #include "BasicTypes.hpp"
 
-#include <algorithm>
 #include <cstddef>
 #include <filesystem>
-#include <iterator>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 /// @brief Loads an HDF5 file created by pandas
@@ -31,14 +30,15 @@ class HDF5DataSet {
 public:
   /// @brief Constructs an HDF5DataSet from an hdf5 file
   HDF5DataSet(const std::filesystem::path& hdf5_filepath);
-  /// @brief Returns the value at the given axis values
+  /// @brief Returns the value at the given axis indices
   /// @details The user is responsible for knowing what each level of the HDF5
-  ///          DataFrame corresponds to. For exaple, a DataFrame of
+  ///          DataFrame corresponds to. For example, consider a DataFrame of
   ///          space-dependent temperatures with level 0 corresponding to
   ///          x-position, level 1 corresponding to y-position, and level 2
-  ///          corresponding to z-position can retrieve the temperature at
-  ///          @f$ (x=0.1, y=0.2, z=0.3) @f$ with `at(0.1, 0.2, 0.3)`.
-  template <typename... Args> Real at(Real index, Args... inner_indices) {
+  ///          corresponding to z-position. One can retrieve the temperature at
+  ///          index 4 of level 0, index 2 of level 1, and index 0 of level 2
+  ///          with `at(4, 2, 0)`.
+  template <typename... Args> Real at(size_t index, Args... inner_indices) {
     return at_from_base(0, 0, index, inner_indices...);
   }
 
@@ -56,19 +56,18 @@ private:
   // given level, return value from full flattened array
   template <typename... Args>
   Real
-  at_from_base(size_t base, size_t level, Real index, Args... inner_indices) {
-    const auto upper_bound =
-        std::upper_bound(axes.at(level).cbegin(), axes.at(level).cend(), index);
-    if (upper_bound == axes.at(level).cend()) {
-      throw std::out_of_range("Upper bound not found");
+  at_from_base(size_t base, size_t level, size_t index, Args... inner_indices) {
+    if (index >= axes.at(level).size()) {
+      throw std::out_of_range(
+          "Out-of-range (level, index): (" + std::to_string(level) + ", " +
+          std::to_string(index) + ")");
     }
-    const auto distance = std::distance(axes.at(level).cbegin(), upper_bound);
     if constexpr (sizeof...(inner_indices) == 0) {
-      return values.at(base + distance);
+      return values.at(base + index);
     }
     else {
       return at_from_base(
-          base + distance * strides.at(level), level + 1, inner_indices...);
+          base + index * strides.at(level), level + 1, inner_indices...);
     }
   }
   // Outer vector contains each axis. Inner vector contains values of an axis.

@@ -11,17 +11,16 @@ TEST_CASE("invalid HDF5 file fails") {
 
 TEST_CASE("element access using variadic member function works"){
   HDF5DataSet hdf5_dataset{"test_HDF5_valid.hdf5"};
-  // std::upper_bound is used so these will return the value at the next-highest
-  // data point, (3.81, 18.92, 573.6)
-  REQUIRE(hdf5_dataset.at(0.00, 0.0005, 293.6) == Approx(1.142070e-2));
-  REQUIRE(hdf5_dataset.at(3.8099, 18.9199, 573.599) == Approx(1.142070e-2));
-  // std::upper_bound is used so this will return the highest data point
-  REQUIRE(hdf5_dataset.at(35.30, 18.92, 293.6) == Approx(7.921300e-17));
-  REQUIRE(hdf5_dataset.at(93.99, 310.99, 573.599) == Approx(7.921300e-17));
-  // maximum value of zeroth axis is 94.0
+  REQUIRE(hdf5_dataset.at(0, 0, 0) == Approx(4.628770e-02));
+  REQUIRE(hdf5_dataset.at(0, 0, 1) == Approx(1.761820e-01));
+  REQUIRE(hdf5_dataset.at(0, 1, 0) == Approx(9.757560e-03));
+  REQUIRE(hdf5_dataset.at(0, 1, 1) == Approx(2.031040e-02));
+  REQUIRE(hdf5_dataset.at(1, 0, 0) == Approx(2.147320e-06));
+  REQUIRE(hdf5_dataset.at(1, 0, 1) == Approx(1.212070e-05));
   REQUIRE_THROWS_WITH(
-      hdf5_dataset.at(94.0, 0.0005, 293.6), "Upper bound not found");
-  // maximum value of last axis is 573.6
+      hdf5_dataset.at(4, 0, 0), "Out-of-range (level, index): (0, 4)");
   REQUIRE_THROWS_WITH(
-      hdf5_dataset.at(0.00, 0.0005, 573.6), "Upper bound not found");
+      hdf5_dataset.at(0, 3, 0), "Out-of-range (level, index): (1, 3)");
+  REQUIRE_THROWS_WITH(
+      hdf5_dataset.at(0, 0, 2), "Out-of-range (level, index): (2, 2)");
 }
