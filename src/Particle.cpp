@@ -79,6 +79,12 @@ void Particle::Stream(const Real distance) noexcept {
   position += direction * distance;
 }
 
+void Particle::Scatter(const Real& mu, const Energy& e) noexcept {
+  const Real phi = 2 * constants::pi * std::uniform_real_distribution{}(rng);
+  direction = Direction{direction, mu, phi};
+  energy = e;
+}
+
 const Point& Particle::GetPosition() const noexcept { return position; };
 
 void Particle::SetDirectionIsotropic() noexcept {

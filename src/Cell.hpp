@@ -1,6 +1,7 @@
 #pragma once
 
 #include "BasicTypes.hpp"
+#include "Constants.hpp"
 #include "Point.hpp"
 #include "pugixml.hpp"
 
@@ -59,6 +60,8 @@ public:
   const SurfaceSenses surface_senses;
   /// @brief Material this Cell is made of. A nullptr corresponds to a void.
   const std::shared_ptr<const Material> material;
+  /// @brief Temperature of the entire Cell
+  const Temperature temperature = constants::room_temperature;
 
 private:
   // Helper function to assign all CSGSurface objects which make up Cell with

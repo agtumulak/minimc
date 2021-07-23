@@ -89,6 +89,7 @@
                   <xs:extension base="CSGDefinition">
                     <xs:attribute name="name" type="xs:normalizedString" use="required"/>
                     <xs:attribute name="material" type="xs:normalizedString" use="required"/>
+                    <xs:attribute name="temperature" type="NonNegativeDouble"/>
                   </xs:extension>
                 </xs:complexContent>
               </xs:complexType>

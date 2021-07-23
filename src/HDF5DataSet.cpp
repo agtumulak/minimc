@@ -2,7 +2,9 @@
 
 #include "H5Cpp.h"
 
+#include <algorithm>
 #include <functional>
+#include <iterator>
 #include <numeric>
 #include <string>
 
@@ -15,6 +17,10 @@ HDF5DataSet::HDF5DataSet(const std::filesystem::path& hdf5_filepath)
     : axes{ReadPandasAxis(hdf5_filepath)},
       values{ReadPandasValues(hdf5_filepath)}, strides{
                                                    ComputeAxisStrides(axes)} {}
+
+const std::vector<double>& HDF5DataSet::GetAxis(size_t level) const noexcept {
+  return axes.at(level);
+}
 
 //// private
 

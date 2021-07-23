@@ -21,7 +21,7 @@ TEST_CASE("stream Particle some distance") {
 }
 
 TEST_CASE("Particle Cell can be assigned") {
-  XMLDocument doc{"simple_multigroup.xml"};
+  XMLDocument doc{"multigroup.xml"};
   const auto w{World{doc.root}};
   Particle p{Point{}, Direction{1, 0, 0}, Group{1}, Particle::Type::neutron, 1};
   REQUIRE_THROWS_WITH(p.GetCell(), "Particle does not belong to a Cell");

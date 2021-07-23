@@ -48,6 +48,11 @@ public:
   void Kill() noexcept;
   /// @brief Moves the particle along its current direction a given distance
   void Stream(const Real distance) noexcept;
+  /// @brief Scatters the Particle with an outgoing direction and energy.
+  /// @details Scattering is assumed to be azimuthally symmetric.
+  /// @param mu The scattering cosine @f$ \mu @f$
+  /// @param e The outgoing energy
+  void Scatter(const Real& mu, const Energy& e) noexcept;
   /// @brief Return the current position of the Particle
   const Point& GetPosition() const noexcept;
   /// @brief Sets the direction to a random isotropic direction

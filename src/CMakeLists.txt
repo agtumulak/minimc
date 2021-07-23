@@ -34,6 +34,8 @@ set(MINIMC_SOURCES
   Reaction.hpp
   Source.cpp
   Source.hpp
+  ThermalScattering.cpp
+  ThermalScattering.hpp
   World.cpp
   World.hpp
   XMLDocument.cpp

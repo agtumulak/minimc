@@ -7,8 +7,9 @@
 
 //// public
 
-Nuclide::Nuclide(const pugi::xml_node& root, const std::string& nuclide_name)
-    : name{nuclide_name}, xs{Interaction::Create(root, nuclide_name)} {}
+Nuclide::Nuclide(const pugi::xml_node& nuclide_node)
+    : name{nuclide_node.attribute("name").as_string()}, xs{Interaction::Create(
+                                                            nuclide_node)} {}
 
 MicroscopicCrossSection Nuclide::GetTotal(const Particle& p) const noexcept {
   return xs.at(p.type)->GetTotal(p);

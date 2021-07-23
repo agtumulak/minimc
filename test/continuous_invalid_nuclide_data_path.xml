@@ -1,0 +1,58 @@
+<minimc
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="minimc.xsd">
+<general>
+  <particles>neutron</particles>
+  <histories>100000</histories>
+  <threads>2</threads>
+  <chunksize>1000</chunksize>
+</general>
+<nuclides>
+  <continuous>
+    <nuclide name="badpath" awr="1.0">
+      <neutron>
+        <total file="/not/real"/>
+        <capture file="/not/real"/>
+        <scatter>
+          <xs file="/not/real"/>
+        </scatter>
+      </neutron>
+    </nuclide>
+  </continuous>
+</nuclides>
+<materials>
+  <material name="material" aden="1">
+    <nuclide name="badpath" afrac="1.0"/>
+  </material>
+</materials>
+<surfaces>
+  <sphere name="sphere">
+    <center x="0" y="0" z="0"/>
+    <radius r="1"/>
+  </sphere>
+</surfaces>
+<cells>
+  <cell name="cell" material="material">
+    <surface name="sphere" sense="-1"/>
+  </cell>
+  <void>
+    <surface name="sphere" sense="+1"/>
+  </void>
+</cells>
+<problemtype>
+  <fixedsource>
+    <position>
+      <constant x="0" y="0" z="0"/>
+    </position>
+    <direction>
+      <isotropic/>
+    </direction>
+    <energy>
+      <constant energy="1e-6"/>
+    </energy>
+    <particletype>
+      <constant type="neutron"/>
+    </particletype>
+  </fixedsource>
+</problemtype>
+</minimc>

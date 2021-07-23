@@ -3,7 +3,7 @@
 #include "catch2/catch.hpp"
 
 TEST_CASE("nonexistent material name throws exception") {
-  XMLDocument doc{"simple_multigroup.xml"};
+  XMLDocument doc{"multigroup.xml"};
   REQUIRE_THROWS_WITH(
       Material::FindNode(doc.root, "nonexistent"),
       Catch::Matchers::Equals(

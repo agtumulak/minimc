@@ -7,32 +7,29 @@
 #include "catch2/catch.hpp"
 
 TEST_CASE("nonexistent nuclide name throws exception") {
-  XMLDocument doc{"simple_multigroup.xml"};
   REQUIRE_THROWS_WITH(
-      Nuclide(doc.root, "nonexistent"),
-      "Nuclide node \"nonexistent\" not found. Must be one of: [\"hydrogen\", "
-      "\"oxygen\", \"uranium235\", \"inconsistent capture\", \"inconsistent "
-      "scatter\", \"wrong particle\", ]");
+      World{XMLDocument{"multigroup_nonexistent_nuclide.xml"}.root},
+      "Nuclide node \"nonexistent\" not found. Must be one of: "
+      "[\"nuclide A\", \"nuclide B\", ]");
 }
 
-TEST_CASE("poorly formed multigroup data for Nuclide throws exception") {
-  XMLDocument doc{"simple_multigroup.xml"};
+TEST_CASE("malformed multigroup data for Nuclide throws exception") {
   REQUIRE_THROWS_WITH(
-      Nuclide(doc.root, "inconsistent capture"),
+      World{XMLDocument{"multigroup_malformed_capture.xml"}.root},
       "/minimc/nuclides/multigroup/nuclide/neutron/capture: Expected 2 entries "
       "but got 3");
   REQUIRE_THROWS_WITH(
-      Nuclide(doc.root, "inconsistent scatter"),
+      World{XMLDocument{"multigroup_malformed_scatter.xml"}.root},
       "/minimc/nuclides/multigroup/nuclide/neutron/scatter: Expected 4 entries "
       "but got 5");
   REQUIRE_THROWS_WITH(
-      Nuclide(doc.root, "wrong particle"),
+      World{XMLDocument{"multigroup_missing_particle_data.xml"}.root},
       "/minimc/nuclides/multigroup/nuclide: \"neutron\" node not found");
 }
 
 TEST_CASE("Nuclide member methods work properly") {
   SECTION("Multigroup methods") {
-    XMLDocument doc{"simple_multigroup.xml"};
+    XMLDocument doc{"multigroup.xml"};
     World w{doc.root};
     Particle neutron_group1{
         Point{}, Direction{1, 0, 0}, Group{1}, Particle::Type::neutron, 1};
@@ -40,9 +37,20 @@ TEST_CASE("Nuclide member methods work properly") {
     Particle neutron_group2{
         Point{}, Direction{1, 0, 0}, Group{2}, Particle::Type::neutron, 1};
     neutron_group2.SetCell(w.FindCellContaining(neutron_group2.GetPosition()));
-    const Nuclide hydrogen{doc.root, "hydrogen"};
-    const Nuclide oxygen{doc.root, "oxygen"};
-    const Nuclide uranium235{doc.root, "uranium235"};
+    const Nuclide hydrogen{
+        doc.root
+            .select_node(
+                "/minimc/nuclides/multigroup/nuclide[@name='hydrogen']")
+            .node()};
+    const Nuclide oxygen{
+        doc.root
+            .select_node("/minimc/nuclides/multigroup/nuclide[@name='oxygen']")
+            .node()};
+    const Nuclide uranium235{
+        doc.root
+            .select_node(
+                "/minimc/nuclides/multigroup/nuclide[@name='uranium235']")
+            .node()};
 
     REQUIRE(hydrogen.GetTotal(neutron_group1) == 1);
     REQUIRE(hydrogen.GetTotal(neutron_group2) == 1);
@@ -52,17 +60,29 @@ TEST_CASE("Nuclide member methods work properly") {
     REQUIRE(uranium235.GetTotal(neutron_group2) == 2.67);
   }
   SECTION("Continuous methods") {
-    XMLDocument doc{"simple_continuous.xml"};
+    XMLDocument doc{"continuous.xml"};
     World w{doc.root};
     Particle neutron{
         Point{}, Direction{1, 0, 0}, ContinuousEnergy{0.999e-6},
         Particle::Type::neutron, 1};
     neutron.SetCell(w.FindCellContaining(neutron.GetPosition()));
-    const Nuclide hydrogen{doc.root, "hydrogen"};
-    const Nuclide oxygen{doc.root, "oxygen"};
-    const Nuclide uranium235{doc.root, "uranium235"};
+    const Nuclide hydrogen{
+        doc.root
+            .select_node(
+                "/minimc/nuclides/continuous/nuclide[@name='hydrogen']")
+            .node()};
+    const Nuclide oxygen{
+        doc.root
+            .select_node("/minimc/nuclides/continuous/nuclide[@name='oxygen']")
+            .node()};
+    const Nuclide uranium235{
+        doc.root
+            .select_node(
+                "/minimc/nuclides/continuous/nuclide[@name='uranium235']")
+            .node()};
     REQUIRE_THROWS_WITH(
-        Nuclide(doc.root, "badpath"), "File not found: /not/real");
+        World{XMLDocument{"continuous_invalid_nuclide_data_path.xml"}.root},
+        "File not found: /not/real");
 
     REQUIRE(hydrogen.GetTotal(neutron) == 20.74762);
     REQUIRE(oxygen.GetTotal(neutron) == 3.796956);

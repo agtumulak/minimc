@@ -177,7 +177,7 @@ Continuous::ReadJanisWebCDF(const std::filesystem::path& datapath) {
   return swapped;
 }
 
-std::optional<HDF5DataSet>
+std::optional<ThermalScattering>
 Continuous::ReadPandasSAB(const pugi::xml_node& tsl_node) {
   if (!tsl_node) {
     return std::nullopt;
@@ -188,7 +188,7 @@ Continuous::ReadPandasSAB(const pugi::xml_node& tsl_node) {
         tsl_node.path() +
         ": Only neutrons may have a thermal scattering library node");
   }
-  return HDF5DataSet{tsl_node.attribute("file").as_string()};
+  return ThermalScattering{tsl_node};
 }
 
 std::map<Reaction, Continuous::CE_XS>
@@ -218,7 +218,12 @@ Continuous::CreateReactions(const pugi::xml_node& particle_node) {
 void Continuous::Capture(Particle& p) const noexcept { p.Kill(); }
 
 void Continuous::Scatter(Particle& p) const noexcept {
-  p.SetDirectionIsotropic();
+  if (sab->IsValid(p)) {
+    sab->Scatter(p);
+  }
+  else {
+    p.SetDirectionIsotropic();
+  }
   return;
 }
 

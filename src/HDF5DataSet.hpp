@@ -38,9 +38,12 @@ public:
   ///          corresponding to z-position. One can retrieve the temperature at
   ///          index 4 of level 0, index 2 of level 1, and index 0 of level 2
   ///          with `at(4, 2, 0)`.
-  template <typename... Args> Real at(size_t index, Args... inner_indices) {
+  template <typename... Args>
+  Real at(size_t index, Args... inner_indices) const {
     return at_from_base(0, 0, index, inner_indices...);
   }
+  /// @brief Get values of a given axis
+  const std::vector<double>& GetAxis(size_t level) const noexcept;
 
 private:
   // Helper function to read HDF5 file from pandas and return flattened array
@@ -55,8 +58,8 @@ private:
   // Starting from a given base offset, using innermost levels starting at
   // given level, return value from full flattened array
   template <typename... Args>
-  Real
-  at_from_base(size_t base, size_t level, size_t index, Args... inner_indices) {
+  Real at_from_base(
+      size_t base, size_t level, size_t index, Args... inner_indices) const {
     if (index >= axes.at(level).size()) {
       throw std::out_of_range(
           "Out-of-range (level, index): (" + std::to_string(level) + ", " +
