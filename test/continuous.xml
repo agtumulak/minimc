@@ -9,7 +9,7 @@
 </general>
 <nuclides>
   <continuous>
-    <nuclide name="uranium235">
+    <nuclide name="uranium235" awr="233.024791">
       <neutron>
         <total file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-total.csv"/>
         <capture file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-gamma.csv"/>

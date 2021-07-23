@@ -17,6 +17,7 @@ set(UNIT_TEST_SOURCES
   test_Nuclide.cpp
   test_Particle.cpp
   test_Point.cpp
+  test_ThermalScattering.cpp
   test_XMLDocument.cpp
   test_World.cpp
   )

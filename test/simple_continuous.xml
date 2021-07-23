@@ -9,7 +9,7 @@
 </general>
 <nuclides>
   <continuous>
-    <nuclide name="hydrogen">
+    <nuclide name="hydrogen" awr="0.999167339">
       <neutron>
         <total file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-total.csv"/>
         <capture file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-gamma.csv"/>
@@ -23,7 +23,7 @@
         </scatter>
       </neutron>
     </nuclide>
-    <nuclide name="oxygen">
+    <nuclide name="oxygen" awr="15.8575107">
       <neutron>
         <total file="/Users/atumulak/Developer/minimc/data/endfb8/n-O16_0-total.csv"/>
         <capture file="/Users/atumulak/Developer/minimc/data/endfb8/n-O16_0-gamma.csv"/>
@@ -32,7 +32,7 @@
         </scatter>
       </neutron>
     </nuclide>
-    <nuclide name="uranium235">
+    <nuclide name="uranium235" awr="233.024791">
       <neutron>
         <total file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-total.csv"/>
         <capture file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-gamma.csv"/>
@@ -46,7 +46,7 @@
         </fission>
       </neutron>
     </nuclide>
-    <nuclide name="badpath">
+    <nuclide name="badpath" awr="1.0">
       <neutron>
         <total file="/not/real"/>
         <capture file="/not/real"/>

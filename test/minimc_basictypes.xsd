@@ -117,6 +117,7 @@
           <xs:element name="photon" type="ContinuousXSReactions" minOccurs="0"/>
         </xs:all>
         <xs:attribute name="name" use="required"/>
+        <xs:attribute name="awr" type="StrictlyPositiveDouble" use="required"/>
       </xs:complexType>
     </xs:element>
   </xs:choice>
