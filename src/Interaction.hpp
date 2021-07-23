@@ -7,7 +7,6 @@
 
 #include <map>
 #include <memory>
-#include <string>
 
 /// @brief Models the interaction between a Particle and a Nuclide
 /// @details The polymorphism here shall be where multigroup and continuous
@@ -19,8 +18,9 @@ public:
   using Map = std::map<Particle::Type, std::unique_ptr<const Interaction>>;
   /// @brief Factory method to create multigroup or continuous Interaction
   ///        from a nuclide node
-  static Map
-  Create(const pugi::xml_node& root, const std::string& nuclide_name);
+  /// @exception std::runtime_error Particle declared in `general/particles`
+  ///            node not found in `nuclide` node.
+  static Map Create(const pugi::xml_node& nuclide_node);
   /// @brief Virtual destructor (C++ Core Guidelines C.127)
   virtual ~Interaction() noexcept;
   /// @brief Returns the total cross section for a given Particle

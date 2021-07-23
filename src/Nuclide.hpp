@@ -12,13 +12,8 @@ class Particle;
 /// @brief Aggregates cross sections for all reactions and related nuclear data
 class Nuclide {
 public:
-  /// @brief Constructs a Nuclide from an XML document
-  /// @param root Root node of existing XML document
-  /// @param nuclide_name Value of `name` attribute of `nuclide` node in XML
-  ///        document
-  /// @exception std::runtime_error `nuclide` node with matching `name`
-  ///            attribute not found, or incorrect number of entries
-  Nuclide(const pugi::xml_node& root, const std::string& nuclide_name);
+  /// @brief Constructs a Nuclide from a `nuclide` node
+  Nuclide(const pugi::xml_node& nuclide_node);
   /// @brief Returns the total cross section for a given Particle
   MicroscopicCrossSection GetTotal(const Particle& p) const noexcept;
   /// @brief Returns the cross section for a given Particle and Reaction
