@@ -74,9 +74,9 @@ private:
     }
   }
   // Outer vector contains each axis. Inner vector contains values of an axis.
-  std::vector<std::vector<double>> axes;
+  const std::vector<std::vector<double>> axes;
   // The values of the rectangular grid are stored in a flattened array.
-  std::vector<double> values;
+  const std::vector<double> values;
   // Distance of a single step in each level
-  std::vector<size_t> strides;
+  const std::vector<size_t> strides;
 };
