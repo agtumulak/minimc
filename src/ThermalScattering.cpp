@@ -46,208 +46,64 @@ Real ThermalScattering::EvaluateAlpha(
 }
 
 ThermalScattering::Beta
-ThermalScattering::SampleBetaHistogramPDF(Particle& p) const noexcept {
-
-  // temperature of Cell occupied by Particle
-  const Temperature T = p.GetCell().temperature;
+ThermalScattering::SampleBeta(Particle& p) const noexcept {
 
   // incident energy of neutron
   const auto E = std::get<ContinuousEnergy>(p.GetEnergy());
   // find index of energy value strictly greater than E
-  const size_t hi_E_i = std::distance(
+  const size_t E_hi_i = std::distance(
       beta_energies.cbegin(),
       std::upper_bound(beta_energies.cbegin(), beta_energies.cend(), E));
+  // We require that E is strictly less than cutoff energy
+  assert (E_hi_i != beta_energies.size());
+
+  // Determine interpolation factor. If E < E_min, we force the use of the grid
+  // at E_min by setting r = 1. This way, index of the sampled energy E_s_i is
+  // always valid.
+  const Real r =
+      E_hi_i != 0
+          ? (E - beta_energies.at(E_hi_i - 1)) /
+                (beta_energies.at(E_hi_i) - beta_energies.at(E_hi_i - 1))
+          : 1;
+  const size_t E_s_i =
+      r <= std::uniform_real_distribution{}(p.rng) ? E_hi_i - 1 : E_hi_i;
+  const ContinuousEnergy E_s = beta_energies.at(E_s_i);
 
   // sample a CDF value
   const Real F = std::uniform_real_distribution{}(p.rng);
   // find index of CDF value strictly greater than sampled CDF value
-  const size_t hi_F_i = std::distance(
+  const size_t F_hi_i = std::distance(
       beta_cdfs.cbegin(),
       std::upper_bound(beta_cdfs.cbegin(), beta_cdfs.cend(), F));
 
-  // In all the following cases, we require that E is strictly less than
-  // cutoff energy
-  assert (hi_E_i != beta_energies.size());
-  // In the following comments, cdf_min and cdf_max are the smallest and
-  // greatest CDF values that appear in the dataset, respectively.
-  // E_min and E_max are the smallest and greatest energy values that appear
-  // in the dataset, respectively.
+  // Evaluate nearest Fs on the sampled E grid.
+  const Real F_lo = F_hi_i != 0 ? beta_cdfs.at(F_hi_i - 1) : 0;
+  const Real F_hi = F_hi_i != beta_cdfs.size() ? beta_cdfs.at(F_hi_i) : 1;
 
-  // The most common case, cdf_min <= cdf < cdf_max
-  if (hi_F_i != 0 && hi_F_i != beta_cdfs.size()) {
-    // The most common case, E_min <= E < E_max
-    if (hi_E_i != 0) {
-      const ContinuousEnergy hi_E = beta_energies.at(hi_E_i);
-      const ContinuousEnergy lo_E = beta_energies.at(hi_E_i - 1);
-      const Real r = (E - lo_E) / (hi_E - lo_E);
-      const size_t sampled_E_i =
-          r < std::uniform_real_distribution{}(p.rng) ? hi_E_i - 1 : hi_E_i;
-      const ContinuousEnergy sampled_E = beta_energies.at(sampled_E_i);
-      const Real hi_F = beta_cdfs.at(hi_F_i);
-      const Real lo_F = beta_cdfs.at(hi_F_i - 1);
-      const Beta sampled_E_hi_b = EvaluateBeta(sampled_E_i, hi_F_i, T);
-      const Beta sampled_E_lo_b = EvaluateBeta(sampled_E_i, hi_F_i - 1, T);
-      // Sample beta from sampled energy grid using histogram PDF
-      // interpolation. Unscaled.
-      const Beta b_prime =
-          sampled_E_lo_b +
-          (F - lo_F) / (hi_F - lo_F) * (sampled_E_hi_b - sampled_E_lo_b);
-      // Scale to preserve thresholds. The lower and upper values of beta are
-      // not included in the data set since their analytical form is known.
-      const Beta b_min = - (E * 1e6) / (constants::boltzmann * T);
-      const Beta b_max = 20;
-      const Beta sampled_E_b_min =
-          -(sampled_E * 1e6) / (constants::boltzmann * T);
-      const Beta sampled_E_b_max = 20;
-      return b_min + (b_prime - sampled_E_b_min) * (b_max - b_min) /
-                         (sampled_E_b_max - sampled_E_b_min);
-    }
-    // Less common case, E < E_min
-    else {
-      const ContinuousEnergy hi_E = beta_energies.at(hi_E_i);
-      const ContinuousEnergy lo_E = 0; // XXX: Different
-      const Real r = 1; // XXX: Different
-      const size_t sampled_E_i =
-          r < std::uniform_real_distribution{}(p.rng) ? hi_E_i - 1 : hi_E_i;
-      const ContinuousEnergy sampled_E = beta_energies.at(sampled_E_i);
-      const Real hi_F = beta_cdfs.at(hi_F_i);
-      const Real lo_F = beta_cdfs.at(hi_F_i - 1);
-      const Beta sampled_E_hi_b = EvaluateBeta(sampled_E_i, hi_F_i, T);
-      const Beta sampled_E_lo_b = EvaluateBeta(sampled_E_i, hi_F_i - 1, T);
-      // Sample beta from sampled energy grid using histogram PDF
-      // interpolation. Unscaled.
-      const Beta b_prime =
-          sampled_E_lo_b +
-          (F - lo_F) / (hi_F - lo_F) * (sampled_E_hi_b - sampled_E_lo_b);
-      // Scale to preserve thresholds. The lower and upper values of beta are
-      // not included in the data set since their analytical form is known.
-      const Beta b_min = - (E * 1e6) / (constants::boltzmann * T);
-      const Beta b_max = 20;
-      const Beta sampled_E_b_min =
-          -(sampled_E * 1e6) / (constants::boltzmann * T);
-      const Beta sampled_E_b_max = 20;
-      return b_min + (b_prime - sampled_E_b_min) * (b_max - b_min) /
-                         (sampled_E_b_max - sampled_E_b_min);
-    }
-  }
-  // Less common case, cdf < cdf_min
-  else if (hi_F_i == 0) {
-    // More common case, E_min <= E < E_max
-    if (hi_E_i != 0) {
-      const ContinuousEnergy hi_E = beta_energies.at(hi_E_i);
-      const ContinuousEnergy lo_E = beta_energies.at(hi_E_i - 1);
-      const Real r = (E - lo_E) / (hi_E - lo_E);
-      const size_t sampled_E_i =
-          r < std::uniform_real_distribution{}(p.rng) ? hi_E_i - 1 : hi_E_i;
-      const ContinuousEnergy sampled_E = beta_energies.at(sampled_E_i);
-      const Real hi_F = beta_cdfs.at(hi_F_i);
-      const Real lo_F = 0; // XXX: Different
-      const Beta sampled_E_hi_b = EvaluateBeta(sampled_E_i, hi_F_i, T);
-      const Beta sampled_E_lo_b =
-          -(sampled_E * 1e6) / (constants::boltzmann * T); // XXX: Different
-      // Sample beta from sampled energy grid using histogram PDF
-      // interpolation. Unscaled.
-      const Beta b_prime =
-          sampled_E_lo_b +
-          (F - lo_F) / (hi_F - lo_F) * (sampled_E_hi_b - sampled_E_lo_b);
-      // Scale to preserve thresholds. The lower and upper values of beta are
-      // not included in the data set since their analytical form is known.
-      const Beta b_min = - (E * 1e6) / (constants::boltzmann * T);
-      const Beta b_max = 20;
-      const Beta sampled_E_b_min =
-          -(sampled_E * 1e6) / (constants::boltzmann * T);
-      const Beta sampled_E_b_max = 20;
-      return b_min + (b_prime - sampled_E_b_min) * (b_max - b_min) /
-                         (sampled_E_b_max - sampled_E_b_min);
-    }
-    // Less common case, E < E_min
-    else {
-      const ContinuousEnergy hi_E = beta_energies.at(hi_E_i);
-      const ContinuousEnergy lo_E = 0; // XXX: Different
-      const Real r = 1; // XXX: Different
-      const size_t sampled_E_i =
-          r < std::uniform_real_distribution{}(p.rng) ? hi_E_i - 1 : hi_E_i;
-      const ContinuousEnergy sampled_E = beta_energies.at(sampled_E_i);
-      const Real hi_F = beta_cdfs.at(hi_F_i);
-      const Real lo_F = 0; // XXX: Different
-      const Beta sampled_E_hi_b = EvaluateBeta(sampled_E_i, hi_F_i, T);
-      const Beta sampled_E_lo_b =
-          -(sampled_E * 1e6) / (constants::boltzmann * T); // XXX: Different
-      // Sample beta from sampled energy grid using histogram PDF
-      // interpolation. Unscaled.
-      const Beta b_prime =
-          sampled_E_lo_b +
-          (F - lo_F) / (hi_F - lo_F) * (sampled_E_hi_b - sampled_E_lo_b);
-      // Scale to preserve thresholds. The lower and upper values of beta are
-      // not included in the data set since their analytical form is known.
-      const Beta b_min = - (E * 1e6) / (constants::boltzmann * T);
-      const Beta b_max = 20;
-      const Beta sampled_E_b_min =
-          -(sampled_E * 1e6) / (constants::boltzmann * T);
-      const Beta sampled_E_b_max = 20;
-      return b_min + (b_prime - sampled_E_b_min) * (b_max - b_min) /
-                         (sampled_E_b_max - sampled_E_b_min);
-    }
-  }
-  // Least common case, cdf_max <= cdf
-  // implicit condition: hi_F_i == beta_cdfs.size()
-  else {
-    // More common case, E_min <= E < E_max
-    if (hi_E_i != 0) {
-      const ContinuousEnergy hi_E = beta_energies.at(hi_E_i);
-      const ContinuousEnergy lo_E = beta_energies.at(hi_E_i - 1);
-      const Real r = (E - lo_E) / (hi_E - lo_E);
-      const size_t sampled_E_i =
-          r < std::uniform_real_distribution{}(p.rng) ? hi_E_i - 1 : hi_E_i;
-      const ContinuousEnergy sampled_E = beta_energies.at(sampled_E_i);
-      const Real hi_F = 1; // XXX: Different
-      const Real lo_F = beta_cdfs.at(hi_F_i - 1);
-      const Beta sampled_E_hi_b = 20; // XXX: Different
-      const Beta sampled_E_lo_b = EvaluateBeta(sampled_E_i, hi_F_i - 1, T);
-      // Sample beta from sampled energy grid using histogram PDF
-      // interpolation. Unscaled.
-      const Beta b_prime =
-          sampled_E_lo_b +
-          (F - lo_F) / (hi_F - lo_F) * (sampled_E_hi_b - sampled_E_lo_b);
-      // Scale to preserve thresholds. The lower and upper values of beta are
-      // not included in the data set since their analytical form is known.
-      const Beta b_min = - (E * 1e6) / (constants::boltzmann * T);
-      const Beta b_max = 20;
-      const Beta sampled_E_b_min =
-          -(sampled_E * 1e6) / (constants::boltzmann * T);
-      const Beta sampled_E_b_max = 20;
-      return b_min + (b_prime - sampled_E_b_min) * (b_max - b_min) /
-                         (sampled_E_b_max - sampled_E_b_min);
-    }
-    // Less common case, E < E_min
-    else {
-      const ContinuousEnergy hi_E = beta_energies.at(hi_E_i);
-      const ContinuousEnergy lo_E = 0; // XXX: Different
-      const Real r = 1; // XXX: Different
-      const size_t sampled_E_i =
-          r < std::uniform_real_distribution{}(p.rng) ? hi_E_i - 1 : hi_E_i;
-      const ContinuousEnergy sampled_E = beta_energies.at(sampled_E_i);
-      const Real hi_F = beta_cdfs.at(hi_F_i);
-      const Real lo_F = beta_cdfs.at(hi_F_i - 1);
-      const Beta sampled_E_hi_b = EvaluateBeta(sampled_E_i, hi_F_i, T);
-      const Beta sampled_E_lo_b = EvaluateBeta(sampled_E_i, hi_F_i - 1, T);
-      // Sample beta from sampled energy grid using histogram PDF
-      // interpolation. Unscaled.
-      const Beta b_prime =
-          sampled_E_lo_b +
-          (F - lo_F) / (hi_F - lo_F) * (sampled_E_hi_b - sampled_E_lo_b);
-      // Scale to preserve thresholds. The lower and upper values of beta are
-      // not included in the data set since their analytical form is known.
-      const Beta b_min = - (E * 1e6) / (constants::boltzmann * T);
-      const Beta b_max = 20;
-      const Beta sampled_E_b_min =
-          -(sampled_E * 1e6) / (constants::boltzmann * T);
-      const Beta sampled_E_b_max = 20;
-      return b_min + (b_prime - sampled_E_b_min) * (b_max - b_min) /
-                         (sampled_E_b_max - sampled_E_b_min);
-    }
-  }
+  // Evaluate nearest betas on the sampled E grid.
+  const Temperature T = p.GetCell().temperature;
+  const ContinuousEnergy E_s_b_lo =
+      F_hi_i != 0 ? EvaluateBeta(E_s_i, F_hi_i - 1, T)
+                  : -(E_s * 1e6) / (constants::boltzmann * T);
+  const ContinuousEnergy E_s_b_hi =
+      F_hi_i != beta_cdfs.size() ? EvaluateBeta(E_s_i, F_hi_i, T) : 20;
+
+  // Evalute interpolated value of beta on the sampled E grid (assuming
+  // histogram PDF)
+  const Beta b_prime =
+      E_s_b_lo + (F - F_lo) / (F_hi - F_lo) * (E_s_b_hi - E_s_b_lo);
+
+  // Scale to preserve thresholds at actual incident energy E. The minimum and
+  // maximum values of beta are not included in the dataset since their
+  // analytical form is known.
+  const Beta b_min = -(E * 1e6) / (constants::boltzmann * T);
+  const Beta b_max = 20;
+  const Beta E_s_b_min = -(E_s * 1e6) / (constants::boltzmann * T);
+  const Beta E_s_b_max = 20;
+  return b_min + (b_prime - E_s_b_min) * (b_max - b_min) /
+                     (E_s_b_max - E_s_b_min);
 }
 
 ThermalScattering::Alpha
-ThermalScattering::SampleAlpha(Particle& p, const Beta& b) const noexcept {}
+ThermalScattering::SampleAlpha(Particle& p, const Beta& b) const noexcept {
+}

@@ -54,7 +54,7 @@ private:
       Temperature T) const noexcept;
   // Sample an outgoing energy. Requires Particle energy is strictly below
   // ThermalScattering::cutoff_energy. Uses histogram interpolation in PDF.
-  Beta SampleBetaHistogramPDF(Particle& p) const noexcept;
+  Beta SampleBeta(Particle& p) const noexcept;
   // Sample an outgoing cosine given an outgoing energy.
   Alpha SampleAlpha(Particle &p, const Beta& b) const noexcept;
   // Raw cumulative distribution function data for beta and alpha
