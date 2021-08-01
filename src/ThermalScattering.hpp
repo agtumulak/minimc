@@ -28,15 +28,18 @@ public:
   /// @details HDF5 files referenced in the `tsl` node must follow the format
   ///          specified by HDF5DataSet. Additionally, the levels of the
   ///          @f$ \beta @f$ MultiIndex must be in the following order:
-  ///          1. Incident energy of neutron in @f$(0, E_{\text{cutoff}})@f$
+  ///          1. Incident neutron energies in @f$(0, E_{\text{cutoff}})@f$
   ///             (non-inclusive)
   ///          2. CDF values in @f$ (0, 1) @f$ (non-inclusive)
   ///          3. Coefficient labels
   ///
   ///          Also, the levels of the @f$ \alpha @f$ MultiIndex must be in the
   ///          following order:
-  ///          1. Sampled @f$ \beta @f$ value in @f$ [0, \beta_{\text{max}}) @f$
-  ///          2. CDF values in @f$ (0, 1) @f$ (non-inclusive)
+  ///          1. Sampled energy transfer @f$ \beta @f$ values in @f$ \left[0,
+  ///             \max (\frac{E}{kT}, \beta_{\text{cutoff}}) \right) @f$. Note
+  ///             that the conditional probability in @f$ \alpha @f$ is
+  ///             symmetric about @f$ \beta @f$.
+  ///          2. CDF values in @f$ (0, 1) @f$ (non-inclusive).
   ///          3. Coefficient labels
   ///
   ///          The actual values are therefore the coefficients required to
@@ -65,12 +68,16 @@ private:
   const std::vector<Real> beta_cdfs = beta_cdf.GetAxis(1);
   // Number of beta coefficients
   const size_t n_beta_coefficients = beta_cdf.GetAxis(2).size();
+  // Maximum value of beta which can be sampled
+  const Beta beta_cutoff;
   // Beta values for energy-independent alpha distributions
   const std::vector<Real> alpha_betas = alpha_cdf.GetAxis(0);
   // CDF valeus for alpha
   const std::vector<Real> alpha_cdfs = alpha_cdf.GetAxis(1);
   // Number of alpha coefficients
   const size_t n_alpha_coefficients = alpha_cdf.GetAxis(2).size();
+  // Maximum value of alpha which can be sampled
+  const Alpha alpha_cutoff;
   // Range of valid temperatures
   const Temperature min_temperature, max_temperature;
   // Atomic weight ratio of target

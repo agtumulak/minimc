@@ -89,8 +89,10 @@
             <xs:complexType>
               <xs:attribute name="beta_cdf_file" type="xs:anyURI" use="required"/>
               <xs:attribute name="alpha_cdf_file" type="xs:anyURI" use="required"/>
-              <xs:attribute name="min_temperature" type="NonNegativeDouble" use="required"/>
-              <xs:attribute name="max_temperature" type="NonNegativeDouble" use="required"/>
+              <xs:attribute name="min_temperature" type="StrictlyPositiveDouble" use="required"/>
+              <xs:attribute name="max_temperature" type="StrictlyPositiveDouble" use="required"/>
+              <xs:attribute name="beta_cutoff" type="StrictlyPositiveDouble" use="required"/>
+              <xs:attribute name="alpha_cutoff" type="StrictlyPositiveDouble" use="required"/>
             </xs:complexType>
           </xs:element>
         </xs:all>
