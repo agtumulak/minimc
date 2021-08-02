@@ -41,8 +41,9 @@ Real ThermalScattering::EvaluateAlpha(
     const size_t beta_index, const size_t cdf_index,
     Temperature T) const noexcept {
   Alpha result = 0.;
-  for (size_t order = 0; order <= n_alpha_coefficients; order++){
-    result += alpha_cdf.at(beta_index, cdf_index, order) * std::pow(T, -order);
+  for (size_t order = 0; order < n_alpha_coefficients; order++){
+    result += alpha_cdf.at(beta_index, cdf_index, order) *
+              std::pow(T, -static_cast<double>(order));
   }
   return result;
 }
