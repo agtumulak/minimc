@@ -27,11 +27,16 @@ target_link_libraries(all_tests Catch2::Catch2 minimc)
 
 # add new unit test input files here
 set(UNIT_TEST_INPUTS
+  continuous.xml
+  continuous_invalid_nuclide_data_path.xml
   minimc.xsd
   minimc_basictypes.xsd
+  multigroup.xml
+  multigroup_malformed_capture.xml
+  multigroup_malformed_scatter.xml
+  multigroup_missing_particle_data.xml
+  multigroup_nonexistent_nuclide.xml
   point_source_leakage.xml
-  simple_continuous.xml
-  simple_multigroup.xml
   test_HDF5_valid.hdf5
   test_HDF5_invalid.hdf5
   test_XMLDocument.xsd

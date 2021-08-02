@@ -15,7 +15,10 @@
 Interaction::Map Interaction::Create(const pugi::xml_node& nuclide_node) {
   Map xs;
   std::stringstream particle_name_list{
-      nuclide_node.root().child("general").child("particles").child_value()};
+      nuclide_node.root()
+          .select_node("minimc/general/particles")
+          .node()
+          .child_value()};
   std::string particle_name;
   while (particle_name_list >> particle_name) {
     const auto& particle_node{nuclide_node.child(particle_name.c_str())};
@@ -23,8 +26,7 @@ Interaction::Map Interaction::Create(const pugi::xml_node& nuclide_node) {
       throw std::runtime_error(
           nuclide_node.path() + ": \"" + particle_name + "\" node not found");
     }
-    const std::string energy_type{
-        nuclide_node.root().child("nuclides").first_child().name()};
+    const std::string energy_type{nuclide_node.parent().name()};
     if (energy_type == "multigroup") {
       xs.emplace(
           Particle::ToType(particle_name),
