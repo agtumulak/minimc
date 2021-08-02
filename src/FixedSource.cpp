@@ -43,9 +43,8 @@ Estimator FixedSource::StartWorker() {
     if (elapsed >= batchsize) {
       break;
     }
-    // Use the remaining number of histories remaining as the seed. This is
-    // guaranteed to be greater than one.
-    auto p{source.Sample(batchsize - seed)};
+    // Use the remaining number of histories run for the seed
+    auto p{source.Sample(seed + elapsed)};
     // we choose a list because list::splice is constant time
     std::list<Particle> bank(1, p);
     while (!bank.empty()) {
