@@ -55,4 +55,6 @@ set_target_properties(minimc PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
   )
 add_executable(runminimc minimc.cpp)
+add_executable(runsab sab.cpp)
 target_link_libraries(runminimc minimc)
+target_link_libraries(runsab minimc)
