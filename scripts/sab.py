@@ -40,7 +40,7 @@ df_interpolator = interpolate.RegularGridInterpolator(
         bounds_error=False, fill_value=None)
 
 # target nuclide mass ratio
-A = 1.00782503207
+A = 0.999167339
 
 # Boltzmann constant in eV / K
 k = 8.617333262145E-5
