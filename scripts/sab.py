@@ -217,6 +217,42 @@ def get_alpha_pdf(df, b_lower=None, b_upper=None):
     return alpha_pdf
 
 
+def get_pdf_minimc(counts_path, *bounds_paths):
+    """
+    Creates bivariate PDF in alpha and beta from a list of counts and N paths
+    to axis boundaries
+
+    Parameters
+    ----------
+    counts_path : string
+        Path to file containing counts separated by newlines. Counts are
+        ordered with the last element in `bounds_paths` changing the fastest,
+        and the first element in `bounds_paths` changing slowest.
+    bounds_paths : sequence of strings
+        paths to files containing bin boundaries.
+
+    Returns
+    -------
+    pd.Series with a MultiIndex for each axis
+    """
+    with open(counts_path) as f:
+        counts = np.array([int(l.strip()) for l in f.readlines()])
+        counts = counts / counts.sum()
+    widths, bin_edges = [], []
+    for bounds_path in bounds_paths:
+        with open(bounds_path) as f:
+            bounds = np.array([float(x) for x in f.readlines()])
+            widths.append(bounds[1:] - bounds[:-1])
+            bin_edges.append(bounds[:-1])
+    bin_areas = np.einsum('i,j->ij', *widths).reshape(-1)
+    density = counts / bin_areas
+    return pd.Series(
+            density,
+            index=pd.MultiIndex.from_product(
+                bin_edges, names=['alpha', 'beta']),
+            name='minimc')
+
+
 def get_alpha_pdf_mcnp(E, T, b_lower=None, b_upper=None):
     df = pd.read_hdf('~/Downloads/MCNP6/hockey_stick_E_mu.hdf5', 'hockey_stick_E_mu')
     df['absolute error'] = df['estimate'] * df['relative error']
