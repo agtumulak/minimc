@@ -127,7 +127,7 @@ def process_E_T(args):
                 index=S_values.index)
         alpha_integral = alpha_cdf.iloc[-1]
         alpha_cdfs[beta] = alpha_cdf / alpha_integral
-        alpha_pdfs[beta] = S_values / alpha_integral
+        alpha_pdfs[beta] = (S_values / alpha_integral).rename(beta)
         beta_pdf.loc[beta] = np.exp(-beta / 2.0) * alpha_integral
     # convert pdf to cdf
     beta_cdf = pd.Series(
@@ -219,6 +219,34 @@ def get_alpha_pdf(df, b_lower=None, b_upper=None):
     alpha_integral = integrate.trapezoid(alpha_pdf, alpha_pdf.index)
     alpha_pdf /= alpha_integral
     return alpha_pdf
+
+
+def get_pdf_pdos(E, T):
+    """
+    Creates bivariate PDF in alpha and beta from PDOS file
+
+    Alpha grid is unionized across all possible beta values. Linear
+    interpolation is used in alpha for missing values. Zero values are used
+    outside valid alpha ranges.
+
+    Parameters
+    ----------
+    E : float
+        Incident energy in eV
+    T : float
+        Temperature in K
+    """
+    beta_pdf, alpha_pdfs, _, _ = process_E_T((E, T))
+    for beta, p_beta in beta_pdf.iloc[1:-1].iteritems():
+        alpha_pdfs[beta] *= p_beta
+    return (
+            pd
+            .concat(alpha_pdfs.values(), names=alpha_pdfs.keys(), axis='columns')
+            .interpolate(method='index', axis='index', limit_area='inside')
+            .fillna(0)
+            .stack()
+            .rename_axis(['alpha', 'beta'])
+            .rename('pdos'))
 
 
 def get_pdf_minimc(counts_path, *bounds_paths):
