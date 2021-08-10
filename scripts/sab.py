@@ -473,18 +473,31 @@ def vary_T():
     plt.show()
 
 
+def parallel_apply(df_grouped, func):
+    with Pool(10) as p:
+        results = p.map(func, [(name, group) for name, group in df_grouped], chunksize=100)
+    return pd.concat(results)
+
+
+def fit_points(args):
+    group_name, s = args
+    s = pd.Series(
+            coeffs := optimize.curve_fit(
+                beta_fitting_function, s.index.unique(level='T'), s)[0],
+            index=pd.Index(range(len(coeffs)), name='coefficient'))
+    return pd.concat([s], keys=[group_name], names=['E', 'CDF'])
+
+
 def beta_functional_expansion(x):
     beta_df = pd.DataFrame(
-            0,
+            np.nan,
             index=pd.Index(F, name='CDF'),
             columns=pd.MultiIndex.from_product((E_grid, df_Ts), names=('E', 'T')))
     for E, x_E in zip(E_grid, x):
         for T, beta_cdf in zip(df_Ts, x_E):
             beta_df.loc[:, (E, T)] = np.interp(F, beta_cdf, beta_cdf.index)
-    beta_df_fit = beta_df.unstack().groupby(level=['E', 'CDF']).apply(
-            lambda s: pd.Series(
-                coeffs := optimize.curve_fit(beta_fitting_function, s.index.unique(level='T'), s)[0],
-                index=pd.Index(range(len(coeffs)), name='coefficient')))
+    beta_df_fit = parallel_apply(
+            beta_df.unstack().groupby(level=['E', 'CDF']), fit_points)
     # check that CDFS are monotonic for certain T values
     test_T = np.linspace(df_Ts.min(), df_Ts.max(), 100)
     beta_df_reconstructed = beta_df_fit.groupby(level=['E', 'CDF']).apply(
