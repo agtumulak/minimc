@@ -403,6 +403,49 @@ def plot_pdf(s):
     plt.show()
 
 
+def marginalize(s, axis='beta'):
+    """
+    Converts a bivariate PDF into a univariate PDF in given axis
+
+    Parameters
+    ----------
+    s : pd.Series
+        Bivariate PDF in alpha and beta to plot. MultiIndex must be beta
+        followed by alpha.
+    axis : {'alpha', 'beta'}, optional
+        The axis of the resulting univariate PDF
+    """
+    return (
+            s.groupby(axis)
+
+            .apply(lambda s: np.trapz(s.values, s.index.droplevel(axis))))
+
+
+def compare_univariate_pdf(title, *series, axis='beta'):
+    """
+    Compares PDFs in beta from multiple series.
+
+    Parameters
+    ----------
+    title : string
+        Plot title
+    s1, s2, ... : sequence of PDFs in beta
+        Beta PDFs to plot
+    axis : {'alpha', 'beta'}, optional
+        The axis corresponding to the abscissa
+    """
+    for s in series:
+        s.plot(label=s.name)
+    plt.xlabel(fr'$\{axis}$')
+    plt.ylabel(fr'$p_{{\{axis}}} (\{axis})$')
+    plt.xlim(
+            max(s.index.min() for s in series),
+            min(s.index.max() for s in series))
+    plt.legend()
+    plt.title(title)
+    plt.show()
+
+
 def get_alpha_pdf_mcnp(E, T, b_lower=None, b_upper=None):
     df = pd.read_hdf('~/Downloads/MCNP6/hockey_stick_E_mu.hdf5', 'hockey_stick_E_mu')
     df['absolute error'] = df['estimate'] * df['relative error']
