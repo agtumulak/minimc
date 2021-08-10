@@ -157,6 +157,10 @@ def beta_fitting_function(T, c0, c1, c2, c3, c4):
     return c0 + c1 / T ** (1/2) + c2 / T + c3 / T ** (3/2) + c4 / T ** 2
 
 
+def alpha_fitting_function(T, c0, c1, c2):
+    return c0 + c1 / T + c2 / T ** 2
+
+
 def plot_beta_pdf(E, T):
     beta_pdf_pdos, _, _, _ = process_E_T((E, T))
     beta_alpha_pdf_mcnp = pd.read_hdf('~/Downloads/MCNP6/hockey_stick_E_mu.hdf5', 'hockey_stick_E_mu')
@@ -391,21 +395,15 @@ def alpha_functional_expansion(x):
     for beta, x_beta in zip(betas, x):
         for T, alpha_cdf in zip(df_Ts, x_beta):
             alpha_df.loc[:, (beta, T)] = np.interp(F, alpha_cdf, df_alphas)
-    def fitting_function(T, c0, c1, c2):
-        # clamp T to be within [min_val, max_val]
-        min_val = 0.5
-        max_val = 1.0
-        x = (T - T.min()) / (T.max() - T.min()) * (max_val - min_val) + min_val
-        return c0 + c1 / x + c2 / x ** 2
     alpha_df_fit = alpha_df.unstack().groupby(level=['beta', 'CDF']).apply(
             lambda s: pd.Series(
-                coeffs := optimize.curve_fit(fitting_function, s.index.unique(level='T'), s)[0],
+                coeffs := optimize.curve_fit(alpha_fitting_function, s.index.unique(level='T'), s)[0],
                 index=pd.Index(range(len(coeffs)), name='coefficient')))
     # check that CDFS are monotonic for certain T values
     test_T = np.linspace(df_Ts.min(), df_Ts.max(), 100)
     alpha_df_reconstructed = alpha_df_fit.groupby(level=['beta', 'CDF']).apply(
             lambda s: pd.Series(
-                fitting_function(test_T, *s), index=pd.Index(test_T, name='T')))
+                alpha_fitting_function(test_T, *s), index=pd.Index(test_T, name='T')))
     print(f"RMSE: {np.sqrt(((alpha_df - alpha_df_reconstructed.unstack(level='beta').unstack(level='T')) ** 2).mean().mean())}")
     is_monotonic = (
             alpha_df_reconstructed
