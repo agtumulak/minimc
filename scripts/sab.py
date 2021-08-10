@@ -249,6 +249,102 @@ def get_pdf_pdos(E, T):
             .rename('pdos'))
 
 
+def get_pdf_pdos_reconstructed(beta_hdf_path, alpha_hdf_path, E, T):
+    """
+    Reconstructs bivariate PDF in alpha and beta from expansion
+    coefficients in temperature for alpha and beta
+
+    Parameters
+    ---------
+    beta_hdf_path : string
+        Path to CDF file for beta
+    alpha_cdf_path : string
+        Path to conditional CDF file for alpha
+    E : float
+        Incident energy in eV
+    T : float
+        Temperature in K
+    """
+    # evaluate beta at E and T
+    beta_cdf = (
+            pd.read_hdf(beta_hdf_path)
+            .loc[E * 1e-6]
+            .groupby('CDF')
+            .apply(lambda s: beta_fitting_function(T, *s.values)[0]))
+    # add endpoints at F = 0 and F = 1
+    beta_cdf = pd.concat((
+        pd.Series({0: - E / (k * T)}),
+        beta_cdf,
+        pd.Series({1: 20})))
+    # compute PDF
+    beta_pdf = pd.Series(
+            (beta_cdf.index[1:] - beta_cdf.index[:-1])
+          / (beta_cdf.values[1:] - beta_cdf.values[:-1]),
+            index=beta_cdf.values[:-1])
+    # add endpoints
+    beta_pdf = pd.concat((
+        pd.Series({- E / (k * T): 0}),
+        beta_pdf,
+        pd.Series({20: 0})))
+    # evaluate alpha at E and k
+    alpha_cdf = (
+            pd
+            .read_hdf(alpha_hdf_path)
+            .groupby(['beta', 'CDF'])
+            .apply(lambda s: alpha_fitting_function(T, *s.values)[0]))
+    # append alpha CDFs for negative beta values
+    alpha_betas = alpha_cdf.index.unique('beta')
+    # find largest beta in alpha_betas which is strictly less than E / (k * T)
+    # we assume beta = 0 exists so result of searchsorted is >= 1
+    min_beta = alpha_betas[np.searchsorted(alpha_betas, -beta_cdf.iloc[0])] - 1
+    neg_b_alpha_cdf = (
+            alpha_cdf
+            .loc[alpha_betas[1]:min_beta] # don't include beta = 0
+            .rename(index=lambda x: -x, level='beta') # make beta labels negative
+            .sort_index(level='beta'))
+    # find largest beta in alpha_betas which is strictly less than 20
+    max_beta = alpha_betas[np.searchsorted(alpha_betas, 20)] - 1
+    alpha_cdf = pd.concat((neg_b_alpha_cdf, alpha_cdf.loc[:max_beta]))
+    def get_joint_probability(s):
+        """
+        Multiplies conditional probability in alpha with probability in beta
+        """
+        # choose correct subset of CDF values within min_alpha and max_alpha
+        nonlocal E
+        beta = s.name
+        s = pd.Series(s.index.get_level_values('CDF'), index=pd.Index(s, name='alpha'))
+        # insert values for min_alpha and max_apha
+        min_alpha = np.square(np.sqrt(E) - np.sqrt(E + beta * k * T)) / (A * k * T)
+        max_alpha = np.square(np.sqrt(E) + np.sqrt(E + beta * k * T)) / (A * k * T)
+        s.loc[min_alpha] = np.nan # interpolate value later
+        s.loc[max_alpha] = np.nan # interpolate value later
+        s.loc[0] = 0
+        s.loc[632.9] = 1
+        s = s.sort_index().interpolate(method='index').loc[min_alpha:max_alpha]
+        # rescale CDF to be 0 at min_alpha and 1 at max_alpha
+        s = (s - s.min()) / (s.max() - s.min())
+        alpha_pdf = pd.Series(
+                (s.values[1:] - s.values[:-1]) / (s.index[1:] - s.index[:-1]),
+                index=s.index[:-1])
+        alpha_pdf[min_alpha] = 0
+        alpha_pdf[max_alpha] = 0
+        alpha_pdf = alpha_pdf.sort_index()
+        # interpolate value of beta pdf
+        nonlocal beta_pdf
+        beta_pdf_value = np.interp(beta, beta_pdf.index, beta_pdf, left=0, right=0)
+        return alpha_pdf * beta_pdf_value
+    return (
+            alpha_cdf
+            .groupby('beta')
+            .apply(get_joint_probability)
+            .unstack('beta')
+            .interpolate(method='index', axis='index', limit_area='inside')
+            .fillna(0)
+            .stack()
+            .rename_axis(['alpha', 'beta'])
+            .rename('pdos reconstructed'))
+
+
 def get_pdf_minimc(counts_path, *bounds_paths):
     """
     Creates bivariate PDF in alpha and beta from a list of counts and N paths
