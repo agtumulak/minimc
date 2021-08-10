@@ -381,6 +381,28 @@ def get_pdf_minimc(counts_path, *bounds_paths):
             name='minimc')
 
 
+def plot_pdf(s):
+    """
+    Plots bivariate PDF of in alpha and beta
+
+    Parameters
+    ----------
+    s : pd.Series
+        Bivariate PDF in alpha and beta to plot. MultiIndex must be beta
+        followed by alpha.
+    """
+    plt.contourf(
+            s.index.unique('beta'),
+            s.index.unique('alpha'),
+            np.log(s).unstack(),
+            levels=100)
+    plt.xlabel(r'$\beta$')
+    plt.ylabel(r'$\alpha$')
+    plt.title(r'$\log p_{\alpha, \beta} (\alpha, \beta)$')
+    plt.colorbar()
+    plt.show()
+
+
 def get_alpha_pdf_mcnp(E, T, b_lower=None, b_upper=None):
     df = pd.read_hdf('~/Downloads/MCNP6/hockey_stick_E_mu.hdf5', 'hockey_stick_E_mu')
     df['absolute error'] = df['estimate'] * df['relative error']
