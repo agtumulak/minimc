@@ -381,6 +381,83 @@ def get_pdf_minimc(counts_path, *bounds_paths):
             name='minimc')
 
 
+def get_pdf_mcnp(mctal_path, E, T):
+    """
+    Creates bivariate PDF in alpha and beta from an MCNP mctal file
+
+    Parameters
+    ----------
+    mctal_path : string
+        Path to mctal file
+    E : float
+        Incident energy in eV
+    T : float
+        Temperature in K
+    """
+    cosine_bounds = [-1.,]
+    energy_bounds = [0.,]
+    counts = []
+    with open(mctal_path) as f:
+        line = ''
+        # skip to cosine bins
+        while not line.startswith('c'):
+            line = f.readline()
+        line = f.readline()
+        # parse cosine boundaries until energy boundaries section is reached
+        while not line.startswith('e'):
+            cosine_bounds.extend(float(x) for x in line.split())
+            line = f.readline()
+        line = f.readline()
+        # parse energy boundaries until time boundaries section is reached
+        while not line.startswith('t'):
+            energy_bounds.extend(float(x) * 1e6 for x in line.split())
+            line = f.readline()
+        # skip to values
+        while not line.startswith('vals'):
+            line = f.readline()
+        line = f.readline()
+        # parse values until the tfc section is reached
+        while not line.startswith('tfc'):
+            counts.extend(float(x) for x in line.split()[::2])
+            line = f.readline()
+    # compute densities in cosine, eV space
+    cosine_bounds = np.array(cosine_bounds)
+    energy_bounds = np.array(energy_bounds)
+    counts = np.array(counts)
+    cosine_widths = cosine_bounds[1:] - cosine_bounds[:-1]
+    energy_widths = energy_bounds[1:] - energy_bounds[:-1]
+    bin_areas = np.einsum('i,j->ij', cosine_widths, energy_widths).reshape(-1)
+    density = counts / bin_areas
+    # convert to alpha, beta space
+    def myfoo(s):
+        beta = s.name
+        out_E = E + beta * k * T
+        mus = s.index.get_level_values('mu')
+        alphas = (E + out_E - 2 * mus * np.sqrt(E * out_E)) / (A * k * T)
+        return pd.Series(s.values, index=alphas).rename_axis(index={'mu': 'alpha'})
+    s = pd.Series(
+            density,
+            index=pd.MultiIndex.from_product(
+                [cosine_bounds[:-1], energy_bounds[:-1]], names=['mu', 'E']),
+            name='mcnp')
+    # multiply by jacobian
+    s = s * 0.5 * A * (k * T) ** 2 / (np.sqrt(s.index.get_level_values('E') * E))
+    s = (
+            s
+            .rename(index=lambda out_E: (out_E - E) / (k * T), level='E')
+            .rename_axis(index={'E': 'beta'})
+            .groupby('beta')
+            .apply(myfoo))
+    return (
+            s[~s.index.duplicated()]
+            .unstack('beta')
+            .interpolate(method='index', axis='index', limit_area='inside')
+            .fillna(0)
+            .stack()
+            .rename_axis(['alpha', 'beta'])
+            .rename('mcnp'))
+
+
 def plot_pdf(s):
     """
     Plots bivariate PDF of in alpha and beta
