@@ -480,6 +480,45 @@ def plot_pdf(s):
     plt.show()
 
 
+def compare_bivariate_pdf(title, *series):
+    """
+    Compares PDFs in alpha and beta from multiple series.
+
+    Parameters
+    ----------
+    title : string
+        Plot title
+    s1, s2, ... : sequence of PDFs in alpha and beta
+    """
+    nrows, ncols = 2, 2
+    min_log_density = np.log(min(s[s>0].min() for s in series))
+    min_beta = max(s.index.unique('beta').min() for s in series)
+    max_beta = min(s.index.unique('beta').max() for s in series)
+    min_alpha = max(s.index.unique('alpha').min() for s in series)
+    max_alpha = min(s.index.unique('alpha').max() for s in series)
+    f, axs = plt.subplots(nrows=nrows, ncols=ncols, sharex='col', sharey='row', constrained_layout=True)
+    for i, row in enumerate(axs):
+        for j, ax in enumerate(row):
+            k = ncols * i + j
+            if k >= len(series):
+                break
+            s = series[k]
+            cm = ax.contourf(
+                s.index.unique('beta'),
+                s.index.unique('alpha'),
+                np.log(s).unstack(),
+                levels=np.linspace(min_log_density, 0, 100))
+            if (j == 1):
+                ax.set_xlabel(r'$\beta$')
+            if (i == 0):
+                ax.set_ylabel(r'$\alpha$')
+            ax.set_xlim(min_beta, max_beta)
+            ax.set_ylim(min_alpha, max_alpha)
+            ax.set_title(s.name)
+    f.colorbar(cm, ax=axs, location='right')
+    plt.show()
+
+
 def marginalize(s, axis='beta'):
     """
     Converts a bivariate PDF into a univariate PDF in given axis
