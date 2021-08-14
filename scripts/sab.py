@@ -161,31 +161,6 @@ def alpha_fitting_function(T, c0, c1, c2):
     return c0 + c1 / T + c2 / T ** 2
 
 
-def get_alpha_pdf(df, b_lower=None, b_upper=None):
-    '''
-    Columns are beta values. Rows are alpha values. All entries are valid (no
-    nans).
-    '''
-    b_lower = b_lower if b_lower else df.columns.min()
-    b_upper = b_upper if b_upper else df.columns.max()
-    # add columns for lower and upper beta
-    if b_lower not in df.columns:
-        df[b_lower] = np.nan
-    if b_upper not in df.columns:
-        df[b_upper] = np.nan
-    alpha_pdf = (
-            df[sorted(df.columns)]
-            .interpolate(method='index', axis='columns')
-            .loc[:, b_lower:b_upper]
-            .apply(
-                lambda s:
-                integrate.trapezoid(s, s.index),
-                axis='columns'))
-    alpha_integral = integrate.trapezoid(alpha_pdf, alpha_pdf.index)
-    alpha_pdf /= alpha_integral
-    return alpha_pdf
-
-
 def get_pdf_pdos(E, T):
     """
     Creates bivariate PDF in alpha and beta from PDOS file
@@ -524,84 +499,6 @@ def compare_univariate_pdf(title, *series, axis='beta'):
             min(s.index.max() for s in series))
     plt.legend()
     plt.title(title)
-    plt.show()
-
-
-def get_alpha_pdf_mcnp(E, T, b_lower=None, b_upper=None):
-    df = pd.read_hdf('~/Downloads/MCNP6/hockey_stick_E_mu.hdf5', 'hockey_stick_E_mu')
-    df['absolute error'] = df['estimate'] * df['relative error']
-    df.index = df.index.set_levels(
-            df.index.unique(level='energy') * 1e6, level='energy')
-    # compute bin widths
-    cosines = np.array(sorted(df.index.unique(level='cosine')))
-    cosine_widths = cosines - np.concatenate(([-1.0], cosines[:-1]))
-    Es = np.array(sorted(df.index.unique(level='energy')))
-    E_widths = Es - np.concatenate(([0.0], Es[:-1]))
-    # compute probability densities
-    df['cosine'] = df.index.unique(level='cosine')
-    df['energy'] = df.index.unique(level='energy')
-    df['cosine widths'] = df['cosine']
-    df['energy widths'] = df['energy']
-    df = df.replace(to_replace={
-        'cosine widths': {k: v for k, v in zip(cosines, cosine_widths)},
-        'energy widths': {k: v for k, v in zip(Es, E_widths)}})
-    jacobian = A * (k * T) ** 2 / (2 * np.sqrt(E * df['energy']))
-    df['density'] = df['estimate'] / (df['cosine widths'] * df['energy widths']) * jacobian
-    df['density error'] = df['absolute error'] / (df['cosine widths'] * df['energy widths']) * jacobian
-    # compute corresponding beta values
-    df['beta'] = (df['energy'] - E) / (k * T)
-    # compute corresponding alpha values. use lower cosine boundaries
-    df['lower cosine'] = df['cosine']
-    df = df.replace(to_replace={
-        'lower cosine': {k: v for k, v in zip(cosines, np.concatenate(([-1.], cosines[:-1])))}})
-    df['alpha'] = (E + df['energy'] - 2. * df['cosine'] * (df['energy'] * E) ** 0.5) / (A * k * T)
-    b_lower = b_lower if b_lower is not None else df['beta'].min()
-    b_upper = b_upper if b_upper is not None else df['beta'].max()
-    density_df = (
-            df
-            .pivot(index='alpha', columns='beta', values='density')
-            .interpolate(method='index', axis='index', limit_area='inside')
-            .fillna(0))
-    alpha_pdf = get_alpha_pdf(density_df, b_lower=b_lower, b_upper=b_upper)
-    return alpha_pdf
-    # alpha_pdf_error = (
-    #         df
-    #         .pivot(index='alpha', columns='beta', values='density error')
-    #         .loc[:, b_lower:b_upper]
-    #         .apply(
-    #             lambda row: ((row.dropna() ** 2).sum()) ** 0.5, axis='columns'))
-    # plt.plot(alpha_pdf.index, alpha_pdf)
-    # plt.fill_between(
-    #         alpha_pdf.index,
-    #         alpha_pdf - alpha_pdf_error,
-    #         alpha_pdf + alpha_pdf_error,
-    #         alpha=0.25, color='C0')
-    # plt.show()
-
-
-def get_alpha_pdf_pdos(beta_pdf_pdos, alpha_pdfs_pdos, b_lower=None, b_upper=None):
-    beta_alpha_pdf_pdos = (
-            pd.DataFrame(alpha_pdfs_pdos, )
-            .mul(beta_pdf_pdos.iloc[1:-1])
-            .interpolate(method='index', axis='index', limit_area='inside')
-            .fillna(0))
-    beta_alpha_pdf_pdos.index.rename('alpha')
-    return get_alpha_pdf(beta_alpha_pdf_pdos, b_lower=b_lower, b_upper=b_upper)
-
-
-def compare_alpha_pdf(E, T, b_lower=None, b_upper=None):
-    alpha_pdf_pdos = get_alpha_pdf_pdos(
-            *process_E_T((E, T))[:2], b_lower=b_lower, b_upper=b_upper)
-    alpha_pdf_mcnp = get_alpha_pdf_mcnp(
-            E, T, b_lower=b_lower, b_upper=b_upper)
-    plt.plot(alpha_pdf_pdos.index, alpha_pdf_pdos, label='pdos')
-    plt.plot(alpha_pdf_mcnp.index, alpha_pdf_mcnp, label='mcnp')
-    plt.xlabel(r'$\alpha$')
-    plt.ylabel(r'$p(\alpha \mid \beta_{\min} < \beta < \beta_{\max})$')
-    b_lower = b_lower if b_lower is not None else - E / (k * T)
-    b_upper = b_upper if b_upper is not None else 20
-    plt.title(r'$\beta_{\min} = ' + str(b_lower) + r', \beta_{\max} = ' + str(b_upper) + r'$')
-    plt.legend()
     plt.show()
 
 
