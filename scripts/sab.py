@@ -153,47 +153,12 @@ def process_b_T(args):
     return (E_independent_alpha_cdf / E_independent_alpha_integral).values
 
 
-def beta_fitting_function(T, c0, c1, c2, c3, c4):
-    return c0 + c1 / T ** (1/2) + c2 / T + c3 / T ** (3/2) + c4 / T ** 2
+def beta_fitting_function(T, c0, c1, c2, c3, c4, c5):
+    return c0 + c1 / T ** (1/2) + c2 / T + c3 / T ** (3/2) + c4 / T ** 2 + c5 / T ** (5/2)
 
 
 def alpha_fitting_function(T, c0, c1, c2):
     return c0 + c1 / T + c2 / T ** 2
-
-
-def plot_beta_pdf(E, T):
-    beta_pdf_pdos, _, _, _ = process_E_T((E, T))
-    beta_alpha_pdf_mcnp = pd.read_hdf('~/Downloads/MCNP6/hockey_stick_E_mu.hdf5', 'hockey_stick_E_mu')
-    beta_alpha_pdf_mcnp['absolute error'] = (
-            beta_alpha_pdf_mcnp['estimate'] * beta_alpha_pdf_mcnp['relative error'])
-    beta_pdf_mcnp = beta_alpha_pdf_mcnp.groupby(level='energy').aggregate({
-        'estimate': sum,
-        'absolute error': lambda s: sum(s ** 2) ** 0.5 }) # assume uncorrelated
-    beta_pdf_mcnp.index = beta_pdf_mcnp.index * 1e6 # MeV to eV
-    # convert mcnp estimates to probability density in beta.
-    beta_pdf_mcnp['bin width'] = (
-            beta_pdf_mcnp.index - np.concatenate(([0], beta_pdf_mcnp.index[:-1])))
-    beta_pdf_mcnp['density'] = beta_pdf_mcnp['estimate'] / beta_pdf_mcnp['bin width'] * (k * T)
-    beta_pdf_mcnp['density error'] = beta_pdf_mcnp['absolute error'] / beta_pdf_mcnp['bin width'] * (k * T)
-    beta_pdf_mcnp = pd.concat((
-        pd.DataFrame(0, index=[0.], columns=beta_pdf_mcnp.columns),
-        beta_pdf_mcnp))
-    # Assumes beta boundaries correspond to energy bins in mcnp.
-    df = pd.DataFrame({
-        'mcnp density': beta_pdf_mcnp['density'].values,
-        'mcnp density lower': beta_pdf_mcnp['density'].values - beta_pdf_mcnp['density error'].values,
-        'mcnp density upper': beta_pdf_mcnp['density'].values + beta_pdf_mcnp['density error'].values,
-        'pdos density': beta_pdf_pdos.values},
-        index=beta_pdf_pdos.index)
-    plt.plot(df.index, df['mcnp density'], label='mcnp')
-    plt.fill_between(df.index, df['mcnp density lower'], df['mcnp density upper'], alpha=0.25, color='C0')
-    plt.plot(df.index, df['pdos density'], label='pdos')
-    plt.xlabel(r'$\beta$')
-    plt.ylabel(r'$p_{\beta}(\beta)$')
-    plt.xlim(df.index.min(), df.index.max())
-    plt.ylim(0, df[['mcnp density', 'pdos density']].max().max())
-    plt.legend()
-    plt.show()
 
 
 def get_alpha_pdf(df, b_lower=None, b_upper=None):
