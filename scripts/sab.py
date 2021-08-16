@@ -497,20 +497,6 @@ def compare_univariate_pdf(title, *series, axis='beta'):
     plt.show()
 
 
-def vary_T():
-    max_cdf = 0
-    # for T in df_Ts:
-    for T in [273.6]:
-        beta, beta_cdf, _, _ = process_E_T((1.0, T))
-        max_cdf = max(max_cdf, beta_cdf.max())
-        plt.plot(beta, beta_cdf, label=f'{T} K')
-    plt.ylim(0, max_cdf)
-    plt.xlabel(r'$\beta$')
-    plt.ylabel(r'$P_{\beta}(\beta)$')
-    plt.legend()
-    plt.show()
-
-
 def parallel_apply(df_grouped, func):
     with Pool(10) as p:
         results = p.map(func, [(name, group) for name, group in df_grouped], chunksize=100)
