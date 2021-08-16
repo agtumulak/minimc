@@ -34,11 +34,6 @@ df_betas = np.array(sorted(df.index.unique(level='beta')))
 df_alphas = np.array(sorted(df.index.unique(level='alpha')))
 df_Ts = np.array(sorted(df.index.unique(level='T')))
 
-df_interpolator = interpolate.RegularGridInterpolator(
-        (df_betas, df_alphas, df_Ts),
-        df.values.reshape(len(df_betas), len(df_alphas), len(df_Ts)),
-        bounds_error=False, fill_value=None)
-
 # target nuclide mass ratio
 A = 0.999167339
 
