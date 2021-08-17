@@ -15,6 +15,7 @@ https://doi.org/10.1016/j.anucene.2014.04.028.
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import re
 from multiprocessing import Pool
 from scipy import integrate, interpolate, optimize
 from tqdm import tqdm
@@ -47,6 +48,71 @@ F = np.array([
     0.325, 0.35, 0.375, 0.4, 0.425, 0.45, 0.475, 0.5, 0.525, 0.55, 0.575, 0.6,
     0.625, 0.65, 0.675, 0.7, 0.725, 0.75, 0.775, 0.8, 0.825, 0.85, 0.875, 0.9,
     0.925, 0.95, 0.975])
+
+
+def parse_file7(mf7_path):
+    """
+    Parse ENDF File 7 file and return pandas DataFrame.
+
+    Parameters
+    ----------
+    mf7_path : string
+        Path to File 7A
+    """
+    def to_float(endf_float_string):
+        """Convert ENDF-style float string to float."""
+        pattern = re.compile(r'\d([+-])')
+        return float(pattern.sub(r'E\1', endf_float_string))
+
+    with open(mf7_path, mode='r') as sab_file:
+        # skip headers
+        while True:
+            if sab_file.readline().endswith('1 7  4    5\n'):
+                N_beta = int(sab_file.readline().split()[0])
+                break
+        alphas, betas, Ts, Ss = [], [], [], []
+        for _ in range(N_beta):
+            # Read first temperature, beta block
+            entries = sab_file.readline().split()
+            temp, beta = (to_float(x) for x in entries[:2])
+            N_temp = int(entries[2]) + 1
+            # The first temperature is handled differently: alpha and
+            # S(alpha, beta) values are given together.
+            N_alpha = int(sab_file.readline().split()[0])
+            N_full_rows, remainder = divmod(N_alpha, 3)
+            for row in range(N_full_rows + (remainder != 0)):
+                # Everything after column 66 is ignored
+                line = sab_file.readline()
+                doubles = [
+                        to_float(line[start:start+11])
+                        for start in range(0, 66, 11)
+                        if not line[start:start+11].isspace()]
+                for alpha, S in zip(doubles[::2], doubles[1::2]):
+                    alphas.append(alpha)
+                    betas.append(beta)
+                    Ts.append(temp)
+                    Ss.append(S)
+            # The remaining temperatures are handled uniformly
+            N_full_rows, remainder = divmod(N_alpha, 6)
+            for _ in range(N_temp - 1):
+                temp, beta = (
+                        to_float(x) for x in sab_file.readline().split()[:2])
+                # Subsequent betas use the first beta's alpha grid.
+                unique_alphas = (a for a in alphas[:N_alpha])
+                for row in range(N_full_rows + (remainder != 0)):
+                    line = sab_file.readline()[:66]
+                    for S in [
+                            to_float(line[start:start+11])
+                            for start in range(0, 66, 11)
+                            if not line[start:start+11].isspace()]:
+                        alphas.append(next(unique_alphas))
+                        betas.append(beta)
+                        Ts.append(temp)
+                        Ss.append(S)
+        return (
+                pd.DataFrame.from_dict(
+                    {'alpha': alphas, 'beta': betas, 'T': Ts, 'S': Ss})
+                .set_index(['beta', 'alpha', 'T']))
 
 
 def process_E_T(args):
