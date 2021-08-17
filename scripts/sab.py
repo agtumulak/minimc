@@ -20,20 +20,6 @@ from scipy import integrate, interpolate, optimize
 from tqdm import tqdm
 
 
-# Raw S(alpha, beta, T) data
-realization = 1
-df = pd.read_hdf('/Users/atumulak/Developer/sab-poly-fit/sab_medium_retry.hdf5')
-# df = pd.read_hdf('/Users/atumulak/Developer/sab-data-generator/full_order200/df.hdf5')
-
-df = (
-        df[df['Realization']==realization]
-        .drop('Realization', axis='columns')
-        .set_index(['beta', 'alpha', 'T']))
-# df = pd.read_hdf('../data/H_in_H2O_sab.hdf5')
-df_betas = np.array(sorted(df.index.unique(level='beta')))
-df_alphas = np.array(sorted(df.index.unique(level='alpha')))
-df_Ts = np.array(sorted(df.index.unique(level='T')))
-
 # target nuclide mass ratio
 A = 0.999167339
 
@@ -87,7 +73,17 @@ F = np.array([
 
 
 def process_E_T(args):
-    E, T = args
+    """
+    Generates PDFs in beta, conditional PDFs in alpha given beta, and CDFs
+    thereof
+
+    Parameters
+    ----------
+    args : tuple
+        (S(a,b,T) DataFrame, Incident energy in eV, Temperature in K)
+    """
+    sab_df, E, T = args
+    df_betas = np.array(sorted(sab_df.index.unique('beta')))
     # valid beta values
     min_beta = - E / (k * T)
     max_beta = 20
@@ -103,7 +99,7 @@ def process_E_T(args):
     beta_pdf = pd.Series(0, index=betas) # pdf is zero at min_beta and max_beta
     for beta in betas[1:-1]:
         # energy-independent alpha distribution
-        S_values = df.xs((beta if beta > 0 else -beta, T), level=('beta', 'T'))['S']
+        S_values = sab_df.xs((beta if beta > 0 else -beta, T), level=('beta', 'T'))['S']
         # energy-dependent alpha distribution, valid alpha values
         min_alpha = np.square(np.sqrt(E) - np.sqrt(E + beta * k * T)) / (A * k * T)
         max_alpha = np.square(np.sqrt(E) + np.sqrt(E + beta * k * T)) / (A * k * T)
@@ -137,8 +133,8 @@ def process_E_T(args):
 
 
 def process_b_T(args):
-    beta, T = args
-    S_values = df.xs((beta, T), level=('beta', 'T'))['S']
+    sab_df, beta, T = args
+    S_values = sab_df.xs((beta, T), level=('beta', 'T'))['S']
     E_independent_alpha_cdf = pd.Series(
             np.concatenate((
                 [0],
@@ -156,9 +152,9 @@ def alpha_fitting_function(T, c0, c1, c2):
     return c0 + c1 / T + c2 / T ** 2
 
 
-def get_pdf_pdos(E, T):
+def get_pdf_pdos(sab_df, E, T):
     """
-    Creates bivariate PDF in alpha and beta from PDOS file
+    Creates bivariate PDF in alpha and beta from given DataFrame
 
     Alpha grid is unionized across all possible beta values. Linear
     interpolation is used in alpha for missing values. Zero values are used
@@ -166,12 +162,14 @@ def get_pdf_pdos(E, T):
 
     Parameters
     ----------
+    sab_df : pd.DataFrame
+        S(a,b,T) DataFrame
     E : float
         Incident energy in eV
     T : float
         Temperature in K
     """
-    beta_pdf, alpha_pdfs, _, _ = process_E_T((E, T))
+    beta_pdf, alpha_pdfs, _, _ = process_E_T((sab_df, E, T))
     for beta, p_beta in beta_pdf.iloc[1:-1].iteritems():
         alpha_pdfs[beta] *= p_beta
     return (
@@ -512,7 +510,8 @@ def fit_points(args):
     return pd.concat([s], keys=[group_name], names=['E', 'CDF'])
 
 
-def beta_functional_expansion(x):
+def beta_functional_expansion(sab_df, x):
+    df_Ts = np.array(sorted(sab_df.index.unique('T')))
     beta_df = pd.DataFrame(
             np.nan,
             index=pd.Index(F, name='CDF'),
@@ -546,7 +545,10 @@ def beta_functional_expansion(x):
     return beta_df_fit.to_frame('coefficients').sort_index(level=['E', 'CDF', 'coefficient'])
 
 
-def alpha_functional_expansion(x):
+def alpha_functional_expansion(sab_df, x):
+    df_betas = np.array(sorted(sab_df.index.unique('beta')))
+    df_alphas = np.array(sorted(sab_df.index.unique('alpha')))
+    df_Ts = np.array(sorted(sab_df.index.unique('T')))
     max_beta = max(20, E_grid[-1] / (k * df_Ts[0]))
     betas = df_betas[:np.searchsorted(df_betas, max_beta)] # will never include max_beta
     alpha_df = pd.DataFrame(
@@ -580,10 +582,11 @@ def alpha_functional_expansion(x):
     return alpha_df_fit.to_frame('coefficients').sort_index(level=['beta', 'CDF', 'coefficient'])
 
 
-def process_all_E_T():
+def process_all_E_T(sab_df):
+    df_Ts = np.array(sorted(sab_df.index.unique('T')))
     with Pool(processes=10) as pool:
         # incident energy, temperature pairs
-        E_T_values = np.array([(E, T) for E in E_grid for T in df_Ts])
+        E_T_values = np.array([(sab_df, E, T) for E in E_grid for T in df_Ts])
         return (
                 np.array(
                     [x[2] for x in tqdm(
@@ -592,7 +595,8 @@ def process_all_E_T():
                     dtype=object).reshape(len(E_grid), len(df_Ts)))
 
 
-def process_all_b_T():
+def process_all_b_T(sab_df):
+    df_betas = np.array(sorted(sab_df.index.unique('beta')))
     with Pool(processes=10) as pool:
         # largest possible beta value
         max_beta = max(20, E_grid[-1] / (k * df_Ts[0]))
