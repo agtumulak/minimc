@@ -539,9 +539,11 @@ def compare_univariate_pdf(title, *series, axis='beta'):
 
 
 def parallel_apply(df_grouped, func):
-    with Pool(10) as p:
-        results = p.map(func, [(name, group) for name, group in df_grouped], chunksize=100)
-    return pd.concat(results)
+    with Pool(processes=10) as pool:
+        return pd.concat(
+                [x for x in tqdm(
+                    pool.imap(func=func, iterable=df_grouped),
+                    total=len(df_grouped))])
 
 
 def fit_points(args):
