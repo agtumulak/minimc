@@ -109,10 +109,13 @@ def parse_file7(mf7_path):
                         betas.append(beta)
                         Ts.append(temp)
                         Ss.append(S)
-        return (
-                pd.DataFrame.from_dict(
-                    {'alpha': alphas, 'beta': betas, 'T': Ts, 'S': Ss})
-                .set_index(['beta', 'alpha', 'T']))
+        df = pd.DataFrame.from_dict(
+                {'alpha': alphas, 'beta': betas, 'T': Ts, 'S': Ss})
+        # rescale alpha and beta due to LAT flag in LEAPR
+        df['alpha'] = df['alpha'] * 293.6 / df['T']
+        df['beta'] = df['beta'] * 293.6 / df['T']
+        df = df.set_index(['beta', 'alpha', 'T'])
+        return df
 
 
 def process_E_T(args):
@@ -126,16 +129,16 @@ def process_E_T(args):
         (S(a,b,T) DataFrame, Incident energy in eV, Temperature in K)
     """
     sab_df, E, T = args
-    df_betas = np.array(sorted(sab_df.index.unique('beta')))
+    T_betas = np.array(sorted(sab_df.loc[:,:,T].index.unique('beta')))
     # valid beta values
     min_beta = - E / (k * T)
     max_beta = 20
-    min_beta_index = np.searchsorted(df_betas, -min_beta) # as range end, will never include min_beta
-    max_beta_index = np.searchsorted(df_betas, max_beta) # as range end, will never include max_beta
+    min_beta_index = np.searchsorted(T_betas, -min_beta) # as range end, will never include min_beta
+    max_beta_index = np.searchsorted(T_betas, max_beta) # as range end, will never include max_beta
     betas = np.concatenate((
         [min_beta],
-        -np.flip(df_betas[1:min_beta_index]),
-        df_betas[:max_beta_index],
+        -np.flip(T_betas[1:min_beta_index]),
+        T_betas[:max_beta_index],
         [max_beta]))
     alpha_cdfs = {}
     alpha_pdfs = {}
