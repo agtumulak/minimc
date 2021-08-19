@@ -558,13 +558,47 @@ def fit_points(args):
     return pd.concat([s], keys=[group_name], names=['E', 'CDF'])
 
 
-def beta_functional_expansion(sab_df, x):
+def beta_functional_expansion(sab_df):
+    """
+    Computes the CDF in beta at various incident energies and temperatures,
+    then performs a functional expansion in temperature at various incident
+    energies and CDF values.
+
+    Parameters
+    ----------
+    sab_df : pd.DataFrame
+        S(a,b,T) DataFrame
+
+    Returns
+    -------
+    pd.DataFrame
+        Expansion coefficients in temperature for beta given a given set of
+        incident energies and CDF values.
+    """
+    # Populate `beta_cdfs`, a 2D array where the first index corresponds to
+    # incident energy and the second index corresponds to temperature. Each
+    # element of this array is a cumulative distribution function for beta.
     df_Ts = np.array(sorted(sab_df.index.unique('T')))
+    with Pool(processes=10) as pool:
+        # incident energy, temperature pairs
+        E_T_values = np.array([(sab_df, E, T) for E in E_grid for T in df_Ts])
+        beta_cdfs =  (
+                np.array(
+                    [x[2] for x in tqdm(
+                        pool.imap(func=process_E_T, iterable=E_T_values),
+                        total=len(E_T_values))],
+                    dtype=object).reshape(len(E_grid), len(df_Ts)))
+    # take the union of all CDF values that appear across all incident energies
+    all_cdfs = sorted(set(np.concatenate(beta_cdfs.reshape(-1))))
+    # choose number of CDF points we want to use
+    stride, remainder = divmod(len(all_cdfs), 1000) # use 1000 CDF values
+    F = all_cdfs[::stride if not remainder else stride + 1]
+    print(f"Using {len(F)} CDF values")
     beta_df = pd.DataFrame(
             np.nan,
             index=pd.Index(F, name='CDF'),
             columns=pd.MultiIndex.from_product((E_grid, df_Ts), names=('E', 'T')))
-    for E, x_E in zip(E_grid, x):
+    for E, x_E in zip(E_grid, beta_cdfs):
         for T, beta_cdf in zip(df_Ts, x_E):
             beta_df.loc[:, (E, T)] = np.interp(F, beta_cdf, beta_cdf.index)
     beta_df_fit = parallel_apply(
@@ -579,6 +613,11 @@ def beta_functional_expansion(sab_df, x):
             beta_df_reconstructed
             .groupby(level=['E', 'T'])
             .apply(lambda s: s.is_monotonic))
+    print(
+            f"Of {E_grid.size} incident energies and {test_T.size} target "
+            f"temperatures, {is_monotonic.sum()} of {is_monotonic.size} "
+            f"({is_monotonic.sum() / is_monotonic.size * 100}%) have "
+            f"monotonic beta as a function of CDF")
     if not is_monotonic.all():
         print("The following CDFs are not monotonic:")
         print((
