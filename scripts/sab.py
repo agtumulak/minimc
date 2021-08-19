@@ -17,7 +17,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import re
 from multiprocessing import Pool
-from scipy import integrate, interpolate, optimize
+from scipy import integrate, optimize
 from tqdm import tqdm
 
 
