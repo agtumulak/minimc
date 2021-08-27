@@ -29,7 +29,7 @@ public:
   ///          specified by HDF5DataSet. Additionally, the levels of the
   ///          @f$ \beta @f$ MultiIndex must be in the following order:
   ///          1. Incident neutron energies in @f$(0, E_{\text{cutoff}})@f$
-  ///             (non-inclusive)
+  ///             (non-inclusive) in MeV
   ///          2. CDF values in @f$ (0, 1) @f$ (non-inclusive)
   ///          3. Coefficient labels
   ///
