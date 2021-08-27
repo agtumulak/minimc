@@ -500,10 +500,10 @@ def compare_bivariate_pdf(title, *series):
                 s.index.unique('alpha'),
                 np.log(s).unstack(),
                 levels=np.linspace(min_log_density, 0, 100))
-            if (j == 1):
-                ax.set_xlabel(r'$\beta$')
-            if (i == 0):
-                ax.set_ylabel(r'$\alpha$')
+            if (j == 0):
+                ax.set_ylabel(r'$\beta$')
+            if (i == 1):
+                ax.set_xlabel(r'$\alpha$')
             ax.set_xlim(min_beta, max_beta)
             ax.set_ylim(min_alpha, max_alpha)
             ax.set_title(s.name)
