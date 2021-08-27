@@ -310,7 +310,7 @@ def get_pdf_pdos_reconstructed(beta_hdf_path, alpha_hdf_path, E, T):
         s.loc[min_alpha] = np.nan # interpolate value later
         s.loc[max_alpha] = np.nan # interpolate value later
         s.loc[0] = 0
-        s.loc[632.9] = 1
+        s.loc[632.9 * 293.6 / 273.6] = 1 # 273.6 K is smallest T in dataset
         s = s.sort_index().interpolate(method='index').loc[min_alpha:max_alpha]
         # rescale CDF to be 0 at min_alpha and 1 at max_alpha
         s = (s - s.min()) / (s.max() - s.min())
