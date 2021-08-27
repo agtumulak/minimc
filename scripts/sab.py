@@ -279,22 +279,12 @@ def get_pdf_pdos_reconstructed(beta_hdf_path, alpha_hdf_path, E, T):
             .loc[E * 1e-6]
             .groupby('CDF')
             .apply(lambda s: beta_fitting_function(T, *s.values)[0]))
-    # add endpoints at F = 0 and F = 1
-    beta_cdf = pd.concat((
-        pd.Series({0: - E / (k * T)}),
-        beta_cdf,
-        pd.Series({1: 20})))
     # compute PDF
     beta_pdf = pd.Series(
             (beta_cdf.index[1:] - beta_cdf.index[:-1])
           / (beta_cdf.values[1:] - beta_cdf.values[:-1]),
             index=beta_cdf.values[:-1])
-    # add endpoints
-    beta_pdf = pd.concat((
-        pd.Series({- E / (k * T): 0}),
-        beta_pdf,
-        pd.Series({20: 0})))
-    # evaluate alpha at E and k
+    # evaluate alpha at E and T
     alpha_cdf = (
             pd
             .read_hdf(alpha_hdf_path)
