@@ -112,21 +112,29 @@ ThermalScattering::SampleAlpha(Particle& p, const Beta& b) const noexcept {
 
   // assume S(a,b) = S(a,-b)
   const Beta abs_b = std::abs(b);
-  // find index of beta value strictly greater than b
+  // get sign of beta: https://stackoverflow.com/a/4609795/5101335
+  const int_fast8_t sgn_b = (0 < b) - (b < 0);
+  // find index of beta value strictly greater than abs_b
   const size_t b_hi_i = std::distance(
       alpha_betas.cbegin(),
       std::upper_bound(alpha_betas.cbegin(), alpha_betas.cend(), abs_b));
 
-  // Determine interpolation factor. If b_max <= b, we force the use of the grid
-  // at b_max by setting r = 0. This way, index of the sampled beta b_s_i is
-  // always valid
-  const Real r = b_hi_i != alpha_betas.size()
-                     ? (b - alpha_betas.at(b_hi_i - 1)) /
-                           (alpha_betas.at(b_hi_i) - alpha_betas.at(b_hi_i - 1))
-                     : 0;
+  // For any given abs_b, we have two beta grids to choose from:
+  // b_lo <= abs_b < b_hi
+  // For positive b, if beta_cutoff <= b_hi, we force the use of b_lo
+  // For negative b, if -b_hi < - E / (k * T), we force the use of b_lo
+  const bool snap_to_lower = (
+      (sgn_b == 1 && beta_cutoff <= alpha_betas.at(b_hi_i)) ||
+      (sgn_b == -1 &&
+       -alpha_betas.at(b_hi_i) < -(E * 1e6) / (constants::boltzmann * T)));
+  // Determine interpolation factor and sample a beta grid to use, b_s
+  const Real r =
+    snap_to_lower ? 0 :
+    (abs_b - alpha_betas.at(b_hi_i - 1)
+     / (alpha_betas.at(b_hi_i) - alpha_betas.at(b_hi_i - 1)));
   const size_t b_s_i =
       r <= std::uniform_real_distribution{}(p.rng) ? b_hi_i - 1 : b_hi_i;
-  const Beta b_s = alpha_betas.at(b_s_i);
+  Beta b_s = sgn_b * alpha_betas.at(b_s_i);
 
   // parameters needed to scale sampled CDF value
   const auto E = std::get<ContinuousEnergy>(p.GetEnergy());
@@ -184,11 +192,10 @@ ThermalScattering::SampleAlpha(Particle& p, const Beta& b) const noexcept {
   const Real F_hi = F_hi_i != alpha_cdfs.size() ? alpha_cdfs.at(F_hi_i) : 1;
 
   // Evaluate nearest alphas on the sampled beta grid.
-  const ContinuousEnergy b_s_a_lo =
-      F_hi_i != 0 ? EvaluateAlpha(b_s_i, F_hi_i - 1, T) : 0;
-  const ContinuousEnergy b_s_a_hi = F_hi_i != alpha_cdfs.size()
-                                        ? EvaluateAlpha(b_s_i, F_hi_i, T)
-                                        : alpha_cutoff;
+  const Real b_s_a_lo = F_hi_i != 0 ? EvaluateAlpha(b_s_i, F_hi_i - 1, T) : 0;
+  const Real b_s_a_hi = F_hi_i != alpha_cdfs.size()
+                            ? EvaluateAlpha(b_s_i, F_hi_i, T)
+                            : alpha_cutoff;
 
   // Evalute interpolated value of alpha on the sampled beta grid (assuming
   // histogram PDF)
