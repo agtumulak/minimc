@@ -634,10 +634,7 @@ def beta_functional_expansion(sab_df):
             f"monotonic beta as a function of CDF")
     if not is_monotonic.all():
         print("The following CDFs are not monotonic:")
-        print((
-            beta_df_reconstructed
-            .reorder_levels(['E', 'T', 'CDF'])[~is_monotonic]
-            .unstack('E').unstack('T')))
+        print(beta_df_reconstructed.unstack('CDF')[~is_monotonic].T)
     # set energy units to MeV
     beta_df_fit.index = (
             beta_df_fit.index
