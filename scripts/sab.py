@@ -588,6 +588,11 @@ def beta_functional_expansion(sab_df):
     pd.DataFrame
         Expansion coefficients in temperature for beta given a given set of
         incident energies and CDF values.
+
+    Todo
+    ----
+    Use DataFrames for intermediate steps instead of numpy arrays. This is how
+    alpha_functional_expansion() does it.
     """
     # Populate `beta_cdfs`, a 2D array where the first index corresponds to
     # incident energy and the second index corresponds to temperature. Each
