@@ -16,6 +16,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import re
+from functools import partial
+from inspect import signature
 from multiprocessing import Pool
 from scipy import integrate, optimize
 from tqdm import tqdm
@@ -179,15 +181,42 @@ def process_E_T(args):
 
 
 def process_b_T(args):
-    sab_df, beta, T = args
-    S_values = sab_df.xs((beta, T), level=('beta', 'T'))['S']
+    """
+    Generates conditional CDF in alpha given beta at a particular value of
+    beta and temperature. Returns None if there is zero probability of the
+    given beta being sampled.
+
+    Parameters
+    ----------
+    args: tuple of (group key, group, double)
+        The first element is the group key (a (beta, temperature) pair).
+        The second element is a pd.Series containing a MultiIndex. The
+        MultiIndex levels are temperature `T`, `beta`, and `alpha`. There is
+        only a single value of `T` and `beta` while multiple `alpha` values
+        must be present. The values are corresponding value of S(a,b,T).
+        The third element is the maximum alpha in the entire data set.
+    """
+    (beta, T), sab_s, max_alpha = args
+    # set endpoints to zero
+    if not sab_s.index.isin([(T, beta, 0)]).any():
+        sab_s[T, beta, 0] = 0
+    if not sab_s.index.isin([(T, beta, max_alpha)]).any():
+        sab_s[T, beta, max_alpha] = 0
+    sab_s = sab_s.sort_index()
     E_independent_alpha_cdf = pd.Series(
             np.concatenate((
                 [0],
-                integrate.cumulative_trapezoid(S_values, S_values.index))),
-                index=S_values.index)
+                integrate.cumulative_trapezoid(
+                    sab_s,
+                    sab_s.index.get_level_values('alpha')))),
+                index=sab_s.index)
     E_independent_alpha_integral = E_independent_alpha_cdf.iloc[-1]
-    return (E_independent_alpha_cdf / E_independent_alpha_integral).values
+    # if integral is zero, return nothing
+    if E_independent_alpha_integral == 0:
+        E_independent_alpha_cdf = None
+    else:
+        E_independent_alpha_cdf /= E_independent_alpha_integral
+    return E_independent_alpha_cdf
 
 
 def beta_fitting_function(T, c0, c1, c2, c3, c4, c5):
@@ -541,11 +570,12 @@ def compare_univariate_pdf(title, *series, axis='beta'):
     plt.show()
 
 
-def parallel_apply(df_grouped, func):
+def parallel_apply(df_grouped, func, *args):
+    func_args = ((group_index, group) + args for group_index, group in df_grouped)
     with Pool(processes=10) as pool:
         return pd.concat(
                 [x for x in tqdm(
-                    pool.imap(func=func, iterable=df_grouped),
+                    pool.imap(func=func, iterable=func_args),
                     total=len(df_grouped))])
 
 
@@ -590,10 +620,11 @@ def beta_functional_expansion(sab_df):
                     dtype=object).reshape(len(E_grid), len(df_Ts)))
     # take the union of all CDF values that appear across all incident energies
     all_cdfs = sorted(set(np.concatenate(beta_cdfs.reshape(-1))))
-    # choose number of CDF points we want to use
-    stride, remainder = divmod(len(all_cdfs), 1000) # use 1000 CDF values
-    F = all_cdfs[::stride if not remainder else stride + 1]
-    print(f"Using {len(F)} CDF values")
+    # choose approximate number of CDF points we want to use
+    F = all_cdfs[::len(all_cdfs) // 1000]
+    if F[-1] != 1:
+        F.append(1)
+    print(f"using {len(F)} CDF values")
     beta_df = pd.DataFrame(
             np.nan,
             index=pd.Index(F, name='CDF'),
@@ -632,66 +663,135 @@ def beta_functional_expansion(sab_df):
     return beta_df_fit.to_frame('coefficients').sort_index(level=['E', 'CDF', 'coefficient'])
 
 
-def alpha_functional_expansion(sab_df, x):
-    df_betas = np.array(sorted(sab_df.index.unique('beta')))
-    df_alphas = np.array(sorted(sab_df.index.unique('alpha')))
+def fit_alpha(args):
+    """
+    Fits alpha as a function of temperature for a given beta and CDF value.
+
+    Parameters
+    ----------
+    args : tuple of (group key, group)
+        The first argument is the group key (a (beta, CDF) pair).
+        The second element is a pd.Series containing a MultiIndex. The
+        MultiIndex levels are `beta`, `CDF`, and temperature `T`. There is only
+        a single value of `beta` and `CDF` while multiple `T` values must be
+        present. The values are values of alpha.
+    """
+    [beta, F], s= args
+    try:
+        coeffs = optimize.curve_fit(
+                alpha_fitting_function, s.index.get_level_values('T'), s)[0]
+    except TypeError:
+        # This happens when there are N coefficients to fit, M data points, and
+        # N > M. In this case, we only fit the first M coefficients and set the
+        # other N - M coefficients to zero.
+        n_coeffs = len(signature(alpha_fitting_function).parameters) - 1
+        kwargs = {f'c{i}': 0 for i in range(len(s), n_coeffs)}
+        coeffs = optimize.curve_fit(
+                partial(alpha_fitting_function, **kwargs),
+                s.index.get_level_values('T'), s)[0]
+        coeffs = np.concatenate([coeffs, np.zeros(n_coeffs - len(s))])
+    return pd.Series(
+            coeffs,
+            index=pd.MultiIndex.from_product(
+                [[beta], [F], range(len(coeffs))],
+                names=['beta', 'CDF', 'coefficient']))
+
+
+def alpha_functional_expansion(sab_df):
+    """
+    Computes the energy-independent conditional CDF in alpha given beta at
+    various beta values and temperatures, then performs a functional expansion
+    in temperature at various beta values and CDF values.
+
+    Parameters
+    ----------
+    sab_df : pd.DataFrame
+        S(a,b,T) DataFrame
+
+    """
     df_Ts = np.array(sorted(sab_df.index.unique('T')))
-    max_beta = max(20, E_grid[-1] / (k * df_Ts[0]))
-    betas = df_betas[:np.searchsorted(df_betas, max_beta)] # will never include max_beta
-    alpha_df = pd.DataFrame(
-            0,
-            index=pd.Index(F, name='CDF'),
-            columns=pd.MultiIndex.from_product((betas, df_Ts), names=('beta', 'T')))
-    for beta, x_beta in zip(betas, x):
-        for T, alpha_cdf in zip(df_Ts, x_beta):
-            alpha_df.loc[:, (beta, T)] = np.interp(F, alpha_cdf, df_alphas)
-    alpha_df_fit = alpha_df.unstack().groupby(level=['beta', 'CDF']).apply(
-            lambda s: pd.Series(
-                coeffs := optimize.curve_fit(alpha_fitting_function, s.index.unique(level='T'), s)[0],
-                index=pd.Index(range(len(coeffs)), name='coefficient')))
+
+    # take the union of all beta values that appear across all temperatures
+    all_betas = sab_df.index.unique('beta')
+    # choose number of beta points we want to use
+    selected_betas = all_betas[::len(all_betas) // 100]
+    # add largest beta from each temperature
+    selected_betas = (
+            pd.Index(sab_df.groupby('T').apply(
+                lambda s: s.index.unique('beta').max()),
+                name='beta')
+            .union(selected_betas))
+    print(f"using {len(selected_betas)} beta values...")
+    def common_beta_grid(group):
+        """
+        Modifies beta values at this temperature to conform with common beta
+        grid.
+        """
+        nonlocal sab_df
+        T = group.index.unique('T')[0]
+        group.index = group.index.droplevel('T')
+        # add betas from selected_betas which are not already in group
+        new_betas = selected_betas.difference(group.index.unique('beta'))
+        new_df = pd.DataFrame(
+                np.nan,
+                columns=group.index.unique('alpha'),
+                index=pd.Index(new_betas, name='beta'))
+        combined_df = pd.concat([group.unstack('alpha')['S'], new_df]).sort_index()
+        # S(a,b) above maximum beta at this temperature is zero
+        combined_df.loc[combined_df.index > group.index.unique('beta').max()] = 0
+        # interpolate linearly in beta and linearly in ln(S) (interpolation
+        # scheme 4 in ENDF)
+        return (
+                np.exp(
+                    np.log(combined_df)
+                    .interpolate(method='index', axis='index', limit_area='inside'))
+                .loc[selected_betas]
+                .stack())
+    common_beta_sab_df = sab_df.groupby('T').apply(common_beta_grid)
+    # alpha grids do not have to match across T-beta pairs, but they do have to
+    # have the same minimum and maximum values
+    print("computing alpha CDFs...")
+    alpha_cdfs = (
+            parallel_apply(
+                common_beta_sab_df.groupby(['beta', 'T']),
+                process_b_T, 632.9 * 293.6 / 273.6)
+            .sort_index())
+    # take the union of all CDF values that appear across all incident energies
+    all_cdfs = sorted(set(alpha_cdfs))
+    # choose number of CDF points we want to use
+    F = all_cdfs[::len(all_cdfs) // 1000]
+    # don't include 0
+    F = F if F[0] != 0 else F[1:]
+    # last CDF must always be 1.
+    print(f"using {len(F)} CDF values...")
+    # interpolate alpha values at selected CDF values
+    alpha_df = alpha_cdfs.groupby(['beta', 'T']).apply(
+            lambda s:
+            pd.Series(
+                np.interp(F, s, s.index.get_level_values('alpha')),
+                index=pd.Index(F, name='CDF')))
+    alpha_df_fit = parallel_apply(alpha_df.groupby(['beta', 'CDF']), fit_alpha)
     # check that CDFS are monotonic for certain T values
     test_T = np.linspace(df_Ts.min(), df_Ts.max(), 100)
     alpha_df_reconstructed = alpha_df_fit.groupby(level=['beta', 'CDF']).apply(
             lambda s: pd.Series(
                 alpha_fitting_function(test_T, *s), index=pd.Index(test_T, name='T')))
-    print(f"RMSE: {np.sqrt(((alpha_df - alpha_df_reconstructed.unstack(level='beta').unstack(level='T')) ** 2).mean().mean())}")
+    rmse = np.sqrt(np.mean(np.square(
+                (alpha_df_reconstructed - alpha_df.reorder_levels(['beta', 'CDF', 'T']))
+                .dropna())))
+    print(f"RMSE: {rmse}")
     is_monotonic = (
             alpha_df_reconstructed
             .groupby(level=['beta', 'T'])
-            .apply(lambda s: s.is_monotonic)
-            .all())
-    if not is_monotonic:
+            .apply(lambda s: s.is_monotonic))
+    print(
+            f"Of {alpha_df.index.unique('beta').size} betas and {test_T.size} target "
+            f"temperatures, {is_monotonic.sum()} of {is_monotonic.size} "
+            f"({is_monotonic.sum() / is_monotonic.size * 100}%) have "
+            f"monotonic alpha as a function of CDF")
+    if not is_monotonic.all():
         print("The following CDFs are not monotonic:")
-        print((
-            alpha_df_reconstructed
-            .reorder_levels(['beta', 'T', 'CDF'])[~is_monotonic]
-            .unstack('beta').unstack('T')))
+        print(alpha_df_reconstructed.unstack('CDF')[~is_monotonic].T)
     return alpha_df_fit.to_frame('coefficients').sort_index(level=['beta', 'CDF', 'coefficient'])
 
 
-def process_all_E_T(sab_df):
-    df_Ts = np.array(sorted(sab_df.index.unique('T')))
-    with Pool(processes=10) as pool:
-        # incident energy, temperature pairs
-        E_T_values = np.array([(sab_df, E, T) for E in E_grid for T in df_Ts])
-        return (
-                np.array(
-                    [x[2] for x in tqdm(
-                        pool.imap(func=process_E_T, iterable=E_T_values),
-                        total=len(E_T_values))],
-                    dtype=object).reshape(len(E_grid), len(df_Ts)))
-
-
-def process_all_b_T(sab_df):
-    df_betas = np.array(sorted(sab_df.index.unique('beta')))
-    with Pool(processes=10) as pool:
-        # largest possible beta value
-        max_beta = max(20, E_grid[-1] / (k * df_Ts[0]))
-        betas = df_betas[:np.searchsorted(df_betas, max_beta)] # will never include max_beta
-        b_T_values = np.array([(b, T) for b in betas for T in df_Ts])
-        return (
-                np.vstack([
-                    x for x in tqdm(
-                        pool.imap(func=process_b_T, iterable=b_T_values),
-                        total=len(b_T_values))])
-                    .reshape(len(betas), len(df_Ts), -1))
