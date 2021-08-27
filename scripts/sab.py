@@ -372,7 +372,7 @@ def get_pdf_minimc(counts_path, *bounds_paths):
             name='minimc')
 
 
-def get_pdf_mcnp(mctal_path, E, T):
+def get_pdf_mcnp(mctal_path, E, T, label=None):
     """
     Creates bivariate PDF in alpha and beta from an MCNP mctal file
 
@@ -385,6 +385,7 @@ def get_pdf_mcnp(mctal_path, E, T):
     T : float
         Temperature in K
     """
+    label = label if label else 'mcnp'
     cosine_bounds = [-1.,]
     energy_bounds = [0.,]
     counts = []
@@ -446,7 +447,7 @@ def get_pdf_mcnp(mctal_path, E, T):
             .fillna(0)
             .stack()
             .rename_axis(['alpha', 'beta'])
-            .rename('mcnp'))
+            .rename(label))
 
 
 def plot_pdf(s):
@@ -775,3 +776,37 @@ def alpha_functional_expansion(sab_df):
     return alpha_df_fit.to_frame('coefficients').sort_index(level=['beta', 'CDF', 'coefficient'])
 
 
+if __name__ == '__main__':
+    E = 0.56 # energy in eV
+    T = 293.6 # temperature in K
+    pdf_pdos = get_pdf_pdos(
+            parse_file7('/Users/atumulak/Developer/sab-data-generator/chapman_data.mf7'), E, T)
+    pdf_pdos_reconstructed = get_pdf_pdos_reconstructed(
+            './beta_cdf_chapman_data.hdf5',
+            './alpha_cdf_chapman_data.hdf5',
+            E, T)
+    pdf_minimc = get_pdf_minimc(
+            '../chapman_0.56e-6eV_293.6K.out',
+            '../alpha_boundaries.txt',
+            '../beta_boundaries.txt')
+    pdf_mcnp = get_pdf_mcnp('/Users/atumulak/Downloads/MCNP6/endf80-0.56e-6eV-293.6K.mctal', E, T, label='mcnp (endf80)')
+    compare_univariate_pdf(
+            f'E={E} eV, T={T} K',
+            marginalize(pdf_pdos, axis='beta'),
+            marginalize(pdf_pdos_reconstructed, axis='beta'),
+            marginalize(pdf_minimc, axis='beta'),
+            marginalize(pdf_mcnp, axis='beta'),
+            axis='beta')
+    compare_univariate_pdf(
+            f'E={E} eV, T={T} K',
+            marginalize(pdf_pdos, axis='alpha'),
+            marginalize(pdf_pdos_reconstructed, axis='alpha'),
+            marginalize(pdf_minimc, axis='alpha'),
+            marginalize(pdf_mcnp, axis='alpha'),
+            axis='alpha')
+    compare_bivariate_pdf(
+            f'E={E} eV, T={T} K',
+            pdf_pdos,
+            pdf_pdos_reconstructed,
+            pdf_minimc,
+            pdf_mcnp)
