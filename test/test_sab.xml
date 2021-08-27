@@ -1,0 +1,13 @@
+<nuclide name="hydrogen" awr="0.999167339">
+  <neutron>
+    <scatter>
+      <tsl
+        beta_cdf_file="/Users/atumulak/Developer/minimc/scripts/beta_cdf_chapman_data.hdf5"
+        alpha_cdf_file="/Users/atumulak/Developer/minimc/scripts/alpha_cdf_chapman_data.hdf5"
+        min_temperature="273.6"
+        max_temperature="800.0"
+        beta_cutoff="20.0"
+        alpha_cutoff="679.16461988"/>
+    </scatter>
+  </neutron>
+</nuclide>
