@@ -48,11 +48,9 @@ Real ThermalScattering::EvaluateAlpha(
   return result;
 }
 
-ThermalScattering::Beta
-ThermalScattering::SampleBeta(Particle& p) const noexcept {
+ThermalScattering::Beta ThermalScattering::SampleBeta(
+    Particle& p, ContinuousEnergy E, Temperature T) const noexcept {
 
-  // incident energy of neutron
-  const auto E = std::get<ContinuousEnergy>(p.GetEnergy());
   // find index of energy value strictly greater than E
   const size_t E_hi_i = std::distance(
       beta_energies.cbegin(),
@@ -83,8 +81,6 @@ ThermalScattering::SampleBeta(Particle& p) const noexcept {
   const Real F_lo = F_hi_i != 0 ? beta_cdfs.at(F_hi_i - 1) : 0;
   const Real F_hi = F_hi_i != beta_cdfs.size() ? beta_cdfs.at(F_hi_i) : 1;
 
-  // Evaluate nearest betas on the sampled E grid.
-  const Temperature T = p.GetCell().temperature;
   const ContinuousEnergy E_s_b_lo =
       F_hi_i != 0 ? EvaluateBeta(E_s_i, F_hi_i - 1, T)
                   : -(E_s * 1e6) / (constants::boltzmann * T);
@@ -107,8 +103,9 @@ ThermalScattering::SampleBeta(Particle& p) const noexcept {
                      (E_s_b_max - E_s_b_min);
 }
 
-ThermalScattering::Alpha
-ThermalScattering::SampleAlpha(Particle& p, const Beta& b) const noexcept {
+ThermalScattering::Alpha ThermalScattering::SampleAlpha(
+    Particle& p, const Beta& b, ContinuousEnergy E,
+    Temperature T) const noexcept {
 
   // assume S(a,b) = S(a,-b)
   const Beta abs_b = std::abs(b);
@@ -136,9 +133,6 @@ ThermalScattering::SampleAlpha(Particle& p, const Beta& b) const noexcept {
       r <= std::uniform_real_distribution{}(p.rng) ? b_hi_i - 1 : b_hi_i;
   Beta b_s = sgn_b * alpha_betas.at(b_s_i);
 
-  // parameters needed to scale sampled CDF value
-  const auto E = std::get<ContinuousEnergy>(p.GetEnergy());
-  const Temperature T = p.GetCell().temperature;
   // compute minimum and maximum possible value of alpha
   const auto sqrt_E = std::sqrt(E * 1e6);
   const auto b_s_sqrt_E_bkT =

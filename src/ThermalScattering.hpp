@@ -45,7 +45,15 @@ public:
   ///          The actual values are therefore the coefficients required to
   ///          reconstruct @f$ \beta(T) @f$ or @f$ \alpha(T) @f$.
   ThermalScattering(const pugi::xml_node& tsl_node) noexcept;
-
+  /// @brief Sample an outgoing energy. Requires Particle energy is strictly
+  ///        below ThermalScattering::cutoff_energy. Uses histogram
+  ///        interpolation in PDF.
+  Beta
+  SampleBeta(Particle& p, ContinuousEnergy E, Temperature T) const noexcept;
+  /// @brief Sample an outgoing cosine given an outgoing energy.
+  Alpha SampleAlpha(
+      Particle& p, const Beta& b, ContinuousEnergy E,
+      Temperature T) const noexcept;
 
 private:
   // Evaluates beta using a functional expansion in temperature
@@ -55,11 +63,6 @@ private:
   Real EvaluateAlpha(
       const size_t beta_index, const size_t cdf_index,
       Temperature T) const noexcept;
-  // Sample an outgoing energy. Requires Particle energy is strictly below
-  // ThermalScattering::cutoff_energy. Uses histogram interpolation in PDF.
-  Beta SampleBeta(Particle& p) const noexcept;
-  // Sample an outgoing cosine given an outgoing energy.
-  Alpha SampleAlpha(Particle &p, const Beta& b) const noexcept;
   // Raw cumulative distribution function data for beta and alpha
   const HDF5DataSet beta_cdf, alpha_cdf;
   // Incident energies for beta
