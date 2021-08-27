@@ -70,10 +70,11 @@ std::vector<size_t> Worker(
 ///          (string) path to beta boundaries
 ///          (string) path to alpha boundaries
 ///          (size_t) number of threads
+///          (string) path to output file
 int main(int argc, char* argv[]) {
   std::cout << "S(a,b) sampler..." << std::endl;
-  if (argc != 8) {
-    throw std::runtime_error("Expected 7 arguments!");
+  if (argc != 9) {
+    throw std::runtime_error("Expected 8 arguments!");
   }
   const size_t samples(std::stod(argv[1]));
   const ContinuousEnergy E{std::stod(argv[2])};
@@ -97,6 +98,7 @@ int main(int argc, char* argv[]) {
   }
   const size_t threads{std::stoul(argv[7])};
   const size_t progress_interval = samples * 0.01;
+  const std::filesystem::path output_path{argv[8]};
   // spawn workers
   std::vector<std::future<std::vector<size_t>>> results;
   for (size_t i = 0; i < threads; i++) {
@@ -116,7 +118,6 @@ int main(int argc, char* argv[]) {
         return accumulated;
       });
   std::cout << std::endl;
-  const std::filesystem::path output_path{"./sab_values.out"};
   std::ofstream outfile{output_path};
   for (auto count : counts) {
     outfile << count << std::endl;
