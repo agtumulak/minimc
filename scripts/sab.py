@@ -287,14 +287,14 @@ def get_pdf_pdos_reconstructed(beta_hdf_path, alpha_hdf_path, E, T):
     alpha_betas = alpha_cdf.index.unique('beta')
     # find largest beta in alpha_betas which is strictly less than E / (k * T)
     # we assume beta = 0 exists so result of searchsorted is >= 1
-    min_beta = alpha_betas[np.searchsorted(alpha_betas, -beta_cdf.iloc[0])] - 1
+    min_beta = alpha_betas[np.searchsorted(alpha_betas, -beta_cdf.iloc[0]) - 1]
     neg_b_alpha_cdf = (
             alpha_cdf
             .loc[alpha_betas[1]:min_beta] # don't include beta = 0
             .rename(index=lambda x: -x, level='beta') # make beta labels negative
             .sort_index(level='beta'))
     # find largest beta in alpha_betas which is strictly less than 20
-    max_beta = alpha_betas[np.searchsorted(alpha_betas, 20)] - 1
+    max_beta = alpha_betas[np.searchsorted(alpha_betas, 20) - 1]
     alpha_cdf = pd.concat((neg_b_alpha_cdf, alpha_cdf.loc[:max_beta]))
     def get_joint_probability(s):
         """
