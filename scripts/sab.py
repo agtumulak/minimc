@@ -714,7 +714,6 @@ def alpha_functional_expansion(sab_df):
         grid.
         """
         nonlocal sab_df
-        T = group.index.unique('T')[0]
         group.index = group.index.droplevel('T')
         # add betas from selected_betas which are not already in group
         new_betas = selected_betas.difference(group.index.unique('beta'))
