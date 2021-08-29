@@ -683,7 +683,7 @@ def fit_alpha(args):
                 names=['beta', 'CDF', 'coefficient']))
 
 
-def alpha_functional_expansion(sab_df):
+def alpha_functional_expansion(sab_df, n_betas=100, n_cdfs=1000):
     """
     Computes the energy-independent conditional CDF in alpha given beta at
     various beta values and temperatures, then performs a functional expansion
@@ -693,14 +693,17 @@ def alpha_functional_expansion(sab_df):
     ----------
     sab_df : pd.DataFrame
         S(a,b,T) DataFrame
-
+    n_betas : int, optional
+        Approximate number of betas to use
+    n_cdfs : int, optional
+        Approximate number of CDF values to use
     """
     df_Ts = np.array(sorted(sab_df.index.unique('T')))
 
     # take the union of all beta values that appear across all temperatures
     all_betas = sab_df.index.unique('beta')
     # choose number of beta points we want to use
-    selected_betas = all_betas[::len(all_betas) // 100]
+    selected_betas = all_betas[::len(all_betas) // n_betas]
     # add largest beta from each temperature
     selected_betas = (
             pd.Index(sab_df.groupby('T').apply(
@@ -744,7 +747,7 @@ def alpha_functional_expansion(sab_df):
     # take the union of all CDF values that appear across all incident energies
     all_cdfs = sorted(set(alpha_cdfs))
     # choose number of CDF points we want to use
-    F = all_cdfs[::len(all_cdfs) // 1000]
+    F = all_cdfs[::len(all_cdfs) // n_cdfs]
     # don't include 0
     F = F if F[0] != 0 else F[1:]
     # last CDF must always be 1.
