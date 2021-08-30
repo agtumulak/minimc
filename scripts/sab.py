@@ -19,7 +19,7 @@ import re
 from functools import partial
 from inspect import signature
 from multiprocessing import Pool
-from scipy import integrate, optimize
+from scipy import optimize
 from tqdm import tqdm
 
 
@@ -98,6 +98,27 @@ def parse_file7(mf7_path):
         return df
 
 
+def lin_log_cum_trapz(s):
+    """
+    Integrates a Series with trapezoid rule using linear in index and
+    logarithmic in value interpolation
+
+    Parameters
+    ----------
+    s : pd.Series
+       Series to integrate
+    """
+    x, y = s.index, s.values
+    numerators = y[1:] - y[:-1]
+    denominators = np.log(y[1:]) - np.log(y[:-1])
+    # https://stackoverflow.com/a/37977222/5101335
+    ratios = np.divide(
+            numerators, denominators, out=numerators, where=denominators!=0)
+    return pd.Series(
+            np.concatenate(([0], np.cumsum(ratios * (x[1:] - x[:-1])))),
+            index=s.index)
+
+
 def process_E_T(args):
     """
     Generates PDFs in beta, conditional PDFs in alpha given beta, and CDFs
@@ -137,21 +158,13 @@ def process_E_T(args):
                 pd.Series({min_alpha: S_at_min_alpha}),
                 S_values.iloc[min_alpha_index:max_alpha_index],
                 pd.Series({max_alpha: S_at_max_alpha})))
-        alpha_cdf = pd.Series(
-                np.concatenate((
-                    [0],
-                    integrate.cumulative_trapezoid(S_values, S_values.index))),
-                index=S_values.index)
+        alpha_cdf = lin_log_cum_trapz(S_values)
         alpha_integral = alpha_cdf.iloc[-1]
         alpha_cdfs[beta] = alpha_cdf / alpha_integral
         alpha_pdfs[beta] = (S_values / alpha_integral).rename(beta)
         beta_pdf.loc[beta] = np.exp(-beta / 2.0) * alpha_integral
     # convert pdf to cdf
-    beta_cdf = pd.Series(
-            np.concatenate((
-                [0],
-                integrate.cumulative_trapezoid(beta_pdf, beta_pdf.index))),
-            index=beta_pdf.index)
+    beta_cdf = lin_log_cum_trapz(beta_pdf)
     beta_integral = beta_cdf.iloc[-1]
     beta_cdf /= beta_integral
     beta_pdf /= beta_integral
@@ -181,13 +194,7 @@ def process_b_T(args):
     if not sab_s.index.isin([(T, beta, max_alpha)]).any():
         sab_s[T, beta, max_alpha] = 0
     sab_s = sab_s.sort_index()
-    E_independent_alpha_cdf = pd.Series(
-            np.concatenate((
-                [0],
-                integrate.cumulative_trapezoid(
-                    sab_s,
-                    sab_s.index.get_level_values('alpha')))),
-                index=sab_s.index)
+    E_independent_alpha_cdf = lin_log_cum_trapz(sab_s[T, beta])
     E_independent_alpha_integral = E_independent_alpha_cdf.iloc[-1]
     # if integral is zero, return nothing
     if E_independent_alpha_integral == 0:
