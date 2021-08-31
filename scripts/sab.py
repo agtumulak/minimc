@@ -29,6 +29,10 @@ A = 0.999167339
 # Boltzmann constant in eV / K
 k = 8.617333262145E-5
 
+# bound cross section
+sigma_free = 4.095600e1 / 2 # 2 hydrogens per H2O
+sigma_bound = sigma_free * ((A + 1) / A) ** 2
+
 
 def parse_file7(mf7_path):
     """
@@ -168,7 +172,8 @@ def process_E_T(args):
     beta_integral = beta_cdf.iloc[-1]
     beta_cdf /= beta_integral
     beta_pdf /= beta_integral
-    return beta_pdf, alpha_pdfs, beta_cdf, alpha_cdfs
+    total_inelastic_xs = sigma_bound * A * k * T / (4 * E) * beta_integral
+    return beta_pdf, alpha_pdfs, beta_cdf, alpha_cdfs, total_inelastic_xs
 
 
 def process_b_T(args):
@@ -229,7 +234,7 @@ def get_pdf_pdos(sab_df, E, T):
     T : float
         Temperature in K
     """
-    beta_pdf, alpha_pdfs, _, _ = process_E_T((sab_df, E, T))
+    beta_pdf, alpha_pdfs, _, _, _ = process_E_T((sab_df, E, T))
     for beta, p_beta in beta_pdf.iloc[1:-1].iteritems():
         alpha_pdfs[beta] *= p_beta
     return (
@@ -607,12 +612,14 @@ def beta_functional_expansion(sab_df, E_min=1e-5, E_max=4.0, n_Es=100,
     with Pool(processes=10) as pool:
         # incident energy, temperature pairs
         E_T_values = np.array([(sab_df, E, T) for E in Es for T in df_Ts])
-        beta_cdfs =  (
+        results = (
                 np.array(
-                    [x[2] for x in tqdm(
+                    [[x[2], x[4]] for x in tqdm(
                         pool.imap(func=process_E_T, iterable=E_T_values),
                         total=len(E_T_values))],
-                    dtype=object).reshape(len(Es), len(df_Ts)))
+                    dtype=object).reshape(len(Es), len(df_Ts), -1))
+        beta_cdfs = results[:,:,0]
+        inelastic_xs = pd.DataFrame(results[:,:,1], index=Es, columns=df_Ts)
     # take the union of all CDF values that appear across all incident energies
     all_cdfs = sorted(set(np.concatenate(beta_cdfs.reshape(-1))))
     # choose approximate number of CDF points we want to use
