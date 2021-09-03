@@ -126,6 +126,9 @@ ThermalScattering::Alpha ThermalScattering::SampleAlpha(
     Particle& p, const Beta& b, ContinuousEnergy E,
     Temperature T) const noexcept {
 
+  const auto E = std::get<ContinuousEnergy>(p.GetEnergy());
+  const Temperature T = p.GetCell().temperature;
+
   // assume S(a,b) = S(a,-b)
   const Beta abs_b = std::abs(b);
   // get sign of beta: https://stackoverflow.com/a/4609795/5101335
@@ -152,9 +155,6 @@ ThermalScattering::Alpha ThermalScattering::SampleAlpha(
       r <= std::uniform_real_distribution{}(p.rng) ? b_hi_i - 1 : b_hi_i;
   Beta b_s = sgn_b * alpha_betas.at(b_s_i);
 
-  // parameters needed to scale sampled CDF value
-  const auto E = std::get<ContinuousEnergy>(p.GetEnergy());
-  const Temperature T = p.GetCell().temperature;
   // compute minimum and maximum possible value of alpha
   const auto sqrt_E = std::sqrt(E * 1e6);
   const auto b_s_sqrt_E_bkT =
