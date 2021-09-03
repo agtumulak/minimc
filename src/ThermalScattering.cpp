@@ -114,9 +114,9 @@ ThermalScattering::Beta ThermalScattering::SampleBeta(
   // Scale to preserve thresholds at actual incident energy E. The minimum and
   // maximum values of beta are not included in the dataset since their
   // analytical form is known.
-  const Beta b_min = -(E * 1e6) / (constants::boltzmann * T);
+  const Beta b_min = -E / (constants::boltzmann * T);
   const Beta b_max = beta_cutoff;
-  const Beta E_s_b_min = -(E_s * 1e6) / (constants::boltzmann * T);
+  const Beta E_s_b_min = -E_s / (constants::boltzmann * T);
   const Beta E_s_b_max = beta_cutoff;
   return b_min + (b_prime - E_s_b_min) * (b_max - b_min) /
                      (E_s_b_max - E_s_b_min);
@@ -145,7 +145,7 @@ ThermalScattering::Alpha ThermalScattering::SampleAlpha(
   const bool snap_to_lower = (
       (sgn_b == 1 && beta_cutoff <= alpha_betas.at(b_hi_i)) ||
       (sgn_b == -1 &&
-       -alpha_betas.at(b_hi_i) < -(E * 1e6) / (constants::boltzmann * T)));
+       -alpha_betas.at(b_hi_i) < -E / (constants::boltzmann * T)));
   // Determine interpolation factor and sample a beta grid to use, b_s
   const Real r =
     snap_to_lower ? 0 :
@@ -156,9 +156,8 @@ ThermalScattering::Alpha ThermalScattering::SampleAlpha(
   Beta b_s = sgn_b * alpha_betas.at(b_s_i);
 
   // compute minimum and maximum possible value of alpha
-  const auto sqrt_E = std::sqrt(E * 1e6);
-  const auto b_s_sqrt_E_bkT =
-      std::sqrt(E * 1e6 + b_s * constants::boltzmann * T);
+  const auto sqrt_E = std::sqrt(E);
+  const auto b_s_sqrt_E_bkT = std::sqrt(E + b_s * constants::boltzmann * T);
   const auto akT = awr * constants::boltzmann * T;
   // minimum and maximum alpha values at sampled beta
   const Alpha b_s_a_min = std::pow(sqrt_E - b_s_sqrt_E_bkT, 2) / akT;
@@ -220,7 +219,7 @@ ThermalScattering::Alpha ThermalScattering::SampleAlpha(
 
   // Scale to preserve thresholds at actual beta value b. The minimum and
   // maximum values of alpha have analytical forms which are known.
-  const auto b_sqrt_E_bkT = std::sqrt(E * 1e6 + b * constants::boltzmann * T);
+  const auto b_sqrt_E_bkT = std::sqrt(E + b * constants::boltzmann * T);
   const Alpha b_a_min = std::pow(sqrt_E - b_sqrt_E_bkT, 2) / akT;
   const Alpha b_a_max = std::pow(sqrt_E + b_sqrt_E_bkT, 2) / akT;
   return b_a_min +
