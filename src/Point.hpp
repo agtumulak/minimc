@@ -9,8 +9,6 @@ class Point {
   friend Point operator+(const Point& lhs, const Point& rhs) noexcept;
   /// @brief Returns the vector difference of two Point objects
   friend Point operator-(const Point& lhs, const Point& rhs) noexcept;
-  /// @brief Returns the inner product of two Point objects
-  friend Real operator*(const Point& lhs, const Point& rhs) noexcept;
   /// @brief Returns Point with each element multiplied by lhs
   friend Point operator*(const Point& lhs, const Real& rhs) noexcept;
   /// @brief Returns Point with each element multiplied by rhs
@@ -26,6 +24,8 @@ public:
   Point(const Real& x, const Real& y, const Real& z) noexcept;
   /// @brief Scales the point to satisfy @f$ \lVert v \rVert = 1 @f$
   void Normalize() noexcept;
+  /// @brief Returns the inner product of this and another Point
+  Real Dot(const Point& rhs) const noexcept;
   /// @brief Adds the given Point to the current Point
   Point& operator+=(const Point& rhs) noexcept;
   /// @brief Divides each element of this Point with rhs

@@ -92,10 +92,10 @@ Sphere::Sphere(const pugi::xml_node& sphere_node) noexcept
 Real Sphere::Distance(
     const Point& origin, const Direction& direction) const noexcept {
   const Point oc{origin - center};
-  return SolveQuadratic(1, 2 * (oc * direction), oc * oc - radius * radius);
+  return SolveQuadratic(1, 2 * oc.Dot(direction), oc.Dot(oc) - radius * radius);
 }
 
 bool Sphere::Contains(const Point& p) const noexcept {
   const Point pc{p - center};
-  return pc * pc < radius * radius;
+  return pc.Dot(pc) < radius * radius;
 }

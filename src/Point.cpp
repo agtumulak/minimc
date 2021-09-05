@@ -15,10 +15,6 @@ Point operator-(const Point& lhs, const Point& rhs) noexcept {
   return Point{lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z};
 }
 
-Real operator*(const Point& lhs, const Point& rhs) noexcept {
-  return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z;
-}
-
 Point operator*(const Point& lhs, const Real& rhs) noexcept {
   return Point{lhs.x * rhs, lhs.y * rhs, lhs.z * rhs};
 }
@@ -40,7 +36,11 @@ Point::Point(const Real& x, const Real& y, const Real& z) noexcept
     : x{x}, y{y}, z{z} {}
 
 void Point::Normalize() noexcept {
-  *this /= std::sqrt(*this * *this); // sorry about this
+  *this /= std::sqrt(Dot(*this));
+}
+
+Real Point::Dot(const Point& rhs) const noexcept {
+  return x * rhs.x + y * rhs.y + z * rhs.z;
 }
 
 Point& Point::operator+=(const Point& rhs) noexcept {

@@ -15,8 +15,6 @@ TEST_CASE("overloaded Point binary operators") {
   REQUIRE(p + q == Point{2, 1, 0});
   // subtract Point objects
   REQUIRE(p - q == Point{0, 1, 0});
-  // compute inner product of Point objects
-  REQUIRE(p * q == 1);
   // compute scalar product of Point and Real
   REQUIRE(p * 2 == Point{2, 2, 0});
   // compute scalar product of Real and Point
@@ -37,8 +35,13 @@ TEST_CASE("overloaded member operators") {
   }
 }
 
-TEST_CASE("point normalization works"){
+TEST_CASE("member functions work"){
+  Point u{1, 1, 0};
+  u.Normalize();
+  REQUIRE(u == Point{1 / std::sqrt(2), 1 / std::sqrt(2), 0});
+  // compute vector functions
   Point p{1, 1, 0};
-  p.Normalize();
-  REQUIRE(p == Point{1 / std::sqrt(2), 1 / std::sqrt(2), 0});
+  Point q{1, 0, 0};
+  REQUIRE(p.Dot(q) == 1);
+  REQUIRE(p.Cross(q) == Point{0, 0, -1});
 }
