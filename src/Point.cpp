@@ -35,8 +35,9 @@ Point::Point(const pugi::xml_node& pointtype_node) noexcept
 Point::Point(const Real& x, const Real& y, const Real& z) noexcept
     : x{x}, y{y}, z{z} {}
 
-void Point::Normalize() noexcept {
+const Point& Point::Normalize() noexcept {
   *this /= std::sqrt(Dot(*this));
+  return *this;
 }
 
 Real Point::Dot(const Point& rhs) const noexcept {

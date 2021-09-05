@@ -23,7 +23,7 @@ public:
   /// @brief Constructs a Point with the given components
   Point(const Real& x, const Real& y, const Real& z) noexcept;
   /// @brief Scales the point to satisfy @f$ \lVert v \rVert = 1 @f$
-  void Normalize() noexcept;
+  const Point& Normalize() noexcept;
   /// @brief Returns the inner product of this and another Point
   Real Dot(const Point& rhs) const noexcept;
   /// @brief Adds the given Point to the current Point
