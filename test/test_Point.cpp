@@ -3,11 +3,6 @@
 
 #include <cmath>
 
-TEST_CASE("Point default constructor") {
-  Point p{};
-  REQUIRE(p == Point{0, 0, 0});
-}
-
 TEST_CASE("overloaded Point binary operators") {
   Point p{1, 1, 0};
   Point q{1, 0, 0};
@@ -23,16 +18,9 @@ TEST_CASE("overloaded Point binary operators") {
   REQUIRE_FALSE(p == q);
 }
 
-TEST_CASE("overloaded member operators") {
-  Point p{1, 2, 3};
-  SECTION("assignment by addition") {
-    p += Point{4, 5, 6};
-    REQUIRE(p == Point{5, 7, 9});
-  }
-  SECTION("assignment by division") {
-    p /= 2;
-    REQUIRE(p == Point{0.5, 1, 1.5});
-  }
+TEST_CASE("Point default constructor") {
+  Point p{};
+  REQUIRE(p == Point{0, 0, 0});
 }
 
 TEST_CASE("member functions work"){
@@ -44,4 +32,16 @@ TEST_CASE("member functions work"){
   Point q{1, 0, 0};
   REQUIRE(p.Dot(q) == 1);
   REQUIRE(p.Cross(q) == Point{0, 0, -1});
+}
+
+TEST_CASE("overloaded member operators") {
+  Point p{1, 2, 3};
+  SECTION("assignment by addition") {
+    p += Point{4, 5, 6};
+    REQUIRE(p == Point{5, 7, 9});
+  }
+  SECTION("assignment by division") {
+    p /= 2;
+    REQUIRE(p == Point{0.5, 1, 1.5});
+  }
 }
