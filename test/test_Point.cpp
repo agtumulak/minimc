@@ -45,3 +45,8 @@ TEST_CASE("overloaded member operators") {
     REQUIRE(p == Point{0.5, 1, 1.5});
   }
 }
+
+TEST_CASE("Direction componentwise constuctor") {
+  Direction d{2, 3, 6}; // a Pythagorean quadruple with diagonal length 7
+  REQUIRE(d == Point{2./7., 3./7., 6./7.});
+}
