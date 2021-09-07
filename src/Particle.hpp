@@ -15,9 +15,8 @@ class World;
 /// @details Particles are characterized by their position, direction, energy,
 ///          type, and an alive flag. The awkward declaration order of member
 ///          variables is meant to improve alignment.
-/// @note All users of this class should assume that the direction member is
-///       normalized to one to avoid extra computation. Maintainers of this
-///       class must take care care to keep direction normalized.
+/// @note Users of this class should assume that Direction is normalized to
+///       avoid extra computation.
 class Particle {
 public:
   /// @brief The result of a Transport call

@@ -46,6 +46,10 @@ protected:
 
 /// @brief Point in @f$ \mathbb{R}^{3} @f$ subject to
 ///        @f$ \lVert v \rVert = 1 @f$
+/// @details All users of this class can assume that the base Point is
+///          normalized.
+/// @note    Maintainers of this class must take care to keep the underlying
+///          Point normalized by calling Normalize() when appropriate.
 class Direction : public Point {
 public:
   /// @brief Constructs an isotropically sampled Direction
