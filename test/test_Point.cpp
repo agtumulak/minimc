@@ -50,3 +50,9 @@ TEST_CASE("Direction componentwise constuctor") {
   Direction d{2, 3, 6}; // a Pythagorean quadruple with diagonal length 7
   REQUIRE(d == Point{2./7., 3./7., 6./7.});
 }
+
+TEST_CASE("Direction mu phi constructor") {
+  Direction unit_y{0, 1, 0};
+  Direction cos0_phi0(unit_y, 0, 0); // this must lie in the x-z plane,
+  REQUIRE(cos0_phi0 == Direction{0, 0, -1});
+}
