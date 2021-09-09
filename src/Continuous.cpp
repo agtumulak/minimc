@@ -31,7 +31,7 @@ Continuous::Continuous(const pugi::xml_node& particle_node)
                   particle_node.child("fission").child("chi").attribute("file")
                   .as_string()))
               : std::nullopt},
-      sab{ReadPandasSAB(particle_node.child("scatter").child("tsl"))},
+      tsl{ReadPandasSAB(particle_node.child("scatter").child("tsl"))},
       reactions{CreateReactions(particle_node)},
       total{ReadJanisWeb(
           particle_node.child("total").attribute("file").as_string())} {}
@@ -218,8 +218,8 @@ Continuous::CreateReactions(const pugi::xml_node& particle_node) {
 void Continuous::Capture(Particle& p) const noexcept { p.Kill(); }
 
 void Continuous::Scatter(Particle& p) const noexcept {
-  if (sab->IsValid(p)) {
-    sab->Scatter(p);
+  if (tsl->IsValid(p)) {
+    tsl->Scatter(p);
   }
   else {
     p.SetDirectionIsotropic();
