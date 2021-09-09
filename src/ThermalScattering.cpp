@@ -126,9 +126,6 @@ ThermalScattering::Alpha ThermalScattering::SampleAlpha(
     Particle& p, const Beta& b, ContinuousEnergy E,
     Temperature T) const noexcept {
 
-  const auto E = std::get<ContinuousEnergy>(p.GetEnergy());
-  const Temperature T = p.GetCell().temperature;
-
   // assume S(a,b) = S(a,-b)
   const Beta abs_b = std::abs(b);
   // get sign of beta: https://stackoverflow.com/a/4609795/5101335
