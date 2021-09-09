@@ -1,0 +1,62 @@
+<minimc
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="minimc.xsd">
+<general>
+  <particles>neutron</particles>
+  <histories>100</histories>
+  <threads>2</threads>
+  <chunksize>10</chunksize>
+</general>
+<nuclides>
+  <continuous>
+    <nuclide name="hydrogen in water" awr="0.999167339">
+      <neutron>
+        <total file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-total.csv"/>
+        <capture file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-gamma.csv"/>
+        <scatter>
+          <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-elastic.csv"/>
+          <tsl
+            beta_cdf_file="/Users/atumulak/Developer/minimc/data/beta_cdf_chapman_data.hdf5"
+            alpha_cdf_file="/Users/atumulak/Developer/minimc/data/alpha_cdf_chapman_data.hdf5"
+            min_temperature="293.6"
+            max_temperature="800.0"
+            beta_cutoff="20.0"
+            alpha_cutoff="679.16461988"/>
+        </scatter>
+      </neutron>
+    </nuclide>
+  </continuous>
+</nuclides>
+<materials>
+  <material name="hydrogen in water" aden="0.066854">
+    <nuclide name="hydrogen in water" afrac="1"/>
+  </material>
+</materials>
+<surfaces>
+  <sphere name="sphere">
+    <center x="0" y="0" z="0"/>
+    <radius r="1e8"/>
+  </sphere>
+</surfaces>
+<cells>
+  <cell name="sphere" material="hydrogen in water" temperature="400.0">
+    <surface name="sphere" sense="-1"/>
+  </cell>
+</cells>
+<problemtype>
+  <fixedsource>
+    <position>
+      <constant x="0" y="0" z="0"/>
+    </position>
+    <direction>
+      <constant x="1" y="0" z="0"/>
+    </direction>
+    <energy>
+      <constant energy="1.05e-6"/>
+    </energy>
+    <particletype>
+      <constant type="neutron"/>
+    </particletype>
+  </fixedsource>
+</problemtype>
+</minimc>

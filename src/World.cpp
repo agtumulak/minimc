@@ -5,6 +5,7 @@
 #include "Nuclide.hpp"
 
 #include <algorithm>
+#include <numeric>
 #include <stdexcept>
 #include <string>
 
@@ -70,8 +71,25 @@ World::CreateNuclides(const pugi::xml_node& root) {
             return nuclide->name == nuclide_name;
           });
       if (nuclide_it == all_nuclides.cend()) {
-        all_nuclides.push_back(
-            std::make_shared<const Nuclide>(root, nuclide_name));
+        // Find nuclide node and construct Nuclide
+        const auto& energy_type_node{root.child("nuclides").first_child()};
+        const auto& nuclide_node{
+            energy_type_node.find_child_by_attribute("name", nuclide_name)};
+        if (!nuclide_node) {
+          throw std::runtime_error(
+              std::string{"Nuclide node \""} + nuclide_name +
+              "\" not found. Must be one of: [" +
+              std::accumulate(
+                  energy_type_node.begin(), energy_type_node.end(),
+                  std::string{},
+                  [](const auto& accumulated,
+                     const auto& nuclide_node) noexcept {
+                    return accumulated + "\"" +
+                           nuclide_node.attribute("name").as_string() + "\", ";
+                  }) +
+              "]");
+        }
+        all_nuclides.push_back(std::make_shared<const Nuclide>(nuclide_node));
       }
     }
   }

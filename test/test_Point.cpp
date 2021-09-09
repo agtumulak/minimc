@@ -3,11 +3,6 @@
 
 #include <cmath>
 
-TEST_CASE("Point default constructor") {
-  Point p{};
-  REQUIRE(p == Point{0, 0, 0});
-}
-
 TEST_CASE("overloaded Point binary operators") {
   Point p{1, 1, 0};
   Point q{1, 0, 0};
@@ -15,14 +10,28 @@ TEST_CASE("overloaded Point binary operators") {
   REQUIRE(p + q == Point{2, 1, 0});
   // subtract Point objects
   REQUIRE(p - q == Point{0, 1, 0});
-  // compute inner product of Point objects
-  REQUIRE(p * q == 1);
   // compute scalar product of Point and Real
   REQUIRE(p * 2 == Point{2, 2, 0});
   // compute scalar product of Real and Point
   REQUIRE(2 * p == Point{2, 2, 0});
   // compare inequal Point objects
   REQUIRE_FALSE(p == q);
+}
+
+TEST_CASE("Point default constructor") {
+  Point p{};
+  REQUIRE(p == Point{0, 0, 0});
+}
+
+TEST_CASE("member functions work"){
+  Point u{1, 1, 0};
+  u.Normalize();
+  REQUIRE(u == Point{1 / std::sqrt(2), 1 / std::sqrt(2), 0});
+  // compute vector functions
+  Point p{1, 1, 0};
+  Point q{1, 0, 0};
+  REQUIRE(p.Dot(q) == 1);
+  REQUIRE(p.Cross(q) == Point{0, 0, -1});
 }
 
 TEST_CASE("overloaded member operators") {
@@ -37,8 +46,13 @@ TEST_CASE("overloaded member operators") {
   }
 }
 
-TEST_CASE("point normalization works"){
-  Point p{1, 1, 0};
-  p.Normalize();
-  REQUIRE(p == Point{1 / std::sqrt(2), 1 / std::sqrt(2), 0});
+TEST_CASE("Direction componentwise constuctor") {
+  Direction d{2, 3, 6}; // a Pythagorean quadruple with diagonal length 7
+  REQUIRE(d == Point{2./7., 3./7., 6./7.});
+}
+
+TEST_CASE("Direction mu phi constructor") {
+  Direction unit_y{0, 1, 0};
+  Direction cos0_phi0(unit_y, 0, 0); // this must lie in the x-z plane,
+  REQUIRE(cos0_phi0 == Direction{0, 0, -1});
 }

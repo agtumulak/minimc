@@ -13,6 +13,7 @@
             <xs:element name="histories" type="xs:positiveInteger"/>
             <xs:element name="threads" type="xs:positiveInteger"/>
             <xs:element name="chunksize" type="xs:positiveInteger"/>
+            <xs:element name="seed" type="xs:positiveInteger" minOccurs="0"/>
           </xs:all>
         </xs:complexType>
       </xs:element>
@@ -88,6 +89,7 @@
                   <xs:extension base="CSGDefinition">
                     <xs:attribute name="name" type="xs:normalizedString" use="required"/>
                     <xs:attribute name="material" type="xs:normalizedString" use="required"/>
+                    <xs:attribute name="temperature" type="NonNegativeDouble"/>
                   </xs:extension>
                 </xs:complexContent>
               </xs:complexType>

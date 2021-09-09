@@ -9,12 +9,31 @@
 </general>
 <nuclides>
   <continuous>
-    <nuclide name="uranium235">
+    <nuclide name="hydrogen" awr="0.999167339">
+      <neutron>
+        <total file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-total.csv"/>
+        <capture file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-gamma.csv"/>
+        <scatter>
+          <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-elastic.csv"/>
+        </scatter>
+      </neutron>
+    </nuclide>
+    <nuclide name="oxygen" awr="15.8575107">
+      <neutron>
+        <total file="/Users/atumulak/Developer/minimc/data/endfb8/n-O16_0-total.csv"/>
+        <capture file="/Users/atumulak/Developer/minimc/data/endfb8/n-O16_0-gamma.csv"/>
+        <scatter>
+          <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-O16_0-elastic.csv"/>
+        </scatter>
+      </neutron>
+    </nuclide>
+    <nuclide name="uranium235" awr="233.024791">
       <neutron>
         <total file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-total.csv"/>
         <capture file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-gamma.csv"/>
-        <scatter file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-elastic.csv"/>
-
+        <scatter>
+          <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-elastic.csv"/>
+        </scatter>
         <fission>
           <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-fission.csv"/>
           <nubar file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-nubar.csv"/>
@@ -25,40 +44,58 @@
   </continuous>
 </nuclides>
 <materials>
-  <material name="uranium235" aden="0.048204188">
-    <nuclide name="uranium235" afrac="1.0"/>
+  <material name="water" aden="2">
+    <nuclide name="hydrogen" afrac="0.67"/>
+    <nuclide name="oxygen" afrac="0.33"/>
+  </material>
+  <material name="hydrogen" aden="1">
+    <nuclide name="hydrogen" afrac="0.1"/>
+  </material>
+  <material name="oxygen" aden="1">
+    <nuclide name="oxygen" afrac="0.1"/>
   </material>
 </materials>
 <surfaces>
-  <sphere name="sphere">
+  <sphere name="inner sphere">
     <center x="0" y="0" z="0"/>
-    <radius r="8.66"/>
+    <radius r="1"/>
+  </sphere>
+  <sphere name="middle sphere">
+    <center x="0" y="0" z="0"/>
+    <radius r="2"/>
+  </sphere>
+  <sphere name="outer sphere">
+    <center x="0" y="0" z="0"/>
+    <radius r="3"/>
   </sphere>
 </surfaces>
 <cells>
-  <cell name="sphere" material="uranium235">
-    <surface name="sphere" sense="-1"/>
+  <cell name="pit" material="hydrogen">
+    <surface name="inner sphere" sense="-1"/>
   </cell>
-  <void>
-    <surface name="sphere" sense="+1"/>
-  </void>
+  <cell name="inner shell" material="water">
+    <surface name="inner sphere" sense="+1"/>
+    <surface name="middle sphere" sense="-1"/>
+  </cell>
+  <cell name="outer shell" material="hydrogen">
+    <surface name="middle sphere" sense="+1"/>
+    <surface name="outer sphere" sense="-1"/>
+  </cell>
 </cells>
 <problemtype>
-  <keigenvalue inactive="100" active="10">
-    <initialsource>
-      <position>
-        <constant x="0" y="0" z="0"/>
-      </position>
-      <direction>
-        <isotropic/>
-      </direction>
-      <energy>
-        <constant energy="1"/>
-      </energy>
-      <particletype>
-        <constant type="neutron"/>
-      </particletype>
-    </initialsource>
-  </keigenvalue>
+  <fixedsource>
+    <position>
+      <constant x="0" y="0" z="0"/>
+    </position>
+    <direction>
+      <isotropic/>
+    </direction>
+    <energy>
+      <constant energy="1e-6"/>
+    </energy>
+    <particletype>
+      <constant type="neutron"/>
+    </particletype>
+  </fixedsource>
 </problemtype>
 </minimc>

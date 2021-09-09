@@ -20,17 +20,17 @@ public:
   /// @brief Virtual destructor (C++ Core Guidelines C.127)
   virtual ~Driver() noexcept;
   /// @brief Solves the problem
-  virtual void Solve() = 0;
+  virtual Estimator Solve() = 0;
 
 protected:
   /// @brief Accumulates all counts produced by the simulation
   Estimator estimators{};
   /// @brief Global, read-only description of geometric and material properties
   const World world;
-  /// @brief Total histories for fixed-source; per-cycle for k-eigenvalue
-  const RNG::result_type batchsize;
   /// @brief Number of threads dedicated to particle transport
   const size_t threads;
-  /// @brief Used as a parameter for thread-safe classes such as ChunkGiver
-  const size_t chunksize;
+  /// @brief Histories are assigned a seed in [seed, seed + batchsize)
+  const RNG::result_type seed;
+  /// @brief Total histories for fixed-source; cycle weight for k-eigenvalue
+  const RNG::result_type batchsize;
 };

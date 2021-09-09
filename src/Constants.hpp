@@ -15,7 +15,13 @@ namespace constants {
 constexpr Real pi = M_PI;
 /// @brief Additional distance to stream Particle to cross CSGSurface properly
 constexpr Real nudge = 10 * std::numeric_limits<Real>::epsilon();
-/// @brief Interval between RNG seeds to keep sequences "far apart". Is this
-///        a legitimate concern?
-constexpr RNG::result_type seed_stride{7919};
+/// @brief Used to determine whether a Direction is too close to an axis. A
+///        value of 0 means all directions are too close to the axis. A value
+///        of 1 means any direction is far away enough from the axis. Must be
+///        in (0, 1).
+constexpr Real on_axis_tolerance = 0.9;
+/// @brief The temperature I personally find most comfortable
+constexpr Temperature room_temperature = 293.6;
+/// @brief Boltzmann constant in MeV per kelvin
+constexpr Real boltzmann = 8.617333262145e-11;
 } // namespace constants

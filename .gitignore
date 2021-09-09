@@ -39,3 +39,5 @@ compile_commands.json
 
 # misc
 build/
+COMMIT.md
+TODO.md

@@ -11,11 +11,13 @@ FetchContent_MakeAvailable(catch_download)
 set(UNIT_TEST_SOURCES
   test_CSGSurface.cpp
   test_Cell.cpp
-  test_Parallel.cpp
+  test_FixedSource.cpp
+  test_HDF5.cpp
   test_Material.cpp
   test_Nuclide.cpp
   test_Particle.cpp
   test_Point.cpp
+  test_ThermalScattering.cpp
   test_XMLDocument.cpp
   test_World.cpp
   )
@@ -25,10 +27,19 @@ target_link_libraries(all_tests Catch2::Catch2 minimc)
 
 # add new unit test input files here
 set(UNIT_TEST_INPUTS
+  continuous.xml
+  continuous_invalid_nuclide_data_path.xml
   minimc.xsd
   minimc_basictypes.xsd
-  simple_continuous.xml
-  simple_multigroup.xml
+  multigroup.xml
+  multigroup_malformed_capture.xml
+  multigroup_malformed_scatter.xml
+  multigroup_missing_particle_data.xml
+  multigroup_nonexistent_nuclide.xml
+  point_source_leakage.xml
+  test_HDF5_valid.hdf5
+  test_HDF5_invalid.hdf5
+  test_ThermalScattering.xml
   test_XMLDocument.xsd
   test_XMLDocument_valid.xml
   test_XMLDocument_invalid.xml

@@ -81,7 +81,23 @@
   <xs:all>
     <xs:element name="total" type="ContinuousReactionFilepath" minOccurs="0"/>
     <xs:element name="capture" type="ContinuousReactionFilepath" minOccurs="0"/>
-    <xs:element name="scatter" type="ContinuousReactionFilepath" minOccurs="0"/>
+    <xs:element name="scatter" minOccurs="0">
+      <xs:complexType>
+        <xs:all>
+          <xs:element name="xs" type="ContinuousReactionFilepath"/>
+          <xs:element name="tsl" minOccurs="0">
+            <xs:complexType>
+              <xs:attribute name="beta_cdf_file" type="xs:anyURI" use="required"/>
+              <xs:attribute name="alpha_cdf_file" type="xs:anyURI" use="required"/>
+              <xs:attribute name="min_temperature" type="StrictlyPositiveDouble" use="required"/>
+              <xs:attribute name="max_temperature" type="StrictlyPositiveDouble" use="required"/>
+              <xs:attribute name="beta_cutoff" type="StrictlyPositiveDouble" use="required"/>
+              <xs:attribute name="alpha_cutoff" type="StrictlyPositiveDouble" use="required"/>
+            </xs:complexType>
+          </xs:element>
+        </xs:all>
+      </xs:complexType>
+    </xs:element>
     <xs:element name="fission" minOccurs="0">
       <xs:complexType>
         <xs:all>
@@ -103,6 +119,7 @@
           <xs:element name="photon" type="ContinuousXSReactions" minOccurs="0"/>
         </xs:all>
         <xs:attribute name="name" use="required"/>
+        <xs:attribute name="awr" type="StrictlyPositiveDouble" use="required"/>
       </xs:complexType>
     </xs:element>
   </xs:choice>

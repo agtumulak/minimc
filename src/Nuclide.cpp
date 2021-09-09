@@ -7,8 +7,9 @@
 
 //// public
 
-Nuclide::Nuclide(const pugi::xml_node& root, const std::string& nuclide_name)
-    : name{nuclide_name}, xs{NuclearData::Create(root, nuclide_name)} {}
+Nuclide::Nuclide(const pugi::xml_node& nuclide_node)
+    : name{nuclide_node.attribute("name").as_string()}, xs{Interaction::Create(
+                                                            nuclide_node)} {}
 
 MicroscopicCrossSection Nuclide::GetTotal(const Particle& p) const noexcept {
   return xs.at(p.type)->GetTotal(p);
@@ -23,13 +24,6 @@ Real Nuclide::GetNuBar(const Particle& p) const noexcept {
   return xs.at(p.type)->GetNuBar(p);
 }
 
-void Nuclide::Scatter(RNG& rng, Particle& p) const {
-  xs.at(p.type)->Scatter(rng, p);
-}
-
-std::vector<Particle> Nuclide::Fission(RNG& rng, Particle& p) const noexcept {
-  return xs.at(p.type)->Fission(rng, p);
-}
-Reaction Nuclide::SampleReaction(RNG& rng, const Particle& p) const noexcept {
-  return xs.at(p.type)->SampleReaction(rng, p);
+void Nuclide::Interact(Particle& p) const noexcept {
+  xs.at(p.type)->Interact(p);
 }

@@ -8,17 +8,17 @@
 #include <memory>
 
 TEST_CASE("nonexistent surface name throws exception") {
-  XMLDocument doc{"simple_multigroup.xml"};
+  XMLDocument doc{"multigroup.xml"};
   REQUIRE_THROWS_WITH(
       CSGSurface::Create(doc.root, "nonexistent"),
       "Surface node \"nonexistent\" not found. Must be one of: "
-      "[\"inner sphere\", \"middle sphere\", \"outer sphere\", ]");
+      "[\"inner shell\", \"middle shell\", \"outer shell\", ]");
 }
 
 TEST_CASE("compute distances to Sphere") {
-  XMLDocument doc{"simple_multigroup.xml"};
+  XMLDocument doc{"multigroup.xml"};
   const std::unique_ptr<const CSGSurface> surface{
-      CSGSurface::Create(doc.root, "inner sphere")};
+      CSGSurface::Create(doc.root, "inner shell")};
 
   // discriminant less than zero; no intersection
   REQUIRE(

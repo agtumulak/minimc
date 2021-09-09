@@ -11,7 +11,6 @@
 /// @tparam T Returned type of the distribution
 template <typename T> class Distribution {
 public:
-  using return_type = T;
   /// @brief Factory method to create a new Distribution from an XML document
   /// @param property_node Either a `position`, `direction`, `energy`, or
   ///        `particletype` node
@@ -50,7 +49,7 @@ public:
   ///          minimc XML schema
   Source(const pugi::xml_node& source_node);
   /// @brief Samples a source Particle
-  Particle Sample(RNG& rng) const noexcept;
+  Particle Sample(RNG::result_type seed) const noexcept;
 
 private:
   std::unique_ptr<const Distribution<Point>> position;

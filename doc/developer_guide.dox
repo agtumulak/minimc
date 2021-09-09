@@ -33,7 +33,11 @@ encapsulated and internally performs most of the operations required to update
 its state. Should other classes use a Particle object as a function paramter,
 they should only do so using a `const` qualifier. For instance,
 Material::GetMicroscopicTotal accepts a `const` Particle reference as a
-parameter to look up relevant cross sections.
+parameter to look up relevant cross sections. One notable exception is the
+Interaction class, which accepts a non-`const` Particle reference in some of
+its methods. This is because the very nature of a particle-nuclide interaction
+affects the state of a particle. Changes to the Particle state, however, are
+still made through public Particle methods.
 
 @section developer_guide_commenting Commenting
 

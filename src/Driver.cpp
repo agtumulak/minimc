@@ -29,10 +29,13 @@ Driver::Create(const std::filesystem::path& xml_filepath) {
 }
 
 Driver::Driver(const pugi::xml_node& root)
-    : world{root}, batchsize(std::stoi(
-                       root.child("general").child("histories").child_value())),
-      threads{std::stoul(root.child("general").child("threads").child_value())},
-      chunksize{
-          std::stoul(root.child("general").child("chunksize").child_value())} {}
+    : world{root}, threads{std::stoul(
+                       root.child("general").child("threads").child_value())},
+      seed(std::stoi(
+          root.child("general").child("seed")
+              ? root.child("general").child("seed").child_value()
+              : "1")),
+      batchsize(
+          std::stoi(root.child("general").child("histories").child_value())) {}
 
 Driver::~Driver() noexcept {}

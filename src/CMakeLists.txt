@@ -14,18 +14,18 @@ set(MINIMC_SOURCES
   Constants.hpp
   FixedSource.cpp
   FixedSource.hpp
+  HDF5DataSet.cpp
+  HDF5DataSet.hpp
+  Interaction.cpp
+  Interaction.hpp
   KEigenvalue.cpp
   KEigenvalue.hpp
   Material.cpp
   Material.hpp
   Multigroup.cpp
   Multigroup.hpp
-  NuclearData.cpp
-  NuclearData.hpp
   Nuclide.cpp
   Nuclide.hpp
-  Parallel.cpp
-  Parallel.hpp
   Particle.cpp
   Particle.hpp
   Point.cpp
@@ -34,6 +34,8 @@ set(MINIMC_SOURCES
   Reaction.hpp
   Source.cpp
   Source.hpp
+  ThermalScattering.cpp
+  ThermalScattering.hpp
   World.cpp
   World.hpp
   XMLDocument.cpp
@@ -41,14 +43,14 @@ set(MINIMC_SOURCES
   )
 
 add_library(minimc ${MINIMC_SOURCES})
-add_dependencies(minimc xerces_download pugixml_download)
+add_dependencies(minimc xerces_download pugixml_download hdf5_download)
 target_include_directories(minimc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_options(minimc PUBLIC
   $<$<AND:$<CONFIG:Debug>,$<BOOL:${APPLE}>>:-fprofile-instr-generate -fcoverage-mapping -O0 -Wall -Wextra -Wdocumentation>
   $<$<AND:$<CONFIG:Release>,$<CXX_COMPILER_ID:Clang,GNU>>:-O3>)
 target_link_options(minimc PUBLIC
   $<$<AND:$<CONFIG:Debug>,$<BOOL:${APPLE}>>:-fprofile-instr-generate>)
-target_link_libraries(minimc xerces pugixml)
+target_link_libraries(minimc xerces pugixml hdf5_cpp)
 set_target_properties(minimc PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
   )

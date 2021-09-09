@@ -1,16 +1,13 @@
 #include "FixedSource.hpp"
 
-#include "Constants.hpp"
+#include "Particle.hpp"
 
-#include <algorithm>
 #include <cstddef>
 #include <future>
-#include <string>
 #include <iostream>
-#include <iterator>
+#include <list>
 #include <numeric>
-#include <optional>
-#include <utility>
+#include <string>
 #include <vector>
 
 // FixedSource
@@ -20,13 +17,10 @@
 FixedSource::FixedSource(const pugi::xml_node& root)
     : Driver{root}, source{root.child("problemtype").child("fixedsource")} {};
 
-void FixedSource::Solve() {
+Estimator FixedSource::Solve() {
   std::vector<std::future<Estimator>> results;
   std::cout << "Spawning " << std::to_string(threads) << " threads working on "
-            << std::to_string(batchsize) << " histories split into "
-            << std::to_string(
-                   batchsize / chunksize + (batchsize % chunksize != 0))
-            << " chunks... " << std::endl;
+            << std::to_string(batchsize) << " histories..." << std::endl;
   for (size_t i = 0; i < threads; i++) {
     results.push_back(std::async(&FixedSource::StartWorker, this));
   }
@@ -35,31 +29,30 @@ void FixedSource::Solve() {
       [](auto& accumulated, auto& future) {
         return accumulated += future.get();
       });
-  std::cout << estimators;
-}
-
-Estimator FixedSource::StartWorker() {
-  Estimator worker_estimator;
-  while (const auto range = chunk_giver.Next()) {
-    for (auto h = range->first; h < range->second; h++) {
-      std::vector<Particle> bank(1, Sample(h));
-      while (!bank.empty()) {
-        auto result = bank.back().Transport(world);
-        bank.pop_back();
-        worker_estimator += result.estimator;
-        std::move(
-            result.banked.begin(), result.banked.end(),
-            std::back_insert_iterator(bank));
-      }
-    }
-  }
-  return worker_estimator;
+  estimators.Normalize(batchsize);
+  return estimators;
 }
 
 //// private
 
-Particle FixedSource::Sample(RNG::result_type history) const noexcept {
-  // avoid zero seed with +1
-  RNG rng{(history + 1) * constants::seed_stride};
-  return source.Sample(rng);
+Estimator FixedSource::StartWorker() {
+  Estimator worker_estimator;
+  while (true) {
+    // atomically update thread-local count of histories started
+    auto elapsed = histories_elapsed++;
+    if (elapsed >= batchsize) {
+      break;
+    }
+    // Use the remaining number of histories run for the seed
+    auto p{source.Sample(seed + elapsed)};
+    // we choose a list because list::splice is constant time
+    std::list<Particle> bank(1, p);
+    while (!bank.empty()) {
+      auto result = bank.back().Transport(world);
+      bank.pop_back();
+      worker_estimator += result.estimator;
+      bank.splice(bank.begin(), result.banked);
+    }
+  }
+  return worker_estimator;
 }

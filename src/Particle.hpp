@@ -5,7 +5,7 @@
 #include "Point.hpp"
 
 #include <string>
-#include <vector>
+#include <list>
 
 class Cell;
 class Nuclide;
@@ -14,28 +14,19 @@ class World;
 /// @brief The primary entity performing random walks in a World.
 /// @details Particles are characterized by their position, direction, energy,
 ///          type, and an alive flag. The awkward declaration order of member
-///          variables is meant to improve alignment. On Apple clang version
-///          12.0.0 the members are as follows:
-///          Member        | Size (bytes)  | Total (bytes)
-///          ------------- | ------------- | -------------
-///          position      |            24 |            24
-///          direction     |            24 |            48
-///          energy        |            16 |            64
-///          cell*         |             8 |            72
-///          type          |             4 |            76
-///          seed          |             4 |            80
-///          alive         |             1 |            81
-///          padding       |             7 |            88
-/// @note All users of this class should assume that the direction member is
-///       normalized to one to avoid extra computation. Maintainers of this
-///       class must take care care to keep direction normalized.
+///          variables is meant to improve alignment.
+/// @note Users of this class should assume that Direction is normalized to
+///       avoid extra computation.
 class Particle {
 public:
   /// @brief The result of a Transport call
   struct TransportOutcome {
-    TransportOutcome& operator+=(const TransportOutcome& rhs) noexcept;
+    /// @brief Adds the result of another transport result to this result
+    TransportOutcome& operator+=(TransportOutcome&& rhs) noexcept;
+    /// @brief Estimators scored during transport
     Estimator estimator;
-    std::vector<Particle> banked;
+    /// @brief Secondary particles banked during transport
+    std::list<Particle> banked;
   };
   /// @brief Affects which cross section data is used during transport, among
   ///        other things
@@ -48,34 +39,45 @@ public:
   /// @brief Member constructor. Explicitly assigns phase-space members.
   Particle(
       const Point& position, const Direction& direction, const Energy& energy,
-      const Type type) noexcept;
+      const Type type, RNG::result_type seed,
+      const Cell* cell = nullptr) noexcept;
   /// @brief Moves the Particle through each state until it dies.
   TransportOutcome Transport(const World& w) noexcept;
   /// @brief Kill the Particle, stopping the history
   void Kill() noexcept;
   /// @brief Moves the particle along its current direction a given distance
   void Stream(const Real distance) noexcept;
+  /// @brief Scatters the Particle with an outgoing direction and energy.
+  /// @details Scattering is assumed to be azimuthally symmetric.
+  /// @param mu The scattering cosine @f$ \mu @f$
+  /// @param e The outgoing energy
+  void Scatter(const Real& mu, const Energy& e) noexcept;
   /// @brief Return the current position of the Particle
   const Point& GetPosition() const noexcept;
   /// @brief Sets the direction to a random isotropic direction
   /// @note This should be replaced by a method which accepts scattering cosine
-  void SetDirectionIsotropic(RNG& rng) noexcept;
+  void SetDirectionIsotropic() noexcept;
   /// @brief Returns the current energy of the Particle
   const Energy& GetEnergy() const noexcept;
   /// @brief Updates the current energy of the Particle
   void SetEnergy(const Energy& e) noexcept;
+  /// @brief Returns the Type of the Particle
+  Type GetType() const noexcept;
   /// @brief Returns a reference to the current Cell the Particle is within
   const Cell& GetCell() const;
   /// @brief Sets the current Cell occupied by the Particle
   void SetCell(const Cell& c) noexcept;
+  /// @brief Banks secondaries produced during transport using an outgoing
+  ///        Direction and outgoing Energy
+  void Bank(const Direction& direction, const Energy& energy) noexcept;
 
 private:
   // Returns the distance the Particle will travel before colliding
   Real SampleCollisionDistance() noexcept;
   // Sample a Nuclide given that the Particle has collided inside its Cell
   const Nuclide& SampleNuclide() noexcept;
-  // Random number generator
-  RNG rng{0};
+  // Secondaries produced
+  std::list<Particle> secondaries;
   // Position may be anywhere in @f$ \mathbb{R}^3 @f$
   Point position{0, 0, 0};
   // Direction must be constrained to @f$ \lVert v \rVert = 1 @f$
@@ -86,18 +88,14 @@ private:
   const Cell* cell{nullptr};
 
 public:
+  /// @brief Random number generator (C++ Core Guidelines C.131)
+  /// @details This Particle contains its own random number generator. Any
+  ///          Particle initialized with the same member variables and provided
+  ///          with the same World should return the same result after calling
+  ///          Transport();
+  RNG rng;
   /// @brief Type of the Particle (C++ Core Guidelines C.131)
   const Type type{Type::neutron};
-  /// @brief Seed used to initialize rng once this Particle is constructed
-  /// @details In monte carlo methods, there is a paradoxical requirement that
-  ///          results are completely deterministic. In k-eigenvalue
-  ///          calculations, a given fixed-source cycle must yield the same
-  ///          result every time the simulation is run. To do this, we note
-  ///          that the outcome of sampling a history depends entirely on two
-  ///          things: the initial state of the source particle, and the
-  ///          initial state of the random number generator (rng) used to
-  ///          sample the sequence of events that follow.
-  RNG::result_type seed {0};
 
 private:
   // Flag for determining if this Particle is still alive

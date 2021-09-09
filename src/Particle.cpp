@@ -7,9 +7,7 @@
 #include "Reaction.hpp"
 #include "World.hpp"
 
-#include <algorithm>
 #include <cassert>
-#include <iterator>
 #include <random>
 #include <stdexcept>
 
@@ -18,11 +16,9 @@
 //// public
 
 Particle::TransportOutcome&
-Particle::TransportOutcome::operator+=(const TransportOutcome& rhs) noexcept {
+Particle::TransportOutcome::operator+=(TransportOutcome&& rhs) noexcept {
   estimator += rhs.estimator;
-  std::move(
-      rhs.banked.cbegin(), rhs.banked.cend(),
-      std::back_insert_iterator(banked));
+  banked.splice(banked.begin(), rhs.banked);
   return *this;
 }
 
@@ -44,12 +40,13 @@ Particle::Type Particle::ToType(const std::string& name) noexcept {
 
 Particle::Particle(
     const Point& position, const Direction& direction, const Energy& energy,
-    const Type type) noexcept
-    : position{position}, direction{direction}, energy{energy}, type{type} {}
+    const Type type, RNG::result_type seed, const Cell* cell) noexcept
+    : position{position}, direction{direction}, energy{energy}, cell{cell},
+      rng{seed}, type{type} {}
 
 Particle::TransportOutcome Particle::Transport(const World& w) noexcept {
   TransportOutcome result;
-  SetCell(w.FindCellContaining(GetPosition()));
+  SetCell(w.FindCellContaining(position));
   while (alive) {
     const auto collision = SampleCollisionDistance();
     const auto [nearest_surface, surface_crossing] =
@@ -62,23 +59,7 @@ Particle::TransportOutcome Particle::Transport(const World& w) noexcept {
           nuclide.GetNuBar(*this) *
           nuclide.GetReaction(*this, Reaction::fission) /
           nuclide.GetTotal(*this);
-      switch (nuclide.SampleReaction(rng, *this)) {
-      case Reaction::capture:
-        result.estimator.at(Estimator::Event::capture) += 1;
-        Kill();
-        break;
-      case Reaction::scatter:
-        result.estimator.at(Estimator::Event::scatter) += 1;
-        nuclide.Scatter(rng, *this);
-        break;
-      case Reaction::fission:
-        result.estimator.at(Estimator::Event::fission) += 1;
-        auto fission_yield{nuclide.Fission(rng, *this)};
-        std::move(
-            fission_yield.begin(), fission_yield.end(),
-            std::back_insert_iterator(result.banked));
-        break;
-      }
+      nuclide.Interact(*this);
     }
     else {
       result.estimator.at(Estimator::Event::surface_crossing) += 1;
@@ -98,15 +79,23 @@ void Particle::Stream(const Real distance) noexcept {
   position += direction * distance;
 }
 
+void Particle::Scatter(const Real& mu, const Energy& e) noexcept {
+  const Real phi = 2 * constants::pi * std::uniform_real_distribution{}(rng);
+  direction = Direction{direction, mu, phi};
+  energy = e;
+}
+
 const Point& Particle::GetPosition() const noexcept { return position; };
 
-void Particle::SetDirectionIsotropic(RNG& rng) noexcept {
+void Particle::SetDirectionIsotropic() noexcept {
   direction = Direction::CreateIsotropic(rng);
 }
 
 const Energy& Particle::GetEnergy() const noexcept { return energy; };
 
 void Particle::SetEnergy(const Energy& e) noexcept { energy = e; };
+
+Particle::Type Particle::GetType() const noexcept { return type; }
 
 const Cell& Particle::GetCell() const {
   if (cell) {
@@ -116,6 +105,11 @@ const Cell& Particle::GetCell() const {
 }
 
 void Particle::SetCell(const Cell& c) noexcept { cell = &c; };
+
+void Particle::Bank(const Direction& direction, const Energy& energy) noexcept {
+  secondaries.emplace_back(
+      position, direction, energy, Type::neutron, rng(), cell);
+}
 
 Real Particle::SampleCollisionDistance() noexcept {
   return std::exponential_distribution{

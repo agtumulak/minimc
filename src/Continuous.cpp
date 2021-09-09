@@ -4,7 +4,6 @@
 #include "Point.hpp"
 
 #include <algorithm>
-#include <cassert>
 #include <cstddef>
 #include <fstream>
 #include <iterator>
@@ -21,17 +20,21 @@
 
 Continuous::Continuous(const pugi::xml_node& particle_node)
     : nubar{particle_node.child("fission").child("nubar")
-              ? std::make_optional<OneDimensional>(
+              ? std::make_optional(
+                  ReadJanisWeb(
                   particle_node.child("fission").child("nubar")
-                  .attribute("file").as_string())
+                  .attribute("file").as_string()))
               : std::nullopt},
       chi{particle_node.child("fission").child("chi")
-              ? std::make_optional<CDF>(
+              ? std::make_optional(
+                  ReadJanisWebCDF(
                   particle_node.child("fission").child("chi").attribute("file")
-                  .as_string())
+                  .as_string()))
               : std::nullopt},
+      sab{ReadPandasSAB(particle_node.child("scatter").child("tsl"))},
       reactions{CreateReactions(particle_node)},
-      total{particle_node.child("total").attribute("file").as_string()} {}
+      total{ReadJanisWeb(
+          particle_node.child("total").attribute("file").as_string())} {}
 
 MicroscopicCrossSection Continuous::GetTotal(const Particle& p) const noexcept {
   return total.at(std::get<ContinuousEnergy>(p.GetEnergy()));
@@ -56,54 +59,66 @@ Real Continuous::GetNuBar(const Particle& p) const noexcept {
   }
 }
 
-void Continuous::Scatter(RNG& rng, Particle& p) const noexcept {
-  p.SetDirectionIsotropic(rng);
-  return;
-}
-
-std::vector<Particle>
-Continuous::Fission(RNG& rng, Particle& p) const noexcept {
-  std::vector<Particle> fission_neutrons;
-  p.Kill();
-  // rely on the fact that double to int conversions essentially do a floor()
-  size_t fission_yield(
-      nubar.value().at(std::get<ContinuousEnergy>(p.GetEnergy())) +
-      std::uniform_real_distribution{}(rng));
-  for (size_t i = 0; i < fission_yield; i++) {
-    // evaluation order of arguments is undefined so do evaluation here
-    const auto direction{Direction::CreateIsotropic(rng)};
-    const auto energy{Energy{ContinuousEnergy{chi.value().Sample(rng)}}};
-    fission_neutrons.emplace_back(
-        p.GetPosition(), direction, energy, Particle::Type::neutron);
-    fission_neutrons.back().SetCell(p.GetCell());
-    fission_neutrons.back().seed =
-        std::uniform_int_distribution<RNG::result_type>{1}(rng);
-  }
-  assert(fission_neutrons.size() == fission_yield);
-  return fission_neutrons;
-}
-
-Reaction
-Continuous::SampleReaction(RNG& rng, const Particle& p) const noexcept {
+void Continuous::Interact(Particle& p) const noexcept {
   const MicroscopicCrossSection threshold =
-      std::uniform_real_distribution{}(rng)*GetTotal(p);
+      std::uniform_real_distribution{}(p.rng) * GetTotal(p);
   MicroscopicCrossSection accumulated{0};
   for (const auto& [reaction, xs] : reactions) {
     accumulated += xs.at(std::get<ContinuousEnergy>(p.GetEnergy()));
     if (accumulated > threshold) {
-      return reaction;
+      switch (reaction) {
+      case Reaction::capture:
+        Capture(p);
+        break;
+      case Reaction::scatter:
+        Scatter(p);
+        break;
+      case Reaction::fission:
+        Fission(p);
+        break;
+      }
+      return;
     }
   }
   // If no reaction found, resample tail-recursively
-  return SampleReaction(rng, p);
+  return Interact(p);
 }
 
-// Continuous::OneDimensional
+// Continuous::Map
 
 //// public
 
-Continuous::OneDimensional::OneDimensional(
-    const std::filesystem::path& datapath) {
+template <typename Key, typename T>
+Continuous::Map<Key, T>::Map(elements_type&& other)
+    : elements{std::move(other)} {}
+
+template <typename Key, typename T>
+const T& Continuous::Map<Key, T>::at(const Key k) const noexcept {
+  // TODO: Interpolate and handle edge cases
+  return elements.upper_bound(k)->second;
+}
+
+// Continuous::CDF
+
+//// public
+
+template <typename T>
+Continuous::CDF<T>::CDF(typename Map<Real, T>::elements_type&& other)
+    : Map<Real, T>{std::move(other)} {};
+
+template <typename T>
+const T& Continuous::CDF<T>::Sample(RNG& rng) const noexcept {
+  return this->elements.upper_bound(std::uniform_real_distribution{}(rng))
+      ->second;
+}
+
+//  Continuous
+
+//// private
+
+Continuous::CE_XS::elements_type
+Continuous::ReadJanisWeb(const std::filesystem::path& datapath) {
+  CE_XS::elements_type map;
   std::ifstream datafile{datapath};
   if (!datafile) {
     throw std::runtime_error("File not found: " + datapath.string());
@@ -118,24 +133,15 @@ Continuous::OneDimensional::OneDimensional(
     datafile.ignore(
         std::numeric_limits<std::streamsize>::max(), ';'); // delimiter
     datafile >> xs;
-    elements[energy / 1e6] = xs; // datafile is given in eV
+    map[energy / 1e6] = xs; // datafile is given in eV
   }
+  return map;
 }
 
-const Real&
-Continuous::OneDimensional::at(const ContinuousEnergy e) const noexcept {
-  // TODO: Interpolate and handle edge cases
-  return (*elements.upper_bound(e)).second;
-}
-
-// Continuous::CDF
-
-//// public
-
-Continuous::CDF::CDF(const std::filesystem::path& datapath)
-    : OneDimensional{datapath} {
-  elements_type scratch = std::move(elements);
-  elements.clear(); // the final map will use CDF values as keys
+Continuous::CDF<ContinuousEnergy>::elements_type
+Continuous::ReadJanisWebCDF(const std::filesystem::path& datapath) {
+  // scratch contains PDF values
+  auto scratch = ReadJanisWeb(datapath);
   if (scratch.size() < 2) {
     throw std::runtime_error(
         "In file " + datapath.string() +
@@ -144,7 +150,7 @@ Continuous::CDF::CDF(const std::filesystem::path& datapath)
   // Multiply each probability density by bin width. Use trapezoid rule.
   for (auto it = scratch.rbegin(); it != std::prev(scratch.rend()); it++) {
     // multiplication by 1e6 is because energies were stored as MeV and
-    // datafile PDF is given in per eV and
+    // datafile PDF is given in per eV
     it->second = (it->first - std::next(it)->first) * 0.5 *
                  (it->second + std::next(it)->second) * 1e6;
   }
@@ -164,40 +170,73 @@ Continuous::CDF::CDF(const std::filesystem::path& datapath)
     element.second /= total_weight;
   });
   // swap keys and values, this will remove any zero probability values
+  Continuous::CDF<ContinuousEnergy>::elements_type swapped;
   for (const auto& element : scratch) {
-    elements.emplace(element.second, element.first);
+    swapped.emplace(element.second, element.first);
   }
+  return swapped;
 }
 
-Continuous::elements_type::mapped_type
-Continuous::CDF::Sample(RNG& rng) const noexcept {
-  return elements.upper_bound(std::uniform_real_distribution{}(rng))->second;
+std::optional<ThermalScattering>
+Continuous::ReadPandasSAB(const pugi::xml_node& tsl_node) {
+  if (!tsl_node) {
+    return std::nullopt;
+  }
+  if (Particle::ToType(tsl_node.parent().parent().name()) !=
+      Particle::Type::neutron) {
+    throw std::runtime_error(
+        tsl_node.path() +
+        ": Only neutrons may have a thermal scattering library node");
+  }
+  return ThermalScattering{tsl_node};
 }
 
-//  Continuous
-
-//// private
-
-Continuous::ReactionsMap
+std::map<Reaction, Continuous::CE_XS>
 Continuous::CreateReactions(const pugi::xml_node& particle_node) {
-  Continuous::ReactionsMap reactions;
+  std::map<Reaction, Continuous::CE_XS> reactions;
   for (const auto& reaction_node : particle_node) {
     const std::string reaction_name = reaction_node.name();
     if (reaction_name == "total") {
       continue; // skip total cross section
     }
     const auto reaction{ToReaction(reaction_name)};
-    if (reaction == Reaction::fission) {
+    if (reaction == Reaction::capture) {
       reactions.emplace(
-          reaction,
-          OneDimensional{
-              reaction_node.child("xs").attribute("file").as_string()});
+          ToReaction(reaction_name),
+          ReadJanisWeb(reaction_node.attribute("file").as_string()));
     }
     else {
       reactions.emplace(
-          ToReaction(reaction_name),
-          OneDimensional{reaction_node.attribute("file").as_string()});
+          reaction,
+          ReadJanisWeb(
+              reaction_node.child("xs").attribute("file").as_string()));
     }
   }
   return reactions;
+}
+
+void Continuous::Capture(Particle& p) const noexcept { p.Kill(); }
+
+void Continuous::Scatter(Particle& p) const noexcept {
+  if (sab->IsValid(p)) {
+    sab->Scatter(p);
+  }
+  else {
+    p.SetDirectionIsotropic();
+  }
+  return;
+}
+
+void Continuous::Fission(Particle& p) const noexcept {
+  p.Kill();
+  // rely on the fact that double to int conversions essentially do a floor()
+  size_t fission_yield(
+      nubar.value().at(std::get<ContinuousEnergy>(p.GetEnergy())) +
+      std::uniform_real_distribution{}(p.rng));
+  for (size_t i = 0; i < fission_yield; i++) {
+    // evaluation order of arguments is undefined so do evaluation here
+    const auto direction{Direction::CreateIsotropic(p.rng)};
+    const auto energy{Energy{ContinuousEnergy{chi.value().Sample(p.rng)}}};
+    p.Bank(direction, energy);
+  }
 }

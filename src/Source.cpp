@@ -117,10 +117,15 @@ Source::Source(const pugi::xml_node& source_node)
       particle_type{Distribution<Particle::Type>::Create(
           source_node.child("particletype"))} {}
 
-Particle Source::Sample(RNG& rng) const noexcept {
-  Particle p{
-      position->Sample(rng), direction->Sample(rng), energy->Sample(rng),
-      particle_type->Sample(rng)};
-  p.seed = rng();
-  return p;
+Particle Source::Sample(RNG::result_type seed) const noexcept {
+  // evaluation order of arguments is undefined so do evaluation here
+  RNG rng{seed};
+  auto sampled_position = position->Sample(rng);
+  auto sampled_direction = direction->Sample(rng);
+  auto sampled_energy = energy->Sample(rng);
+  auto sampled_particle_type = particle_type->Sample(rng);
+  auto sampled_seed = rng();
+  return Particle{
+      sampled_position, sampled_direction, sampled_energy,
+      sampled_particle_type, sampled_seed};
 }
