@@ -9,6 +9,7 @@ set(MINIMC_SOURCES
   Driver.hpp
   Continuous.cpp
   Continuous.hpp
+  ContinuousMap.hpp
   Estimator.cpp
   Estimator.hpp
   Constants.hpp

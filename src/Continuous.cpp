@@ -84,36 +84,6 @@ void Continuous::Interact(Particle& p) const noexcept {
   return Interact(p);
 }
 
-// Continuous::Map
-
-//// public
-
-template <typename Key, typename T>
-Continuous::Map<Key, T>::Map(elements_type&& other)
-    : elements{std::move(other)} {}
-
-template <typename Key, typename T>
-const T& Continuous::Map<Key, T>::at(const Key k) const noexcept {
-  // TODO: Interpolate and handle edge cases
-  return elements.upper_bound(k)->second;
-}
-
-// Continuous::CDF
-
-//// public
-
-template <typename T>
-Continuous::CDF<T>::CDF(typename Map<Real, T>::elements_type&& other)
-    : Map<Real, T>{std::move(other)} {};
-
-template <typename T>
-const T& Continuous::CDF<T>::Sample(RNG& rng) const noexcept {
-  return this->elements.upper_bound(std::uniform_real_distribution{}(rng))
-      ->second;
-}
-
-//  Continuous
-
 //// private
 
 Continuous::CE_XS::elements_type
@@ -138,7 +108,7 @@ Continuous::ReadJanisWeb(const std::filesystem::path& datapath) {
   return map;
 }
 
-Continuous::CDF<ContinuousEnergy>::elements_type
+CDF<ContinuousEnergy>::elements_type
 Continuous::ReadJanisWebCDF(const std::filesystem::path& datapath) {
   // scratch contains PDF values
   auto scratch = ReadJanisWeb(datapath);
@@ -170,7 +140,7 @@ Continuous::ReadJanisWebCDF(const std::filesystem::path& datapath) {
     element.second /= total_weight;
   });
   // swap keys and values, this will remove any zero probability values
-  Continuous::CDF<ContinuousEnergy>::elements_type swapped;
+  CDF<ContinuousEnergy>::elements_type swapped;
   for (const auto& element : scratch) {
     swapped.emplace(element.second, element.first);
   }

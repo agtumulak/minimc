@@ -1,6 +1,7 @@
 #pragma once
 
 #include "BasicTypes.hpp"
+#include "ContinuousMap.hpp"
 #include "Interaction.hpp"
 #include "Reaction.hpp"
 #include "ThermalScattering.hpp"
@@ -29,32 +30,8 @@ public:
   void Interact(Particle& p) const noexcept override;
 
 private:
-  // Continuously maps elements from a domain to a range, provided a limited
-  // set of points, by interpolating
-  template <typename Key, typename T> class Map {
-  public:
-    // Type used to store elements internally
-    using elements_type = std::map<Key, T>;
-    // Constructs Continuous::Map by assigning elements directly
-    Map(elements_type&& other);
-    // Returns a const reference to the value at a given key
-    const T& at(const Key k) const noexcept;
-
-  protected:
-    // This class essentially wraps an STL container
-    const elements_type elements;
-  };
-  // Like Map, but stores elements as the CDF of some random variable. Stores
-  // CDF values as keys so that std::map::upper_bound() can be used.
-  template <typename T> class CDF : public Map<Real, T> {
-  public:
-    // Constructs a CDF from a std::map
-    CDF(typename Map<Real, T>::elements_type&& other);
-    // Samples a value from the CDF and returns the sampled key
-    const T& Sample(RNG& rng) const noexcept;
-  };
   // Continuous energy cross sections
-  using CE_XS = Map<ContinuousEnergy, MicroscopicCrossSection>;
+  using CE_XS = ContinuousMap<ContinuousEnergy, MicroscopicCrossSection>;
   // Helper function for constructing CE_XS from JANIS Web data file
   static CE_XS::elements_type
   ReadJanisWeb(const std::filesystem::path& datapath);
@@ -75,7 +52,7 @@ private:
   /// @brief Fissions the Nuclide and produces secondaries
   void Fission(Particle& p) const noexcept;
   // Average number of secondary particles produced per fission
-  const std::optional<Map<ContinuousEnergy, Real>> nubar;
+  const std::optional<ContinuousMap<ContinuousEnergy, Real>> nubar;
   // Outgoing energy distribution of fission neutrons
   const std::optional<CDF<ContinuousEnergy>> chi;
   // Neutron thermal scattering law S(a,b,T)
