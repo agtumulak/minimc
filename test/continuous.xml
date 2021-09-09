@@ -15,13 +15,6 @@
         <capture file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-gamma.csv"/>
         <scatter>
           <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-elastic.csv"/>
-          <tsl
-            beta_cdf_file="/Users/atumulak/Developer/minimc/data/H_in_H2O_beta_coefficients_293.6K_to_647.2K.hdf5"
-            alpha_cdf_file="/Users/atumulak/Developer/minimc/data/H_in_H2O_alpha_coefficients_293.6K_to_647.2K.hdf5"
-            min_temperature="293.6"
-            max_temperature="647.2"
-            beta_cutoff="20.0"
-            alpha_cutoff="632.9"/>
         </scatter>
       </neutron>
     </nuclide>
