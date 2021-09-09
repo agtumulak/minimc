@@ -6,10 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.3] - 2021-09-09
+- Moved RNG to be member of Particle
+- Implemented HDF5 data support
+- Implemented thermal scattering physics
+- Add scripts for parsing, processing, and generating S(a,b) data using
+  functional expansions in temperature
+- Added improved Doxygen stylesheet
+
 ## [0.0.2] - 2021-05-13
 - Implemented k-eigenvalue criticality solver
 - Implemented fission physics and data
-- Add continuous energy physics support
+- Added continuous energy physics support
 
 ## [0.0.1] - 2021-01-16
 ### Added
@@ -26,3 +34,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [Unreleased]: https://github.com/agtumulak/minimc/compare/v0.0.1...develop
 [0.0.1]: https://github.com/agtumulak/minimc/releases/tag/v0.0.1
 [0.0.2]: https://github.com/agtumulak/minimc/releases/tag/v0.0.2
+[0.0.3]: https://github.com/agtumulak/minimc/releases/tag/v0.0.3
