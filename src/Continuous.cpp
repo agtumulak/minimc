@@ -1,5 +1,6 @@
 #include "Continuous.hpp"
 
+#include "HDF5DataSet.hpp"
 #include "Particle.hpp"
 #include "Point.hpp"
 
@@ -17,6 +18,17 @@
 // Continuous
 
 //// public
+
+ContinuousMap<ContinuousEnergy, MicroscopicCrossSection>
+Continuous::ReadPandasHDF5(const std::filesystem::path& datapath) {
+  std::map<ContinuousEnergy, MicroscopicCrossSection> map;
+  HDF5DataSet h5_data{datapath};
+  const auto& energies = h5_data.GetAxis(0);
+  for (size_t index = 0; index < energies.size(); index++) {
+    map[energies[index]] = h5_data.at(index);
+  }
+  return map;
+}
 
 Continuous::Continuous(const pugi::xml_node& particle_node)
     : nubar{particle_node.child("fission").child("nubar")
@@ -37,6 +49,9 @@ Continuous::Continuous(const pugi::xml_node& particle_node)
           particle_node.child("total").attribute("file").as_string())} {}
 
 MicroscopicCrossSection Continuous::GetTotal(const Particle& p) const noexcept {
+  if (tsl->IsValid(p)) {
+    return GetReaction(p, Reaction::capture) + tsl->GetMajorant(p);
+  }
   return total.at(std::get<ContinuousEnergy>(p.GetEnergy()));
 }
 

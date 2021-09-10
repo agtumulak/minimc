@@ -1,6 +1,7 @@
 #pragma once
 
 #include "BasicTypes.hpp"
+#include "ContinuousMap.hpp"
 #include "HDF5DataSet.hpp"
 #include "pugixml.hpp"
 
@@ -47,7 +48,12 @@ public:
   ThermalScattering(const pugi::xml_node& tsl_node) noexcept;
   /// @brief Returns true if Particle is Type::neutron and is strictly below
   ///        the cutoff energy
-  bool IsValid(Particle& p) const noexcept;
+  bool IsValid(const Particle& p) const noexcept;
+  /// @brief Returns the majorant cross section
+  /// @details For thermal inelastic scattering, this is larger than @f$
+  ///          \Sigma_{\text{elastic}}(E) + \Sigma_{\text{inelastic}}(E) @f$
+  ///          because @f$ \beta = 0 @f$ corresponds to elastic scattering.
+  MicroscopicCrossSection GetMajorant(const Particle& p) const noexcept;
   /// @brief The raison d'etre of this class
   void Scatter(Particle& p) const noexcept;
 
@@ -69,6 +75,8 @@ private:
       Temperature T) const noexcept;
   // Raw cumulative distribution function data for beta and alpha
   const HDF5DataSet beta_cdf, alpha_cdf;
+  // Majorant cross section
+  const ContinuousMap<ContinuousEnergy, MicroscopicCrossSection> majorant;
   // Incident energies for beta
   const std::vector<ContinuousEnergy> beta_energies = beta_cdf.GetAxis(0);
   // CDF values for beta

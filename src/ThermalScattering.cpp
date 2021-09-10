@@ -1,6 +1,8 @@
 #include "ThermalScattering.hpp"
+
 #include "Cell.hpp"
 #include "Constants.hpp"
+#include "Continuous.hpp"
 #include "Particle.hpp"
 
 #include <algorithm>
@@ -17,15 +19,22 @@
 ThermalScattering::ThermalScattering(const pugi::xml_node& tsl_node) noexcept
     : beta_cdf{tsl_node.attribute("beta_cdf_file").as_string()},
       alpha_cdf{tsl_node.attribute("alpha_cdf_file").as_string()},
+      majorant{Continuous::ReadPandasHDF5(
+          tsl_node.attribute("majorant").as_string())},
       beta_cutoff{tsl_node.attribute("beta_cutoff").as_double()},
       alpha_cutoff{tsl_node.attribute("alpha_cutoff").as_double()},
       min_temperature{tsl_node.attribute("min_temperature").as_double()},
       max_temperature{tsl_node.attribute("max_temperature").as_double()},
-      awr{tsl_node.parent().parent().parent().attribute("awr").as_double()}{}
+      awr{tsl_node.parent().parent().parent().attribute("awr").as_double()} {}
 
 bool ThermalScattering::IsValid(Particle& p) const noexcept {
   const auto E = std::get<ContinuousEnergy>(p.GetEnergy());
   return p.GetType() == Particle::Type::neutron && E < cutoff_energy;
+}
+
+MicroscopicCrossSection
+ThermalScattering::GetMajorant(const Particle& p) const noexcept {
+  return majorant.at(std::get<ContinuousEnergy>(p.GetEnergy()));
 }
 
 void ThermalScattering::Scatter(Particle& p) const noexcept {
