@@ -27,7 +27,7 @@ ThermalScattering::ThermalScattering(const pugi::xml_node& tsl_node) noexcept
       max_temperature{tsl_node.attribute("max_temperature").as_double()},
       awr{tsl_node.parent().parent().parent().attribute("awr").as_double()} {}
 
-bool ThermalScattering::IsValid(Particle& p) const noexcept {
+bool ThermalScattering::IsValid(const Particle& p) const noexcept {
   const auto E = std::get<ContinuousEnergy>(p.GetEnergy());
   return p.GetType() == Particle::Type::neutron && E < cutoff_energy;
 }
