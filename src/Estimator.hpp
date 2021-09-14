@@ -27,7 +27,7 @@ public:
   /// @brief Normalize by some total weight. Number of histories in
   ///        fixed-source calculations or total active cycles weight in
   ///        k-eigenvalue calculations.
-  void Normalize(Real total_weight) noexcept;
+  Estimator& Normalize(Real total_weight) noexcept;
 
 private:
   using elements_type = std::map<Event, Real>;

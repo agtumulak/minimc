@@ -24,13 +24,12 @@ Estimator FixedSource::Solve() {
   for (size_t i = 0; i < threads; i++) {
     results.push_back(std::async(&FixedSource::StartWorker, this));
   }
-  estimators = std::reduce(
-      results.begin(), results.end(), Estimator{},
-      [](auto& accumulated, auto& future) {
-        return accumulated += future.get();
-      });
-  estimators.Normalize(batchsize);
-  return estimators;
+  return std::reduce(
+             results.begin(), results.end(), Estimator{},
+             [](auto& accumulated, auto& future) {
+               return accumulated += future.get();
+             })
+      .Normalize(batchsize);
 }
 
 //// private

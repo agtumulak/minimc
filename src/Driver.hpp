@@ -1,13 +1,14 @@
 #pragma once
 
 #include "BasicTypes.hpp"
-#include "Estimator.hpp"
 #include "World.hpp"
 #include "pugixml.hpp"
 
 #include <cstddef>
 #include <filesystem>
 #include <memory>
+
+class Estimator;
 
 /// @brief A Driver owns all the data needed to perform radiation transport
 class Driver {
@@ -23,8 +24,6 @@ public:
   virtual Estimator Solve() = 0;
 
 protected:
-  /// @brief Accumulates all counts produced by the simulation
-  Estimator estimators{};
   /// @brief Global, read-only description of geometric and material properties
   const World world;
   /// @brief Number of threads dedicated to particle transport

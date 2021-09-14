@@ -32,10 +32,11 @@ std::string Estimator::ToString(const Event e) noexcept {
   }
 }
 
-void Estimator::Normalize(Real total_weight) noexcept {
+Estimator& Estimator::Normalize(Real total_weight) noexcept {
   std::for_each(elements.begin(), elements.end(), [total_weight](auto& pair) {
     pair.second /= total_weight;
   });
+  return *this;
 }
 
 Real& Estimator::at(Event e) { return elements.at(e); }
