@@ -14,6 +14,8 @@ class Estimator;
 class Driver {
 public:
   /// @brief Factory method to create new Driver from XML document
+  /// @returns A `std::unique_ptr` to the constructed Driver (C++ Core
+  ///          Guidelines R.30)
   static std::unique_ptr<Driver>
   Create(const std::filesystem::path& xml_filepath);
   /// @brief Creates objects necessary for a radiation transport
