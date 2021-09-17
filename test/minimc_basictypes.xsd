@@ -34,6 +34,13 @@
   <xs:list itemType="NonNegativeDouble"/>
 </xs:simpleType>
 
+<xs:simpleType name="TrackingType">
+  <xs:restriction base="xs:string">
+    <xs:enumeration value="surface"/>
+    <xs:enumeration value="delta"/>
+  </xs:restriction>
+</xs:simpleType>
+
 <!-- copmlex types -->
 
 <xs:complexType name="PointType">

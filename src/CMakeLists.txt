@@ -37,6 +37,8 @@ set(MINIMC_SOURCES
   Source.hpp
   ThermalScattering.cpp
   ThermalScattering.hpp
+  TransportMethod.cpp
+  TransportMethod.hpp
   World.cpp
   World.hpp
   XMLDocument.cpp

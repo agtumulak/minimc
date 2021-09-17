@@ -30,14 +30,12 @@ random variables @f$ S: \Omega \rightarrow \mathbb{R} @f$. At each step of a
 <em>history</em>, a Particle takes on some definite state in phase
 space @f$ X_{i} = x_{i} @f$. For this reason, the Particle class is heavily
 encapsulated and internally performs most of the operations required to update
-its state. Should other classes use a Particle object as a function paramter,
+its state. Should other classes use a Particle object as a function parameter,
 they should only do so using a `const` qualifier. For instance,
 Material::GetMicroscopicTotal accepts a `const` Particle reference as a
-parameter to look up relevant cross sections. One notable exception is the
-Interaction class, which accepts a non-`const` Particle reference in some of
-its methods. This is because the very nature of a particle-nuclide interaction
-affects the state of a particle. Changes to the Particle state, however, are
-still made through public Particle methods.
+parameter to look up relevant cross sections. Two notable exceptions, the
+Interaction class and the TransportMethod class, use non-`const` Particle
+arguments but still update a Particle state using its public methods.
 
 @section developer_guide_commenting Commenting
 
