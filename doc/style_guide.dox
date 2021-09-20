@@ -11,6 +11,12 @@ MiniMC primarily adheres to the
 Guide</a> for source code style. Cases which are not addressed in the Google
 C++ Style Guide are addressed individually here.
 
+@section style_guide_function_names Function Names
+
+Function names should generally begin with a verb describing what it <em>does
+</em>. For instance, class methods which sample a random distribution are
+prefixed with `Sample`.
+
 @section style_guide_declaration_order Declaration Order
 
 <a href="https://google.github.io/styleguide/cppguide.html#Declaration_Order">
