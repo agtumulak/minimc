@@ -37,7 +37,7 @@
 <xs:simpleType name="TrackingType">
   <xs:restriction base="xs:string">
     <xs:enumeration value="surface"/>
-    <xs:enumeration value="delta"/>
+    <xs:enumeration value="cell delta"/>
   </xs:restriction>
 </xs:simpleType>
 

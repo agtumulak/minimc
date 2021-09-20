@@ -48,10 +48,21 @@ Continuous::Continuous(const pugi::xml_node& particle_node)
       total{ReadJanisWeb(
           particle_node.child("total").attribute("file").as_string())} {}
 
-MicroscopicCrossSection Continuous::GetTotal(const Particle& p) const noexcept {
+MicroscopicCrossSection
+Continuous::GetMajorant(const Particle& p) const noexcept {
   if (tsl->IsValid(p)) {
-    return GetReaction(p, Reaction::capture) + tsl->GetMajorant(p);
+    // thermal scattering is assumed to encompass elastic and inelstic
+    // scattering
+    // TODO: Possibly make this polymorphic to avoid `if`?
+    return GetReaction(p, Reaction::capture) +
+           GetReaction(p, Reaction::fission) + tsl->GetMajorant(p);
   }
+  else {
+    return GetTotal(p);
+  }
+}
+
+MicroscopicCrossSection Continuous::GetTotal(const Particle& p) const noexcept {
   return total.at(std::get<ContinuousEnergy>(p.GetEnergy()));
 }
 
