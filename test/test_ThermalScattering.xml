@@ -18,6 +18,7 @@
           <tsl
             beta_cdf_file="/Users/atumulak/Developer/minimc/data/beta_cdf_chapman_data.hdf5"
             alpha_cdf_file="/Users/atumulak/Developer/minimc/data/alpha_cdf_chapman_data.hdf5"
+            majorant="/Users/atumulak/Developer/minimc/data/majorant_chapman_data_safety_factor_1.05.hdf5"
             min_temperature="293.6"
             max_temperature="800.0"
             beta_cutoff="20.0"

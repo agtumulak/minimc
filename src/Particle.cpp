@@ -4,23 +4,11 @@
 #include "Constants.hpp"
 #include "Material.hpp"
 #include "Nuclide.hpp"
-#include "Reaction.hpp"
-#include "World.hpp"
 
 #include <cassert>
 #include <random>
 #include <stdexcept>
-
-// Particle::TransportOutcome
-
-//// public
-
-Particle::TransportOutcome&
-Particle::TransportOutcome::operator+=(TransportOutcome&& rhs) noexcept {
-  estimator += rhs.estimator;
-  banked.splice(banked.begin(), rhs.banked);
-  return *this;
-}
+#include <string>
 
 // Particle
 
@@ -44,35 +32,6 @@ Particle::Particle(
     : position{position}, direction{direction}, energy{energy}, cell{cell},
       rng{seed}, type{type} {}
 
-Particle::TransportOutcome Particle::Transport(const World& w) noexcept {
-  TransportOutcome result;
-  SetCell(w.FindCellContaining(position));
-  while (alive) {
-    const auto collision = SampleCollisionDistance();
-    const auto [nearest_surface, surface_crossing] =
-        cell->NearestSurface(position, direction);
-    if (collision < surface_crossing) {
-      result.estimator.at(Estimator::Event::collision) += 1;
-      Stream(collision);
-      const auto& nuclide = SampleNuclide();
-      result.estimator.at(Estimator::Event::implicit_fission) +=
-          nuclide.GetNuBar(*this) *
-          nuclide.GetReaction(*this, Reaction::fission) /
-          nuclide.GetTotal(*this);
-      nuclide.Interact(*this);
-    }
-    else {
-      result.estimator.at(Estimator::Event::surface_crossing) += 1;
-      Stream(surface_crossing + constants::nudge);
-      SetCell(w.FindCellContaining(position));
-      if (!cell->material) {
-        Kill();
-      }
-    }
-  }
-  return result;
-}
-
 void Particle::Kill() noexcept { alive = false; }
 
 void Particle::Stream(const Real distance) noexcept {
@@ -86,6 +45,8 @@ void Particle::Scatter(const Real& mu, const Energy& e) noexcept {
 }
 
 const Point& Particle::GetPosition() const noexcept { return position; };
+
+const Direction& Particle::GetDirection() const noexcept { return direction; };
 
 void Particle::SetDirectionIsotropic() noexcept {
   direction = Direction::CreateIsotropic(rng);
@@ -102,19 +63,13 @@ const Cell& Particle::GetCell() const {
     return *cell;
   }
   throw std::runtime_error("Particle does not belong to a Cell");
-}
+};
 
 void Particle::SetCell(const Cell& c) noexcept { cell = &c; };
 
 void Particle::Bank(const Direction& direction, const Energy& energy) noexcept {
   secondaries.emplace_back(
       position, direction, energy, Type::neutron, rng(), cell);
-}
-
-Real Particle::SampleCollisionDistance() noexcept {
-  return std::exponential_distribution{
-      cell->material->number_density *
-      cell->material->GetMicroscopicTotal(*this)}(rng);
 }
 
 const Nuclide& Particle::SampleNuclide() noexcept {

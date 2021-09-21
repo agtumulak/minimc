@@ -24,6 +24,10 @@ public:
   /// @exception std::runtime_error Number of entries is not consistent with
   ///            number of groups
   Multigroup(const pugi::xml_node& particle_node);
+  /// @brief Returns the total cross section for a given Particle, currently
+  ///        the same as GetTotal().
+  MicroscopicCrossSection
+  GetMajorant(const Particle& p) const noexcept override;
   /// @brief Returns the total cross section for a given Particle
   MicroscopicCrossSection GetTotal(const Particle& p) const noexcept override;
   /// @brief Returns the cross section for a given Particle and Reaction

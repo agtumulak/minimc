@@ -13,6 +13,8 @@ public:
   /// @brief Factory method to create new CSGSurface from an XML document
   /// @param root Root node of existing XML document
   /// @param name Name of the CSGSurface in the XML document
+  /// @returns A `std::unique_ptr` to the constructed CSGSurface (C++ Core
+  ///          Guidelines R.30)
   /// @exception std::runtime_error `surface` node with matching `name`
   ///            attribute not found
   static std::unique_ptr<const CSGSurface>

@@ -35,6 +35,11 @@ Multigroup::Multigroup(const pugi::xml_node& particle_node)
       total{CreateTotalXS(particle_node, reactions)},
       max_group{GroupStructureSize(particle_node.root())} {}
 
+MicroscopicCrossSection
+Multigroup::GetMajorant(const Particle& p) const noexcept {
+  return GetTotal(p);
+}
+
 MicroscopicCrossSection Multigroup::GetTotal(const Particle& p) const noexcept {
   return total.at(std::get<Group>(p.GetEnergy()));
 }

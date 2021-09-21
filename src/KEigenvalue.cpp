@@ -36,13 +36,13 @@ Estimator KEigenvalue::Solve() {
     std::cout << "===== Cycle " << std::to_string(c) << " =====" << std::endl;
     std::cout << "source bank: " << std::to_string(source_bank.size())
               << std::endl;
-    std::vector<std::future<Particle::TransportOutcome>> thread_results;
+    std::vector<std::future<TransportMethod::Outcome>> thread_results;
     // start all the threads
     for (size_t i = 0; i < threads; i++) {
       thread_results.push_back(std::async(&KEigenvalue::StartWorker, this));
     }
     // collect results from each thread
-    Particle::TransportOutcome cycle_outcome;
+    TransportMethod::Outcome cycle_outcome;
     for (auto& thread_result : thread_results) {
       cycle_outcome += thread_result.get();
     }
@@ -54,10 +54,10 @@ Estimator KEigenvalue::Solve() {
 
 //// private
 
-Particle::TransportOutcome KEigenvalue::StartWorker() {
-  Particle::TransportOutcome worker_outcome;
+TransportMethod::Outcome KEigenvalue::StartWorker() {
+  TransportMethod::Outcome worker_outcome;
   while (auto p = NextParticle()) {
-    worker_outcome += p->Transport(world);
+    worker_outcome += transport_method->Transport(p.value());
   }
   return worker_outcome;
 }

@@ -1,6 +1,7 @@
 #include "FixedSource.hpp"
 
 #include "Particle.hpp"
+#include "TransportMethod.hpp"
 
 #include <cstddef>
 #include <future>
@@ -24,13 +25,12 @@ Estimator FixedSource::Solve() {
   for (size_t i = 0; i < threads; i++) {
     results.push_back(std::async(&FixedSource::StartWorker, this));
   }
-  estimators = std::reduce(
-      results.begin(), results.end(), Estimator{},
-      [](auto& accumulated, auto& future) {
-        return accumulated += future.get();
-      });
-  estimators.Normalize(batchsize);
-  return estimators;
+  return std::reduce(
+             results.begin(), results.end(), Estimator{},
+             [](auto& accumulated, auto& future) {
+               return accumulated += future.get();
+             })
+      .Normalize(batchsize);
 }
 
 //// private
@@ -48,7 +48,7 @@ Estimator FixedSource::StartWorker() {
     // we choose a list because list::splice is constant time
     std::list<Particle> bank(1, p);
     while (!bank.empty()) {
-      auto result = bank.back().Transport(world);
+      auto result = transport_method->Transport(bank.back());
       bank.pop_back();
       worker_estimator += result.estimator;
       bank.splice(bank.begin(), result.banked);

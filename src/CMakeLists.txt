@@ -9,6 +9,7 @@ set(MINIMC_SOURCES
   Driver.hpp
   Continuous.cpp
   Continuous.hpp
+  ContinuousMap.hpp
   Estimator.cpp
   Estimator.hpp
   Constants.hpp
@@ -36,6 +37,8 @@ set(MINIMC_SOURCES
   Source.hpp
   ThermalScattering.cpp
   ThermalScattering.hpp
+  TransportMethod.cpp
+  TransportMethod.hpp
   World.cpp
   World.hpp
   XMLDocument.cpp

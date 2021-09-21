@@ -4,6 +4,7 @@
 #include "Driver.hpp"
 #include "Estimator.hpp"
 #include "Particle.hpp"
+#include "TransportMethod.hpp"
 #include "pugixml.hpp"
 
 #include <cstddef>
@@ -24,7 +25,7 @@ public:
 private:
   using Cycle = size_t;
   // Function executed by a worker on a single thread
-  Particle::TransportOutcome StartWorker();
+  TransportMethod::Outcome StartWorker();
   // Returns the next Particle from source_bank in a thread-safe manner
   std::optional<Particle> NextParticle() noexcept;
   // Allows mutually exclusive access to source_bank

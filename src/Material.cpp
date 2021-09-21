@@ -37,6 +37,17 @@ Material::Material(
       number_density{FindNode(root, name).attribute("aden").as_double()} {}
 
 MicroscopicCrossSection
+Material::GetMicroscopicMajorant(const Particle& p) const noexcept {
+  // TODO: Memoize this call for performance
+  return std::accumulate(
+      afracs.cbegin(), afracs.cend(), MicroscopicCrossSection{0},
+      [&p](const auto& accumulated, const auto& nuclide_afrac_pair) {
+        const auto& [nuclide, afrac] = nuclide_afrac_pair;
+        return accumulated + afrac * nuclide->GetMajorant(p);
+      });
+}
+
+MicroscopicCrossSection
 Material::GetMicroscopicTotal(const Particle& p) const noexcept {
   // TODO: Memoize this call for performance
   return std::accumulate(

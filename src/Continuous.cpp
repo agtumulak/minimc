@@ -1,5 +1,6 @@
 #include "Continuous.hpp"
 
+#include "HDF5DataSet.hpp"
 #include "Particle.hpp"
 #include "Point.hpp"
 
@@ -18,6 +19,17 @@
 
 //// public
 
+ContinuousMap<ContinuousEnergy, MicroscopicCrossSection>
+Continuous::ReadPandasHDF5(const std::filesystem::path& datapath) {
+  std::map<ContinuousEnergy, MicroscopicCrossSection> map;
+  HDF5DataSet h5_data{datapath};
+  const auto& energies = h5_data.GetAxis(0);
+  for (size_t index = 0; index < energies.size(); index++) {
+    map[energies[index]] = h5_data.at(index);
+  }
+  return map;
+}
+
 Continuous::Continuous(const pugi::xml_node& particle_node)
     : nubar{particle_node.child("fission").child("nubar")
               ? std::make_optional(
@@ -31,10 +43,24 @@ Continuous::Continuous(const pugi::xml_node& particle_node)
                   particle_node.child("fission").child("chi").attribute("file")
                   .as_string()))
               : std::nullopt},
-      sab{ReadPandasSAB(particle_node.child("scatter").child("tsl"))},
+      tsl{ReadPandasSAB(particle_node.child("scatter").child("tsl"))},
       reactions{CreateReactions(particle_node)},
       total{ReadJanisWeb(
           particle_node.child("total").attribute("file").as_string())} {}
+
+MicroscopicCrossSection
+Continuous::GetMajorant(const Particle& p) const noexcept {
+  if (tsl->IsValid(p)) {
+    // thermal scattering is assumed to encompass elastic and inelstic
+    // scattering
+    // TODO: Possibly make this polymorphic to avoid `if`?
+    return GetReaction(p, Reaction::capture) +
+           GetReaction(p, Reaction::fission) + tsl->GetMajorant(p);
+  }
+  else {
+    return GetTotal(p);
+  }
+}
 
 MicroscopicCrossSection Continuous::GetTotal(const Particle& p) const noexcept {
   return total.at(std::get<ContinuousEnergy>(p.GetEnergy()));
@@ -84,36 +110,6 @@ void Continuous::Interact(Particle& p) const noexcept {
   return Interact(p);
 }
 
-// Continuous::Map
-
-//// public
-
-template <typename Key, typename T>
-Continuous::Map<Key, T>::Map(elements_type&& other)
-    : elements{std::move(other)} {}
-
-template <typename Key, typename T>
-const T& Continuous::Map<Key, T>::at(const Key k) const noexcept {
-  // TODO: Interpolate and handle edge cases
-  return elements.upper_bound(k)->second;
-}
-
-// Continuous::CDF
-
-//// public
-
-template <typename T>
-Continuous::CDF<T>::CDF(typename Map<Real, T>::elements_type&& other)
-    : Map<Real, T>{std::move(other)} {};
-
-template <typename T>
-const T& Continuous::CDF<T>::Sample(RNG& rng) const noexcept {
-  return this->elements.upper_bound(std::uniform_real_distribution{}(rng))
-      ->second;
-}
-
-//  Continuous
-
 //// private
 
 Continuous::CE_XS::elements_type
@@ -138,7 +134,7 @@ Continuous::ReadJanisWeb(const std::filesystem::path& datapath) {
   return map;
 }
 
-Continuous::CDF<ContinuousEnergy>::elements_type
+CDF<ContinuousEnergy>::elements_type
 Continuous::ReadJanisWebCDF(const std::filesystem::path& datapath) {
   // scratch contains PDF values
   auto scratch = ReadJanisWeb(datapath);
@@ -170,7 +166,7 @@ Continuous::ReadJanisWebCDF(const std::filesystem::path& datapath) {
     element.second /= total_weight;
   });
   // swap keys and values, this will remove any zero probability values
-  Continuous::CDF<ContinuousEnergy>::elements_type swapped;
+  CDF<ContinuousEnergy>::elements_type swapped;
   for (const auto& element : scratch) {
     swapped.emplace(element.second, element.first);
   }
@@ -218,8 +214,8 @@ Continuous::CreateReactions(const pugi::xml_node& particle_node) {
 void Continuous::Capture(Particle& p) const noexcept { p.Kill(); }
 
 void Continuous::Scatter(Particle& p) const noexcept {
-  if (sab->IsValid(p)) {
-    sab->Scatter(p);
+  if (tsl->IsValid(p)) {
+    tsl->Scatter(p);
   }
   else {
     p.SetDirectionIsotropic();
