@@ -1,5 +1,7 @@
 #include "Continuous.hpp"
 
+#include "Cell.hpp"
+#include "Constants.hpp"
 #include "HDF5DataSet.hpp"
 #include "Particle.hpp"
 #include "Point.hpp"
@@ -7,6 +9,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cmath>
 #include <fstream>
 #include <iterator>
 #include <limits>
@@ -36,7 +39,8 @@ Continuous::Continuous(const pugi::xml_node& particle_node)
       tsl{ReadPandasSAB(particle_node.child("scatter").child("tsl"))},
       reactions{CreateReactions(particle_node)},
       total{ReadJanisWeb(
-          particle_node.child("total").attribute("file").as_string())} {}
+          particle_node.child("total").attribute("file").as_string())},
+      awr{particle_node.parent().attribute("awr").as_double()}{}
 
 bool Continuous::HasContinuousTemperatureThermalScattering() const noexcept {
   return tsl.has_value();
@@ -51,13 +55,40 @@ Continuous::GetMajorant(const Particle& p) const noexcept {
     return GetReaction(p, Reaction::capture) +
            GetReaction(p, Reaction::fission) + tsl->GetMajorant(p);
   }
+  else if (const auto [E, T_max] = std::make_tuple(
+               std::get<ContinuousEnergy>(p.GetEnergy()),
+               p.GetCell().temperature->upper_bound);
+           p.type == Particle::Type::neutron &&
+           E < 500 * constants::boltzmann * T_max / awr) {
+    // get largest possible free gas scattering adjustment
+    const auto adj_factor = GetFreeGasAdjustment(p, E, T_max);
+    return GetReaction(p, Reaction::capture) +
+           GetReaction(p, Reaction::fission) +
+           adj_factor * GetReaction(p, Reaction::scatter);
+  }
   else {
     return GetTotal(p);
   }
 }
 
 MicroscopicCrossSection Continuous::GetTotal(const Particle& p) const noexcept {
-  return total.at(std::get<ContinuousEnergy>(p.GetEnergy()));
+  if (tsl->IsValid(p)){
+    return GetReaction(p, Reaction::capture) +
+           GetReaction(p, Reaction::fission) + tsl->GetTotal(p);
+  }
+  else if (const auto [E, T] = std::make_tuple(
+               std::get<ContinuousEnergy>(p.GetEnergy()),
+               p.GetCell().temperature->at(p.GetPosition()));
+           p.type == Particle::Type::neutron &&
+           E < 500 * constants::boltzmann * T / awr) {
+    const auto adj_factor = GetFreeGasAdjustment(p, E, T);
+    return GetReaction(p, Reaction::capture) +
+           GetReaction(p, Reaction::fission) +
+           adj_factor * GetReaction(p, Reaction::scatter);
+  }
+  else {
+    return total.at(std::get<ContinuousEnergy>(p.GetEnergy()));
+  }
 }
 
 MicroscopicCrossSection
@@ -287,4 +318,13 @@ void Continuous::Fission(Particle& p) const noexcept {
     const auto energy{Energy{ContinuousEnergy{chi.value().Sample(p.rng)}}};
     p.Bank(direction, energy);
   }
+}
+
+Real Continuous::GetFreeGasAdjustment(
+    const Particle& p, ContinuousEnergy E, Temperature T) const noexcept {
+  const Real x = std::sqrt(E / (constants::boltzmann * T));
+  const auto arg = awr * x * x;
+  return GetReaction(p, Reaction::scatter) *
+         ((1 + 1 / (2 * arg)) * std::erf(std::sqrt(arg)) +
+          std::exp(-arg) / std::sqrt(constants::pi * arg));
 }

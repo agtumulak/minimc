@@ -1,4 +1,5 @@
 #include "Driver.hpp"
+#include "Estimator.hpp"
 
 #include <iostream>
 #include <stdexcept>

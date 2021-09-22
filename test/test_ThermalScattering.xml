@@ -6,6 +6,7 @@
   <histories>100</histories>
   <threads>2</threads>
   <chunksize>10</chunksize>
+  <tracking>cell delta</tracking>
 </general>
 <nuclides>
   <continuous>
@@ -19,6 +20,7 @@
             beta_cdf_file="/Users/atumulak/Developer/minimc/data/beta_cdf_chapman_data.hdf5"
             alpha_cdf_file="/Users/atumulak/Developer/minimc/data/alpha_cdf_chapman_data.hdf5"
             majorant="/Users/atumulak/Developer/minimc/data/majorant_chapman_data_safety_factor_1.05.hdf5"
+            total="/Users/atumulak/Developer/minimc/data/scatter_xs_chapman_data.hdf5"
             min_temperature="293.6"
             max_temperature="800.0"
             beta_cutoff="20.0"
@@ -60,4 +62,11 @@
     </particletype>
   </fixedsource>
 </problemtype>
+<temperature>
+  <linear>
+    <bounds lower="273.6" upper="800.0"/>
+    <intercept b="0"/>
+    <gradient x="1" y="0" z="0"/>
+  </linear>
+</temperature>
 </minimc>

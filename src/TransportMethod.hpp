@@ -39,9 +39,6 @@ public:
   /// @brief Moves a Particle through its states until it dies.
   virtual Outcome Transport(Particle& p, const World& w) const noexcept = 0;
 
-protected:
-  /// @brief Global, read-only description of geometric and material properties
-  const World world;
 };
 
 /// @brief Loops over each CSGSurface in the current Cell to find the next

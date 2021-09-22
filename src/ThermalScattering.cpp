@@ -22,6 +22,8 @@ ThermalScattering::ThermalScattering(const pugi::xml_node& tsl_node) noexcept
       alpha_cdf{tsl_node.attribute("alpha_cdf_file").as_string()},
       majorant{HDF5DataSet<1>{tsl_node.attribute("majorant").as_string()}
                    .ToContinuousMap()},
+      total{HDF5DataSet<2>{tsl_node.attribute("total").as_string()}
+                .ToContinuousMap()},
       beta_cutoff{tsl_node.attribute("beta_cutoff").as_double()},
       alpha_cutoff{tsl_node.attribute("alpha_cutoff").as_double()},
       min_temperature{tsl_node.attribute("min_temperature").as_double()},
@@ -36,6 +38,12 @@ bool ThermalScattering::IsValid(const Particle& p) const noexcept {
 MicroscopicCrossSection
 ThermalScattering::GetMajorant(const Particle& p) const noexcept {
   return majorant.at(std::get<ContinuousEnergy>(p.GetEnergy()));
+}
+
+MicroscopicCrossSection
+ThermalScattering::GetTotal(const Particle& p) const noexcept {
+  return total.at(p.GetCell().temperature->at(p.GetPosition()))
+      .at(std::get<ContinuousEnergy>(p.GetEnergy()));
 }
 
 void ThermalScattering::Scatter(Particle& p) const noexcept {

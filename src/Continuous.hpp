@@ -24,12 +24,15 @@ public:
   /// @brief Returns the majorant cross section for a given Particle
   /// @details Currently used when there is a continuous dependence on
   ///          temperature, returning the largest cross section across all
-  ///          temperatures.
+  ///          temperatures. Performs temperature adjustments from free gas or
+  ///          thermal scattering, if applicable.
   MicroscopicCrossSection GetMajorant(const Particle& p) const noexcept override;
   /// @brief Returns the total cross section for a given Particle
   /// @details This is not guaranteed to be consistent with the sum of all
   ///          mutually exclusive reactions. The total cross section is meant
   ///          to be a user-provided quantity to speed up calculations.
+  ///          Performs temperature adjustments from free gas or thermal
+  ///          scattering, if applicable.
   MicroscopicCrossSection GetTotal(const Particle& p) const noexcept override;
   /// @brief Returns the cross section for a given Particle and Reaction
   MicroscopicCrossSection
@@ -60,8 +63,12 @@ private:
   void Capture(Particle& p) const noexcept;
   // Scatters the Particle and updates its ContinuousEnergy and Direction
   void Scatter(Particle& p) const noexcept;
-  /// @brief Fissions the Nuclide and produces secondaries
+  // Fissions the Nuclide and produces secondaries
   void Fission(Particle& p) const noexcept;
+  // Returns free gas scattering adjustment to scattering cross section for
+  // given temperature
+  Real GetFreeGasAdjustment(
+      const Particle& p, ContinuousEnergy E, Temperature T) const noexcept;
   // Average number of secondary particles produced per fission
   const std::optional<ContinuousMap<ContinuousEnergy, Real>> nubar;
   // Outgoing energy distribution of fission neutrons
@@ -72,4 +79,6 @@ private:
   const std::map<Reaction, CE_XS> reactions;
   // Total cross section provided in nuclear data files
   const CE_XS total;
+  // Atomic weight ratio of target, yes this is duplicated in tsl::awr
+  const Real awr;
 };

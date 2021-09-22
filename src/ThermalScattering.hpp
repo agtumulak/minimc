@@ -54,6 +54,8 @@ public:
   ///          \Sigma_{\text{elastic}}(E) + \Sigma_{\text{inelastic}}(E) @f$
   ///          because @f$ \beta = 0 @f$ corresponds to elastic scattering.
   MicroscopicCrossSection GetMajorant(const Particle& p) const noexcept;
+  /// @brief Returns the total cross section
+  MicroscopicCrossSection GetTotal(const Particle& p) const noexcept;
   /// @brief The raison d'etre of this class
   void Scatter(Particle& p) const noexcept;
 
@@ -78,6 +80,10 @@ private:
   const HDF5DataSet<3> beta_cdf, alpha_cdf;
   // Majorant cross section
   const ContinuousMap<ContinuousEnergy, MicroscopicCrossSection> majorant;
+  // Total scattering cross section
+  const ContinuousMap<
+      Temperature, ContinuousMap<ContinuousEnergy, MicroscopicCrossSection>>
+      total;
   // Incident energies for beta
   const std::vector<ContinuousEnergy> beta_energies = beta_cdf.GetAxis(0);
   // CDF values for beta
@@ -96,7 +102,8 @@ private:
   const Alpha alpha_cutoff;
   // Range of valid temperatures
   const Temperature min_temperature, max_temperature;
-  // Atomic weight ratio of target
+  // Atomic weight ratio of target, yes this is a copy rather than giving a
+  // pointer to the parent Nuclide
   const Real awr;
 
 public:
