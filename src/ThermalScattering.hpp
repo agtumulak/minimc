@@ -95,7 +95,8 @@ private:
   const Alpha alpha_cutoff;
   // Range of valid temperatures
   const Temperature min_temperature, max_temperature;
-  // Atomic weight ratio of target
+  // Atomic weight ratio of target, yes this is a copy rather than giving a
+  // pointer to the parent Nuclide
   const Real awr;
 
 public:

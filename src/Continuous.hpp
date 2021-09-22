@@ -73,4 +73,6 @@ private:
   const std::map<Reaction, CE_XS> reactions;
   // Total cross section provided in nuclear data files
   const CE_XS total;
+  // Atomic weight ratio of target, yes this is duplicated in tsl::awr
+  const Real awr;
 };

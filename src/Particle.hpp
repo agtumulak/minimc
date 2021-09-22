@@ -59,6 +59,11 @@ public:
   /// @brief Banks secondaries produced during transport using an outgoing
   ///        Direction and outgoing Energy
   void Bank(const Direction& direction, const Energy& energy) noexcept;
+  /// @brief Sample a random number uniformly in @f$ [0, 1) @f$
+  /// @details This is provided as a convenience function because more
+  ///          complicated sampling schemes require multiple uniformly
+  ///          distributed random numbers
+  Real Sample() noexcept;
   /// @brief Sample a Nuclide given that the Particle has collided inside its
   ///        Cell
   const Nuclide& SampleNuclide() noexcept;

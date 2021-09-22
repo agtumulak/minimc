@@ -72,6 +72,10 @@ void Particle::Bank(const Direction& direction, const Energy& energy) noexcept {
       position, direction, energy, Type::neutron, rng(), cell);
 }
 
+Real Particle::Sample() noexcept {
+  return std::uniform_real_distribution{}(rng);
+}
+
 const Nuclide& Particle::SampleNuclide() noexcept {
   const MicroscopicCrossSection threshold =
       cell->material->GetMicroscopicTotal(*this) *

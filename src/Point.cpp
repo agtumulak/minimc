@@ -23,6 +23,10 @@ Point operator*(const Real& lhs, const Point& rhs) noexcept {
   return rhs * lhs;
 }
 
+Point operator/(const Point& lhs, const Real& rhs) noexcept {
+  return Point{lhs.x / rhs, lhs.y / rhs, lhs.z / rhs};
+}
+
 //// public
 
 Point::Point() noexcept {}

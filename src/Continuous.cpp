@@ -1,11 +1,14 @@
 #include "Continuous.hpp"
 
+#include "Cell.hpp"
+#include "Constants.hpp"
 #include "HDF5DataSet.hpp"
 #include "Particle.hpp"
 #include "Point.hpp"
 
 #include <algorithm>
 #include <cstddef>
+#include <cmath>
 #include <fstream>
 #include <iterator>
 #include <limits>
@@ -46,7 +49,8 @@ Continuous::Continuous(const pugi::xml_node& particle_node)
       tsl{ReadPandasSAB(particle_node.child("scatter").child("tsl"))},
       reactions{CreateReactions(particle_node)},
       total{ReadJanisWeb(
-          particle_node.child("total").attribute("file").as_string())} {}
+          particle_node.child("total").attribute("file").as_string())},
+      awr{particle_node.parent().attribute("awr").as_double()}{}
 
 MicroscopicCrossSection
 Continuous::GetMajorant(const Particle& p) const noexcept {
@@ -218,7 +222,64 @@ void Continuous::Scatter(Particle& p) const noexcept {
     tsl->Scatter(p);
   }
   else {
-    p.SetDirectionIsotropic();
+    // Adapted from
+    // openmc: openmc.readthedocs.io/en/stable/methods/neutron_physics.html
+    // lanl: laws.lanl.gov/vhosts/mcnp.lanl.gov/pdf_files/la-9721.pdf
+
+    // neutron mass in MeV * (s / cm)^2
+    constexpr auto m_n = constants::neutron_mass;
+    // incident neutron energy in MeV
+    const auto E = std::get<ContinuousEnergy>(p.GetEnergy());
+    // neutron speed and velocity in lab frame in cm / s
+    const auto s_n = std::sqrt(2. * E / m_n);
+    const auto v_n = s_n * p.GetDirection();
+    // beta has units of s / cm
+    const auto beta = std::sqrt(
+        (awr * m_n) / (2. * constants::boltzmann * p.GetCell().temperature));
+    // neutron speed (known) and unitless target speed (to be sampled),
+    // respectively
+    const auto y = beta * s_n;
+    Real x;
+    // mu is cosine of angle between v_n and target velocity v_T in the lab
+    // frame before collision. TODO: Check if this can be made const
+    Real mu;
+    do {
+      if (p.Sample() <
+          2 / (std::sqrt(constants::pi) * y + 2)) {        // openmc Eq. 75
+        x = std::sqrt(-std::log(p.Sample() * p.Sample())); // lanl C49
+      }
+      else {
+        // order random numbers are sampled matters: stackoverflow.com/a/40773451
+        const auto xi_1 = p.Sample(), xi_2 = p.Sample(), xi_3 = p.Sample();
+        const auto z = std::cos(constants::pi * xi_3 / 2);
+        x = std::sqrt(-std::log(xi_1) - std::log(xi_2) * z * z); // lanl C61
+      }
+      mu = 2 * p.Sample() - 1; // TODO: Check if this can be factored out
+    } while (p.Sample() < std::sqrt(x * x + y * y - 2 * x * y * mu) / (x + y));
+    // the sampled speed of the target in the lab frame
+    const auto s_T = x / beta;
+    // sample phi, the azimuthal angle about v_n
+    const auto phi = 2 * constants::pi * p.Sample();
+    // given v_n, s_T, mu, and phi, construct v_T, the velocity of the target
+    // in the lab frame.
+    const auto v_T = s_T * Direction{p.GetDirection(), mu, phi};
+    // Now v_T is known. Compute v_cm, the velocity of the center of mass,
+    // followed by V_n, the velocity of the neutron in the CM frame.
+    const auto v_cm = (v_n + awr * v_T) / (1 + awr);
+    const auto V_n = v_n - v_cm;
+    // Compute neutron energy in CM frame. Use classical kinetic energy. Speed
+    // units are cm / s. Energy units are MeV.
+    const auto E_n = 0.5 * m_n * V_n.Dot(V_n);
+    // scattering cosine of the neutron in the CM frame
+    const auto mu_cm = 2 * p.Sample() - 1;
+    // Compute e_n, the outgoing energy in lab frame. From openmc Eq. 52
+    const auto e_n = E_n + (E + 2 * mu_cm * (awr + 1) * std::sqrt(E * E_n)) /
+                               ((awr + 1) * (awr + 1));
+    // mu_lab is the scattering cosine in the lab frame.
+    const auto mu_lab =
+        mu * std::sqrt(E_n / e_n) + 1 / (awr + 1) * std::sqrt(E / e_n);
+    // Update particle state
+    p.Scatter(mu_lab, e_n);
   }
   return;
 }

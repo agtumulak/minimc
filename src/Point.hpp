@@ -9,10 +9,12 @@ class Point {
   friend Point operator+(const Point& lhs, const Point& rhs) noexcept;
   /// @brief Returns the vector difference of two Point objects
   friend Point operator-(const Point& lhs, const Point& rhs) noexcept;
-  /// @brief Returns Point with each element multiplied by lhs
-  friend Point operator*(const Point& lhs, const Real& rhs) noexcept;
   /// @brief Returns Point with each element multiplied by rhs
+  friend Point operator*(const Point& lhs, const Real& rhs) noexcept;
+  /// @brief Returns Point with each element multiplied by lhs
   friend Point operator*(const Real& lhs, const Point& rhs) noexcept;
+  /// @brief Returns Point with each element divided by rhs
+  friend Point operator/(const Point& lhs, const Real& rhs) noexcept;
 
 public:
   /// @brief Default constructor. Creates a Point at the origin;
