@@ -34,6 +34,8 @@ TransportMethod::Create(const pugi::xml_node& root) {
       root.child("general").child("tracking").child_value();
   // default to surface tracking
   if (tracking_type.empty() || tracking_type == "surface") {
+    // TODO: Throw error when continuous temperature thermal scattering is
+    // enabled
     transport_method = std::make_unique<const SurfaceTracking>(root);
   }
   else if (tracking_type == "cell delta") {
