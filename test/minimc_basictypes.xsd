@@ -151,6 +151,28 @@
   </xs:choice>
 </xs:complexType>
 
+<xs:complexType name="ScalarField">
+  <xs:choice>
+    <xs:element name="constant">
+      <xs:complexType>
+        <xs:attribute name="c" type="xs:double" use="required"/>
+      </xs:complexType>
+    </xs:element>
+    <xs:element name="linear">
+      <xs:complexType>
+        <xs:all>
+          <xs:element name="intercept">
+            <xs:complexType>
+              <xs:attribute name="b" type="xs:double" use="required"/>
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="gradient" type="PointType"/>
+        </xs:all>
+      </xs:complexType>
+    </xs:element>
+  </xs:choice>
+</xs:complexType>
+
 <xs:complexType name="PointDistributionType">
   <xs:choice>
     <xs:element name="constant" type="PointType"/>

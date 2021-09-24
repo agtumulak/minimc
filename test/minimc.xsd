@@ -107,6 +107,7 @@
           <xs:field xpath="@name"/>
         </xs:unique>
       </xs:element>
+      <xs:element name="temperature" type="ScalarField" minOccurs="0"/>
       <xs:element name="problemtype">
         <xs:complexType>
           <xs:choice>
