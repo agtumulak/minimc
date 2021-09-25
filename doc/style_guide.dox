@@ -57,4 +57,24 @@ clearer without the cost of an expensive copy (such as initializing a reference
 or copying an rvalue for which there is a move constructor) so the choice is
 ultimately up to an informed developer's discretion.
 
+@section style_guide_documentation Documentation
+
+- Use the <code>boldsymbol</code> environment to denote vectors
+- Use the <code>bmatrix</code> environment for displaying matrices in
+documentation
+
+@code{.tex}
+  \boldsymbol{p} =
+  \begin{bmatrix}
+    x \\ y \\ z
+  \end{bmatrix}
+@endcode
+
+@f[
+  \boldsymbol{p} =
+  \begin{bmatrix}
+  x \\ y \\ z
+  \end{bmatrix}
+@f]
+
 */

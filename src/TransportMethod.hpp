@@ -2,11 +2,12 @@
 
 #include "Estimator.hpp"
 #include "Particle.hpp"
-#include "World.hpp"
 #include "pugixml.hpp"
 
 #include <list>
 #include <memory>
+
+class World;
 
 /// @brief Performs the transport of a Particle after it is born up until its
 ///        death
@@ -21,21 +22,22 @@ public:
     /// @brief Secondary particles banked during transport
     std::list<Particle> banked;
   };
-  /// @brief Factory method to create new TransportMethod from XML document
+  /// @brief Factory method to create new TransportMethod from an XML document
+  ///        and World
   /// @details This class is meant to compose the various tracking techniques
   ///          (surface tracking, delta tracking, etc...) and variance
   ///          reduction techniques (splitting, rouletting, forced collision)
-  ///          by assigning such tasks to delegates.
+  ///          by assigning such tasks to delegates. World is passed to
+  ///          determine if the requested TransportMethod is @ref
+  ///          transport_methods "supported".
   /// @returns A `std::unique_ptr` to the constructed TransportMethod (C++ Core
   ///          Guidelines R.30)
   static std::unique_ptr<const TransportMethod>
-  Create(const pugi::xml_node& root);
-  /// @brief Constructs a TransportMethod from an XML document
-  TransportMethod(const pugi::xml_node& root);
+  Create(const pugi::xml_node& root, const World& world);
   /// @brief Virtual destructor (C++ Core Guidelines C.127)
   virtual ~TransportMethod() noexcept;
   /// @brief Moves a Particle through its states until it dies.
-  virtual Outcome Transport(Particle& p) const noexcept = 0;
+  virtual Outcome Transport(Particle& p, const World& w) const noexcept = 0;
 
 protected:
   /// @brief Global, read-only description of geometric and material properties
@@ -46,18 +48,14 @@ protected:
 ///        surface crossing
 class SurfaceTracking : public TransportMethod {
 public:
-  /// @brief Constructs a SurfaceTracking from an XML document
-  SurfaceTracking(const pugi::xml_node& root) noexcept;
   /// @brief Implements delta tracking
-  Outcome Transport(Particle& p) const noexcept override;
+  Outcome Transport(Particle& p, const World& w) const noexcept override;
 };
 
 /// @brief Tracks a particle using delta tracking within a Cell. Surface
 ///        tracking is used across different Cells.
 class CellDeltaTracking : public TransportMethod {
 public:
-  /// @brief Constructs a CellDeltaTracking from an XML document
-  CellDeltaTracking(const pugi::xml_node& root) noexcept;
   /// @brief Implements cell delta tracking
-  Outcome Transport(Particle& p) const noexcept override;
+  Outcome Transport(Particle& p, const World& w) const noexcept override;
 };

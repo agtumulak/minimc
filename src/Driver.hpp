@@ -1,6 +1,7 @@
 #pragma once
 
 #include "BasicTypes.hpp"
+#include "World.hpp"
 #include "pugixml.hpp"
 
 #include <cstddef>
@@ -26,6 +27,8 @@ public:
   virtual Estimator Solve() = 0;
 
 protected:
+  /// @brief Global, read-only description of geometric and material properties
+  const World world;
   /// @brief Used to update Particle state
   const std::unique_ptr<const TransportMethod> transport_method;
   /// @brief Number of threads dedicated to particle transport

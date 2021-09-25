@@ -97,6 +97,7 @@
               <xs:attribute name="beta_cdf_file" type="xs:anyURI" use="required"/>
               <xs:attribute name="alpha_cdf_file" type="xs:anyURI" use="required"/>
               <xs:attribute name="majorant" type="xs:anyURI" use="required"/>
+              <xs:attribute name="total" type="xs:anyURI" use="required"/>
               <xs:attribute name="min_temperature" type="StrictlyPositiveDouble" use="required"/>
               <xs:attribute name="max_temperature" type="StrictlyPositiveDouble" use="required"/>
               <xs:attribute name="beta_cutoff" type="StrictlyPositiveDouble" use="required"/>
@@ -161,6 +162,12 @@
     <xs:element name="linear">
       <xs:complexType>
         <xs:all>
+          <xs:element name="bounds">
+            <xs:complexType>
+              <xs:attribute name="lower" type="xs:double" use="required"/>
+              <xs:attribute name="upper" type="xs:double" use="required"/>
+            </xs:complexType>
+          </xs:element>
           <xs:element name="intercept">
             <xs:complexType>
               <xs:attribute name="b" type="xs:double" use="required"/>

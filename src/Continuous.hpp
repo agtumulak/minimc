@@ -22,6 +22,8 @@ public:
   /// @brief Constructs continuous energy nuclear data from a particle node of
   ///        an XML document
   Continuous(const pugi::xml_node& particle_node);
+  /// @brief Returns true if ThermalScattering exists
+  bool HasContinuousTemperatureThermalScattering() const noexcept override;
   /// @brief Returns the majorant cross section for a given Particle
   /// @details Currently used when there is a continuous dependence on
   ///          temperature, returning the largest cross section across all

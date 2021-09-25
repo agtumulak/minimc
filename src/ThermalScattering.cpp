@@ -4,6 +4,7 @@
 #include "Constants.hpp"
 #include "Continuous.hpp"
 #include "Particle.hpp"
+#include "ScalarField.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -40,12 +41,12 @@ ThermalScattering::GetMajorant(const Particle& p) const noexcept {
 void ThermalScattering::Scatter(Particle& p) const noexcept {
   // get incident energy and target temperature
   const auto E = std::get<ContinuousEnergy>(p.GetEnergy());
-  const Temperature T = p.GetCell().temperature;
+  const Temperature T = p.GetCell().temperature->at(p.GetPosition());
   // sample beta then alpha
   const auto beta = SampleBeta(p, E, T);
   const auto alpha = SampleAlpha(p, beta, E, T);
   // convert to outgoing energy and cosine
-  const auto E_p = E + beta * constants::boltzmann * p.GetCell().temperature;
+  const auto E_p = E + beta * constants::boltzmann * T;
   const auto mu =
       (E + E_p - alpha * awr * constants::boltzmann * T) / std::sqrt(E * E_p);
   p.Scatter(mu, E_p);

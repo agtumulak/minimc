@@ -2,22 +2,25 @@
 
 #include "CSGSurface.hpp"
 #include "Material.hpp"
+#include "ScalarField.hpp"
 
 #include <algorithm>
 #include <cassert>
 #include <stdexcept>
+#include <string>
 
 // Cell
 
 //// public
 
 Cell::Cell(
-    const pugi::xml_node& root, const std::string& cell_name,
-    const CSGSurfaceVector& all_surfaces,
-    const MaterialVector& all_materials) noexcept
-    : name{cell_name}, surface_senses{AssignSurfaceSenses(
-                           root, cell_name, all_surfaces)},
-      material{AssignMaterial(root, cell_name, all_materials)} {}
+    const pugi::xml_node& cell_node, const CSGSurfaceVector& all_surfaces,
+    const MaterialVector& all_materials,
+    const std::shared_ptr<const ScalarField> global_temperature) noexcept
+    : name{cell_node.attribute("name").as_string()},
+      surface_senses{AssignSurfaceSenses(cell_node, all_surfaces)},
+      material{AssignMaterial(cell_node, all_materials)},
+      temperature{AssignTemperature(cell_node, global_temperature)} {}
 
 bool Cell::Contains(const Point& p) const noexcept {
   return std::all_of(
@@ -50,11 +53,10 @@ bool Cell::operator==(const Cell& rhs) const noexcept { return this == &rhs; }
 //// private
 
 Cell::SurfaceSenses Cell::AssignSurfaceSenses(
-    const pugi::xml_node& root, const std::string& cell_name,
+    const pugi::xml_node& cell_node,
     const CSGSurfaceVector& all_surfaces) noexcept {
   SurfaceSenses cell_surfaces;
-  for (const auto& surface_node :
-       root.child("cells").find_child_by_attribute("name", cell_name.c_str())) {
+  for (const auto& surface_node : cell_node) {
     const auto surface_name = surface_node.attribute("name").as_string();
     const auto surface_it = std::find_if(
         all_surfaces.cbegin(), all_surfaces.cend(),
@@ -82,16 +84,13 @@ Cell::SurfaceSenses Cell::AssignSurfaceSenses(
 }
 
 std::shared_ptr<const Material> Cell::AssignMaterial(
-    const pugi::xml_node& root, const std::string& cell_name,
+    const pugi::xml_node& cell_node,
     const MaterialVector& all_materials) noexcept {
   // void cells do not have a material
-  if (cell_name.empty()) {
+  if (cell_node.attribute("name").empty()) {
     return nullptr;
   }
-  auto material_name = root.child("cells")
-                           .find_child_by_attribute("name", cell_name.c_str())
-                           .attribute("material")
-                           .as_string();
+  auto material_name = cell_node.attribute("material").as_string();
   auto material_it = std::find_if(
       all_materials.cbegin(), all_materials.cend(),
       [&material_name](const std::shared_ptr<const Material>& material) {
@@ -101,3 +100,12 @@ std::shared_ptr<const Material> Cell::AssignMaterial(
   assert(material_it != all_materials.cend());
   return *material_it;
 };
+
+const std::shared_ptr<const ScalarField> Cell::AssignTemperature(
+    const pugi::xml_node& cell_node,
+    const std::shared_ptr<const ScalarField> global_temperature) noexcept {
+  return cell_node.attribute("temperature")
+             ? std::make_shared<const ConstantField>(
+                   cell_node.attribute("temperature").as_double())
+             : global_temperature;
+}

@@ -6,9 +6,11 @@
 #include "Material.hpp"
 #include "Nuclide.hpp"
 #include "Reaction.hpp"
+#include "World.hpp"
 
 #include <cassert>
 #include <random>
+#include <stdexcept>
 #include <string>
 
 // TransportMethod::Outcome
@@ -27,19 +29,43 @@ TransportMethod::Outcome::operator+=(Outcome&& rhs) noexcept {
 //// public
 
 std::unique_ptr<const TransportMethod>
-TransportMethod::Create(const pugi::xml_node& root) {
+TransportMethod::Create(const pugi::xml_node& root, const World& world) {
   std::unique_ptr<const TransportMethod>
       transport_method{}; // hope this triggers NRVO
   const std::string tracking_type =
       root.child("general").child("tracking").child_value();
   // default to surface tracking
   if (tracking_type.empty() || tracking_type == "surface") {
-    // TODO: Throw error when continuous temperature thermal scattering is
-    // enabled
-    transport_method = std::make_unique<const SurfaceTracking>(root);
+    if (world.HasConstantTemperature()) {
+      if (!world.HasContinuousTemperatureThermalScattering()) {
+        transport_method = std::make_unique<const SurfaceTracking>();
+      }
+      else {
+        throw std::runtime_error(
+            "Surface tracking with constant global temperature and continuous "
+            "temperature thermal scattering not currently supported");
+      }
+    }
+    else {
+      throw std::runtime_error(
+          "Surface tracking with continuous global temperature not allowed");
+    }
   }
   else if (tracking_type == "cell delta") {
-    transport_method = std::make_unique<const CellDeltaTracking>(root);
+    if (world.HasConstantTemperature()){
+      if (!world.HasContinuousTemperatureThermalScattering()) {
+        transport_method = std::make_unique<const CellDeltaTracking>();
+      }
+      else {
+        throw std::runtime_error(
+            "Delta tracking with constant global temperature and continuous "
+            "temperature thermal scattering not currently supported");
+      }
+    }
+    else {
+      // free gas scattering majorant cross section must be calculated
+      transport_method = std::make_unique<const CellDeltaTracking>();
+    }
   }
   else {
     assert(false); // this should have been caught by the validator
@@ -47,19 +73,16 @@ TransportMethod::Create(const pugi::xml_node& root) {
   return transport_method;
 }
 
-TransportMethod::TransportMethod(const pugi::xml_node& root) : world{root} {}
-
 TransportMethod::~TransportMethod() noexcept {}
 
 // SurfaceTracking
 
-SurfaceTracking::SurfaceTracking(const pugi::xml_node& root) noexcept
-    : TransportMethod{root} {}
+// SurfaceTracking
 
 TransportMethod::Outcome
-SurfaceTracking::Transport(Particle& p) const noexcept {
+SurfaceTracking::Transport(Particle& p, const World& w) const noexcept {
   Outcome result;
-  p.SetCell(world.FindCellContaining(p.GetPosition()));
+  p.SetCell(w.FindCellContaining(p.GetPosition()));
   while (p.alive) {
     const auto distance_to_collision = std::exponential_distribution{
         p.GetCell().material->number_density *
@@ -78,7 +101,7 @@ SurfaceTracking::Transport(Particle& p) const noexcept {
     else {
       result.estimator.at(Estimator::Event::surface_crossing) += 1;
       p.Stream(distance_to_surface_crossing + constants::nudge);
-      p.SetCell(world.FindCellContaining(p.GetPosition()));
+      p.SetCell(w.FindCellContaining(p.GetPosition()));
       if (!p.GetCell().material) {
         p.Kill();
       }
@@ -89,16 +112,12 @@ SurfaceTracking::Transport(Particle& p) const noexcept {
 
 // CellDeltaTracking
 
-CellDeltaTracking::CellDeltaTracking(const pugi::xml_node& root) noexcept
-    : TransportMethod{root} {}
-
-
 // TODO: Remove embarrasing amount of code duplication between this and
 // SurfaceTracking
 TransportMethod::Outcome
-CellDeltaTracking::Transport(Particle& p) const noexcept {
+CellDeltaTracking::Transport(Particle& p, const World& w) const noexcept {
   Outcome result;
-  p.SetCell(world.FindCellContaining(p.GetPosition()));
+  p.SetCell(w.FindCellContaining(p.GetPosition()));
   while (p.alive) {
     const auto distance_to_collision = std::exponential_distribution{
         p.GetCell().material->number_density *
@@ -109,7 +128,7 @@ CellDeltaTracking::Transport(Particle& p) const noexcept {
       // a surface crossing occurs
       p.Stream(distance_to_surface_crossing + constants::nudge);
       result.estimator.at(Estimator::Event::surface_crossing) += 1;
-      p.SetCell(world.FindCellContaining(p.GetPosition()));
+      p.SetCell(w.FindCellContaining(p.GetPosition()));
       if (!p.GetCell().material){
         p.Kill();
       }
