@@ -14,6 +14,9 @@ class Nuclide {
 public:
   /// @brief Constructs a Nuclide from a `nuclide` node
   Nuclide(const pugi::xml_node& nuclide_node);
+  /// @brief Returns true if continuous temperature thermal scattering for
+  ///        neutrons is present in this Nuclide.
+  bool HasContinuousTemperatureThermalScattering() const noexcept;
   /// @brief Returns the majorant cross section for a given Particle
   MicroscopicCrossSection GetMajorant(const Particle& p) const noexcept;
   /// @brief Returns the total cross section for a given Particle

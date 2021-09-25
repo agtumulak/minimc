@@ -30,7 +30,7 @@ Driver::Create(const std::filesystem::path& xml_filepath) {
 }
 
 Driver::Driver(const pugi::xml_node& root)
-    : transport_method{TransportMethod::Create(root)},
+    : world{root}, transport_method{TransportMethod::Create(root, world)},
       threads{std::stoul(root.child("general").child("threads").child_value())},
       seed(std::stoi(
           root.child("general").child("seed")

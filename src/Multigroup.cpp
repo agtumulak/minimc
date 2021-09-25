@@ -35,6 +35,10 @@ Multigroup::Multigroup(const pugi::xml_node& particle_node)
       total{CreateTotalXS(particle_node, reactions)},
       max_group{GroupStructureSize(particle_node.root())} {}
 
+bool Multigroup::HasContinuousTemperatureThermalScattering() const noexcept {
+  return false;
+}
+
 MicroscopicCrossSection
 Multigroup::GetMajorant(const Particle& p) const noexcept {
   return GetTotal(p);

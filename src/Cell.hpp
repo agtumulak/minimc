@@ -1,7 +1,6 @@
 #pragma once
 
 #include "BasicTypes.hpp"
-#include "Constants.hpp"
 #include "Point.hpp"
 #include "pugixml.hpp"
 
@@ -13,9 +12,11 @@
 
 class CSGSurface;
 class Material;
+class ScalarField;
 
 /// @brief A subset of @f$ \mathbb{R}^{3} @f$ defined by constructive solid
 ///        geometry (CSG) surfaces
+/// @todo Add support for other temperature ScalarField types
 class Cell {
 private:
   // A polymorphic vector of CSGSurface objects. Multiple Cell objects can
@@ -31,14 +32,15 @@ private:
 
 public:
   /// @brief Constructs a Cell from an XML document
-  /// @param root Root node of existing XML document
-  /// @param cell_name Value of `name` attribute of `cell` node in XML document
+  /// @param cell_node Cell node in XML document
   /// @param all_surfaces CSGSurface objects which may appear in this Cell
   /// @param all_materials Material objects which may appear in this Cell
+  /// @param global_temperature If no temperature is found in the `cell` node,
+  ///                           default to the global temperature
   Cell(
-      const pugi::xml_node& root, const std::string& cell_name,
-      const CSGSurfaceVector& all_surfaces,
-      const MaterialVector& all_materials) noexcept;
+      const pugi::xml_node& cell_node, const CSGSurfaceVector& all_surfaces,
+      const MaterialVector& all_materials,
+      const std::shared_ptr<const ScalarField> global_temperature) noexcept;
   /// @brief Returns true if the point lies inside this Cell
   bool Contains(const Point& p) const noexcept;
   /// @brief Finds the nearest CSGSurface from a point along a given direction
@@ -60,20 +62,25 @@ public:
   const SurfaceSenses surface_senses;
   /// @brief Material this Cell is made of. A nullptr corresponds to a void.
   const std::shared_ptr<const Material> material;
-  /// @brief Temperature of the entire Cell
-  const Temperature temperature = constants::room_temperature;
+  /// @brief Temperature of the Cell
+  const std::shared_ptr<const ScalarField> temperature;
 
 private:
   // Helper function to assign all CSGSurface objects which make up Cell with
   // the given name. CSGSurface objects from all_surfaces are shared between
   // all Cell objects.
   static SurfaceSenses AssignSurfaceSenses(
-      const pugi::xml_node& root, const std::string& cell_name,
+      const pugi::xml_node& cell_node,
       const CSGSurfaceVector& all_surfaces) noexcept;
   // Helper function to assign Material object used by the Cell with the given
   // name. Material objects from all_materials may be shared between Cell
   // objects.
   static std::shared_ptr<const Material> AssignMaterial(
-      const pugi::xml_node& root, const std::string& cell_name,
+      const pugi::xml_node& cell_node,
       const MaterialVector& all_materials) noexcept;
+  // Helper function to assign Cell temperature, if specified. Otherwise
+  // defaults to global temperature.
+  static const std::shared_ptr<const ScalarField> AssignTemperature(
+      const pugi::xml_node& cell_node,
+      const std::shared_ptr<const ScalarField> global_temperature) noexcept;
 };

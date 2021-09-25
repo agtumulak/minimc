@@ -48,7 +48,7 @@ Estimator FixedSource::StartWorker() {
     // we choose a list because list::splice is constant time
     std::list<Particle> bank(1, p);
     while (!bank.empty()) {
-      auto result = transport_method->Transport(bank.back());
+      auto result = transport_method->Transport(bank.back(), world);
       bank.pop_back();
       worker_estimator += result.estimator;
       bank.splice(bank.begin(), result.banked);

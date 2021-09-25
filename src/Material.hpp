@@ -31,7 +31,9 @@ public:
   Material(
       const pugi::xml_node& root, const std::string& name,
       const std::vector<std::shared_ptr<const Nuclide>>& all_nuclides);
-
+  /// @brief Returns true if continuous temperature thermal scattering is
+  ///        present in any Nuclide
+  bool HasContinuousTemperatureThermalScattering() const noexcept;
   /// @brief Return the majorant <em>microscopic</em> cross section
   /// @details This is not to be confused with the <em>global</em> majorant
   ///          across all Materials in the problem

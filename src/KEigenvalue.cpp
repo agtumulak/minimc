@@ -57,7 +57,7 @@ Estimator KEigenvalue::Solve() {
 TransportMethod::Outcome KEigenvalue::StartWorker() {
   TransportMethod::Outcome worker_outcome;
   while (auto p = NextParticle()) {
-    worker_outcome += transport_method->Transport(p.value());
+    worker_outcome += transport_method->Transport(p.value(), world);
   }
   return worker_outcome;
 }

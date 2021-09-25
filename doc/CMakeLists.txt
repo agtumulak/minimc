@@ -4,6 +4,7 @@ if(Doxygen_FOUND)
     mainpage.dox
     developer_guide.dox
     style_guide.dox
+    transport_methods.dox
     )
   file(GLOB_RECURSE MD_FILES "${PROJECT_SOURCE_DIR}/*.md")
   set(DOXYGEN_USE_MATHJAX YES)

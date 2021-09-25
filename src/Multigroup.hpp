@@ -24,6 +24,9 @@ public:
   /// @exception std::runtime_error Number of entries is not consistent with
   ///            number of groups
   Multigroup(const pugi::xml_node& particle_node);
+  /// @brief Multigroup data cannot have thermal scattering so this always
+  ///        returns false
+  bool HasContinuousTemperatureThermalScattering() const noexcept override;
   /// @brief Returns the total cross section for a given Particle, currently
   ///        the same as GetTotal().
   MicroscopicCrossSection

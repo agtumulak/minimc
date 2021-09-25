@@ -5,6 +5,7 @@
 #include "HDF5DataSet.hpp"
 #include "Particle.hpp"
 #include "Point.hpp"
+#include "ScalarField.hpp"
 
 #include <algorithm>
 #include <cstddef>
@@ -51,6 +52,10 @@ Continuous::Continuous(const pugi::xml_node& particle_node)
       total{ReadJanisWeb(
           particle_node.child("total").attribute("file").as_string())},
       awr{particle_node.parent().attribute("awr").as_double()}{}
+
+bool Continuous::HasContinuousTemperatureThermalScattering() const noexcept {
+  return tsl.has_value();
+}
 
 MicroscopicCrossSection
 Continuous::GetMajorant(const Particle& p) const noexcept {
@@ -235,7 +240,8 @@ void Continuous::Scatter(Particle& p) const noexcept {
     const auto v_n = s_n * p.GetDirection();
     // beta has units of s / cm
     const auto beta = std::sqrt(
-        (awr * m_n) / (2. * constants::boltzmann * p.GetCell().temperature));
+        (awr * m_n) / (2. * constants::boltzmann *
+                       p.GetCell().temperature->at(p.GetPosition())));
     // neutron speed (known) and unitless target speed (to be sampled),
     // respectively
     const auto y = beta * s_n;

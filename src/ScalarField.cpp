@@ -23,17 +23,34 @@ ScalarField::Create(const pugi::xml_node& scalar_field_node) noexcept {
   return scalar_field;
 }
 
+ScalarField::ScalarField(Real upper_bound, Real lower_bound) noexcept
+    : upper_bound{upper_bound}, lower_bound{lower_bound} {}
+
+ScalarField::~ScalarField() noexcept {}
+
 // ConstantField
 
 ConstantField::ConstantField(const pugi::xml_node& scalar_field_node) noexcept
-    : c{scalar_field_node.attribute("constant").as_double()} {}
+    : ScalarField{
+      scalar_field_node.attribute("constant").as_double(),
+      scalar_field_node.attribute("constant").as_double()},
+      c{scalar_field_node.attribute("constant").as_double()} {}
+
+ConstantField::ConstantField(const Real c) noexcept : ScalarField{c, c}, c{c} {}
+
+bool ConstantField::IsConstant() const noexcept { return true; }
 
 Real ConstantField::at(const Point&) const noexcept { return c; }
 
 // LinearField
 
 LinearField::LinearField(const pugi::xml_node& scalar_field_node) noexcept
-    : g{scalar_field_node.child("gradient")},
+    : ScalarField{
+      scalar_field_node.child("bounds").attribute("upper").as_double(),
+      scalar_field_node.child("bounds").attribute("lower").as_double()},
+      g{scalar_field_node.child("gradient")},
       b{scalar_field_node.child("intercept").attribute("b").as_double()} {}
+
+bool LinearField::IsConstant() const noexcept { return g == Point{0, 0, 0}; }
 
 Real LinearField::at(const Point& p) const noexcept { return g.Dot(p) + b; }

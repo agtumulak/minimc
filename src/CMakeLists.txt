@@ -33,6 +33,8 @@ set(MINIMC_SOURCES
   Point.hpp
   Reaction.cpp
   Reaction.hpp
+  ScalarField.cpp
+  ScalarField.hpp
   Source.cpp
   Source.hpp
   ThermalScattering.cpp
