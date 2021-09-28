@@ -16,9 +16,6 @@ class Particle;
 /// @brief Contains cross sections which are indexed by continuous energy values
 class Continuous : public Interaction {
 public:
-  /// @brief Helper function for constructing CE_XS from a pandas HDF5 file
-  static ContinuousMap<ContinuousEnergy, MicroscopicCrossSection>
-  ReadPandasHDF5(const std::filesystem::path& datapath);
   /// @brief Constructs continuous energy nuclear data from a particle node of
   ///        an XML document
   Continuous(const pugi::xml_node& particle_node);

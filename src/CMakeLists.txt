@@ -15,7 +15,6 @@ set(MINIMC_SOURCES
   Constants.hpp
   FixedSource.cpp
   FixedSource.hpp
-  HDF5DataSet.cpp
   HDF5DataSet.hpp
   Interaction.cpp
   Interaction.hpp
