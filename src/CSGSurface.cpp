@@ -32,6 +32,9 @@ CSGSurface::Create(const pugi::xml_node& root, const std::string& name) {
   case CSGSurface::SurfaceType::Sphere:
     surface = std::make_unique<const Sphere>(surface_node);
     break;
+  case CSGSurface::SurfaceType::PlaneX:
+    surface = std::make_unique<const PlaneX>(surface_node);
+    break;
   }
   return surface;
 }
@@ -49,6 +52,9 @@ CSGSurface::SurfaceType
 CSGSurface::ToSurfaceType(const std::string& surface_name) noexcept {
   if (surface_name == "sphere") {
     return CSGSurface::SurfaceType::Sphere;
+  }
+  else if (surface_name == "planex"){
+    return CSGSurface::SurfaceType::PlaneX;
   }
   assert(false); // this should have been caught by the validator
 }
@@ -98,4 +104,22 @@ Real Sphere::Distance(
 bool Sphere::Contains(const Point& p) const noexcept {
   const Point pc{p - center};
   return pc.Dot(pc) < radius * radius;
+}
+
+// PlaneX
+
+//// public
+
+PlaneX::PlaneX(const pugi::xml_node& planex_node) noexcept
+    : CSGSurface{planex_node}, c{planex_node.attribute("x").as_double()} {}
+
+Real PlaneX::Distance(
+    const Point& origin, const Direction& direction) const noexcept {
+  const auto x_distance = c - origin.Dot(Point{1, 0, 0});
+  return x_distance / direction.Dot(Point{1, 0, 0});
+}
+
+bool PlaneX::Contains(const Point& p) const noexcept {
+  const auto x_distance = c - p.Dot(Point{1, 0, 0});
+  return x_distance < 0;
 }

@@ -45,6 +45,7 @@ private:
   // Possible derived CSGSurface types
   enum class SurfaceType {
     Sphere,
+    PlaneX,
   };
   // Converts std::string to CSGSurface::SurfaceType
   static SurfaceType ToSurfaceType(const std::string& surface_name) noexcept;
@@ -70,4 +71,22 @@ public:
 private:
   const Point center;
   const Real radius;
+};
+
+/// @brief Plane perpendicular to the x-axis
+class PlaneX : public CSGSurface {
+public:
+  /// @brief Constructs a PlaneX from a `planex` node of an XML document
+  /// @param planex_node The requested `planex` node in the XML document
+  PlaneX(const pugi::xml_node& planex_node) noexcept;
+
+  ///        a given direction.
+  Real Distance(
+      const Point& origin, const Direction& direction) const noexcept override;
+  /// @brief Implements CSGSurface method
+  bool Contains(const Point& p) const noexcept override;
+
+private:
+  // completely defines the plane x - c = 0
+  const Real c;
 };
