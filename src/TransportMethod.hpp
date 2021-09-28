@@ -9,6 +9,42 @@
 
 class World;
 
+// /// @brief Composition over inheritance delegate for sampling distance to
+// ///        collision
+// class DistanceToCollision {
+// public:
+//   virtual Real Sample(Particle& p) const noexcept = 0;
+// };
+// 
+// /// @brief Implements sampling distance to next collision for surface tracking
+// class SurfaceTracking : public DistanceToCollision {
+// public:
+//   Real Sample(Particle &p) const noexcept override;
+// };
+// 
+// /// @brief Implements sampling distance to next collision for cell delta
+// ///        tracking
+// class CellDeltaTracking : public DistanceToCollision {
+// public:
+//   /// @brief
+//   Real Sample(Particle &p) const noexcept override;
+// };
+// 
+// class CollisionInteraction {
+// public:
+//   virtual void Sample(Particle& p, Estimator& e) const noexcept = 0;
+// };
+// 
+// class VirtualCollisionImpossible : public CollisionInteraction {
+// public:
+//   void Sample(Particle& p, Estimator& e) const noexcept override;
+// };
+// 
+// class VirtualCollisionPossible : public CollisionInteraction {
+// public:
+//   void Sample(Particle& p, Estimator & e) const noexcept override;
+// };
+
 /// @brief Performs the transport of a Particle after it is born up until its
 ///        death
 class TransportMethod {
@@ -40,8 +76,10 @@ public:
   virtual Outcome Transport(Particle& p, const World& w) const noexcept = 0;
 
 protected:
-  /// @brief Global, read-only description of geometric and material properties
-  const World world;
+  // /// @brief
+  // const std::unique_ptr<const DistanceToCollision> collision_distance;
+  // /// @brief
+  // const std::unique_ptr<const CollisionInteraction> collision_interaction;
 };
 
 /// @brief Loops over each CSGSurface in the current Cell to find the next

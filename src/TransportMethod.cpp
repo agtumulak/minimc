@@ -13,6 +13,51 @@
 #include <stdexcept>
 #include <string>
 
+// // SurfaceTracking
+// 
+// Real SurfaceTracking::Sample(Particle& p) const noexcept {
+//   return std::exponential_distribution{
+//       p.GetCell().material->number_density *
+//       p.GetCell().material->GetMicroscopicTotal(p)}(p.rng);
+// }
+// 
+// // CellDeltaTracking
+// 
+// Real CellDeltaTracking::Sample(Particle& p) const noexcept {
+//   return std::exponential_distribution{
+//       p.GetCell().material->number_density *
+//       p.GetCell().material->GetMicroscopicMajorant(p)}(p.rng);
+// }
+// 
+// // VirtualCollisionImpossible
+// 
+// void VirtualCollisionImpossible::Sample(
+//     Particle& p, Estimator& e) const noexcept {
+//   e.at(Estimator::Event::collision) += 1;
+//   const auto& nuclide = p.SampleNuclide();
+//   e.at(Estimator::Event::implicit_fission) +=
+//       nuclide.GetNuBar(p) * nuclide.GetReaction(p, Reaction::fission) /
+//       nuclide.GetTotal(p);
+//   nuclide.Interact(p);
+// }
+// 
+// // VirtualCollisionPossible
+// 
+// void VirtualCollisionPossible::Sample(
+//     Particle& p, Estimator& e) const noexcept {
+//   if (std::bernoulli_distribution{
+//           p.GetCell().material->GetMicroscopicTotal(p) /
+//           p.GetCell().material->GetMicroscopicMajorant(p)}(p.rng)) {
+//   }
+//   e.at(Estimator::Event::collision) += 1;
+//   const auto& nuclide = p.SampleNuclide();
+//   e.at(Estimator::Event::implicit_fission) +=
+//       nuclide.GetNuBar(p) * nuclide.GetReaction(p, Reaction::fission) /
+//       nuclide.GetTotal(p);
+//   nuclide.Interact(p);
+// }
+
+
 // TransportMethod::Outcome
 
 //// public
@@ -75,7 +120,28 @@ TransportMethod::Create(const pugi::xml_node& root, const World& world) {
 
 TransportMethod::~TransportMethod() noexcept {}
 
-// SurfaceTracking
+// TransportMethod::Outcome
+// TransportMethod::Transport(Particle& p) const noexcept {
+//   Outcome result;
+//   p.SetCell(world.FindCellContaining(p.GetPosition()));
+//   while (p.alive) {
+//     const auto distance_to_collision = collision_distance->Sample(p);
+//     const auto [nearest_surface, distance_to_surface_crossing] =
+//         p.GetCell().NearestSurface(p.GetPosition(), p.GetDirection());
+//     if (distance_to_surface_crossing < distance_to_collision){
+//       p.Stream(distance_to_surface_crossing + constants::nudge);
+//       result.estimator.at(Estimator::Event::surface_crossing) += 1;
+//       p.SetCell(world.FindCellContaining(p.GetPosition()));
+//       if (!p.GetCell().material){
+//         p.Kill();
+//       }
+//     }
+//     else {
+//       p.Stream(distance_to_collision);
+//       collision_interaction->Sample(p, result.estimator);
+//     }
+//   }
+// }
 
 // SurfaceTracking
 
