@@ -13,19 +13,37 @@ template <typename Key, typename T> class ContinuousMap {
 public:
   /// @brief Type used to store elements internally
   using elements_type = std::map<Key, T>;
-
+  /// @brief Default constructs an empty ContinuousMap
+  ContinuousMap() {}
   /// @brief Constructs ContinuousMap by assigning elements directly
   ContinuousMap(elements_type&& other) : elements{std::move(other)} {}
-
   /// @brief Returns a const reference to the value at a given key
+  /// @todo Interpolate and handle edge cases
   const T& at(const Key k) const noexcept {
-    // TODO: Interpolate and handle edge cases
     return elements.upper_bound(k)->second;
   }
+  /// @brief Returns a reference to the value at a given key
+  T& operator[](const Key& k) { return elements[k]; }
 
 protected:
   /// @brief This class essentially wraps an STL container
-  const elements_type elements;
+  elements_type elements;
+};
+
+/// @brief Contains a nested ContinuousMap type
+/// @details https://stackoverflow.com/a/1500289/5101335
+/// @tparam D Nest depth
+template <size_t D> struct NestedContinuousMap {
+  /// @brief Type contained by a ContinuousMap when there are D levels of
+  ///        nesting
+  using MappedType =
+      ContinuousMap<Real, typename NestedContinuousMap<D - 1>::MappedType>;
+};
+
+/// @brief Contains the base case for NestedContinuousMap
+template <> struct NestedContinuousMap<0> {
+  /// @brief Type contained by a ContinuousMap when there is no nesting
+  using MappedType = Real;
 };
 
 /// @brief Like Map, but stores elements as the CDF of some random variable.

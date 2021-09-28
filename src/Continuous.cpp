@@ -23,17 +23,6 @@
 
 //// public
 
-ContinuousMap<ContinuousEnergy, MicroscopicCrossSection>
-Continuous::ReadPandasHDF5(const std::filesystem::path& datapath) {
-  std::map<ContinuousEnergy, MicroscopicCrossSection> map;
-  HDF5DataSet h5_data{datapath};
-  const auto& energies = h5_data.GetAxis(0);
-  for (size_t index = 0; index < energies.size(); index++) {
-    map[energies[index]] = h5_data.at(index);
-  }
-  return map;
-}
-
 Continuous::Continuous(const pugi::xml_node& particle_node)
     : nubar{particle_node.child("fission").child("nubar")
               ? std::make_optional(

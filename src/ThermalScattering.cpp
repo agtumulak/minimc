@@ -20,8 +20,8 @@
 ThermalScattering::ThermalScattering(const pugi::xml_node& tsl_node) noexcept
     : beta_cdf{tsl_node.attribute("beta_cdf_file").as_string()},
       alpha_cdf{tsl_node.attribute("alpha_cdf_file").as_string()},
-      majorant{Continuous::ReadPandasHDF5(
-          tsl_node.attribute("majorant").as_string())},
+      majorant{HDF5DataSet<1>{tsl_node.attribute("majorant").as_string()}
+                   .ToContinuousMap()},
       beta_cutoff{tsl_node.attribute("beta_cutoff").as_double()},
       alpha_cutoff{tsl_node.attribute("alpha_cutoff").as_double()},
       min_temperature{tsl_node.attribute("min_temperature").as_double()},
