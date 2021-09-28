@@ -98,4 +98,7 @@
     </particletype>
   </fixedsource>
 </problemtype>
+<temperature>
+  <constant c="273"/>
+</temperature>
 </minimc>
