@@ -60,11 +60,9 @@ Continuous::GetMajorant(const Particle& p) const noexcept {
                p.GetCell().temperature->upper_bound);
            p.type == Particle::Type::neutron &&
            E < 500 * constants::boltzmann * T_max / awr) {
-    // get largest possible free gas scattering adjustment
-    const auto adj_factor = GetFreeGasAdjustment(p, E, T_max);
     return GetReaction(p, Reaction::capture) +
            GetReaction(p, Reaction::fission) +
-           adj_factor * GetReaction(p, Reaction::scatter);
+           GetAdjustedFreeGasScatter(p, E, T_max);
   }
   else {
     return GetTotal(p);
@@ -81,10 +79,9 @@ MicroscopicCrossSection Continuous::GetTotal(const Particle& p) const noexcept {
                p.GetCell().temperature->at(p.GetPosition()));
            p.type == Particle::Type::neutron &&
            E < 500 * constants::boltzmann * T / awr) {
-    const auto adj_factor = GetFreeGasAdjustment(p, E, T);
     return GetReaction(p, Reaction::capture) +
            GetReaction(p, Reaction::fission) +
-           adj_factor * GetReaction(p, Reaction::scatter);
+           GetAdjustedFreeGasScatter(p, E, T);
   }
   else {
     return total.at(std::get<ContinuousEnergy>(p.GetEnergy()));
@@ -320,7 +317,7 @@ void Continuous::Fission(Particle& p) const noexcept {
   }
 }
 
-Real Continuous::GetFreeGasAdjustment(
+MicroscopicCrossSection Continuous::GetAdjustedFreeGasScatter(
     const Particle& p, ContinuousEnergy E, Temperature T) const noexcept {
   const Real x = std::sqrt(E / (constants::boltzmann * T));
   const auto arg = awr * x * x;

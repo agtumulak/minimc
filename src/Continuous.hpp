@@ -65,9 +65,8 @@ private:
   void Scatter(Particle& p) const noexcept;
   // Fissions the Nuclide and produces secondaries
   void Fission(Particle& p) const noexcept;
-  // Returns free gas scattering adjustment to scattering cross section for
-  // given temperature
-  Real GetFreeGasAdjustment(
+  // Returns adjusted free gas scattering cross section for given temperature
+  MicroscopicCrossSection GetAdjustedFreeGasScatter(
       const Particle& p, ContinuousEnergy E, Temperature T) const noexcept;
   // Average number of secondary particles produced per fission
   const std::optional<ContinuousMap<ContinuousEnergy, Real>> nubar;
