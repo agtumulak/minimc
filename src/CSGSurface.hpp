@@ -26,7 +26,9 @@ public:
   ///        to be on the "positive" side.
   virtual bool Contains(const Point& p) const noexcept = 0;
   /// @brief Return the distance from a given origin Point to the CSGSurface
-  ///        along a given direction
+  ///        along a given Direction
+  /// @returns A positive finite distance if Direction is pointed towards the
+  ///          CSGSurface, otherwise positive infinity
   virtual Real
   Distance(const Point& origin, const Direction& direction) const noexcept = 0;
   /// @brief Unique, user-defined identifier (C++ Core Guidelines C.131)
@@ -58,7 +60,7 @@ public:
   /// @param sphere_node The requested `sphere` node in the XML document
   Sphere(const pugi::xml_node& sphere_node) noexcept;
   /// @brief Returns the distance from a given origin Point to the Sphere along
-  ///        a given direction using the
+  ///        a given Direction using the
   ///        <a href="https://en.wikipedia.org/wiki/Line-sphere_intersection">
   ///        line-sphere intersection algorithm</a>
   /// @param origin Starting point from where distance will be calculated.
@@ -80,7 +82,8 @@ public:
   /// @param planex_node The requested `planex` node in the XML document
   PlaneX(const pugi::xml_node& planex_node) noexcept;
 
-  ///        a given direction.
+  /// Returns the distance from a given origin Point to the PlaneX along a
+  /// given Direction
   Real Distance(
       const Point& origin, const Direction& direction) const noexcept override;
   /// @brief Implements CSGSurface method

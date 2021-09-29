@@ -115,11 +115,15 @@ PlaneX::PlaneX(const pugi::xml_node& planex_node) noexcept
 
 Real PlaneX::Distance(
     const Point& origin, const Direction& direction) const noexcept {
-  const auto x_distance = c - origin.Dot(Point{1, 0, 0});
-  return x_distance / direction.Dot(Point{1, 0, 0});
+  // x component of any vector pointing from origin to surface
+  const auto v_x = c - origin.Dot(Point{1, 0, 0});
+  // x component of current direction
+  const auto d_x = direction.Dot(Point{1, 0, 0});
+  // distance to travel from origin to surface along current direction
+  const auto d = v_x / d_x;
+  return d > 0 ? d : std::numeric_limits<Real>::infinity();
 }
 
 bool PlaneX::Contains(const Point& p) const noexcept {
-  const auto x_distance = c - p.Dot(Point{1, 0, 0});
-  return x_distance < 0;
+  return p.Dot(Point{1, 0, 0}) < c;
 }
