@@ -32,9 +32,9 @@ ScalarField::~ScalarField() noexcept {}
 
 ConstantField::ConstantField(const pugi::xml_node& scalar_field_node) noexcept
     : ScalarField{
-      scalar_field_node.attribute("constant").as_double(),
-      scalar_field_node.attribute("constant").as_double()},
-      c{scalar_field_node.attribute("constant").as_double()} {}
+      scalar_field_node.attribute("c").as_double(),
+      scalar_field_node.attribute("c").as_double()},
+      c{scalar_field_node.attribute("c").as_double()} {}
 
 ConstantField::ConstantField(const Real c) noexcept : ScalarField{c, c}, c{c} {}
 
