@@ -44,7 +44,7 @@ Continuous::Continuous(const pugi::xml_node& particle_node)
 
 MicroscopicCrossSection
 Continuous::GetMajorant(const Particle& p) const noexcept {
-  if (tsl->IsValid(p)) {
+  if (tsl.has_value() && tsl->IsValid(p)) {
     // thermal scattering is assumed to encompass elastic and inelstic
     // scattering
     // TODO: Possibly make this polymorphic to avoid `if`?
@@ -63,7 +63,7 @@ Continuous::GetMajorant(const Particle& p) const noexcept {
 }
 
 MicroscopicCrossSection Continuous::GetTotal(const Particle& p) const noexcept {
-  if (tsl->IsValid(p)){
+  if (tsl.has_value() && tsl->IsValid(p)){
     return GetReaction(p, Reaction::capture) +
            GetReaction(p, Reaction::fission) + tsl->GetTotal(p);
   }
@@ -225,7 +225,7 @@ Continuous::CreateReactions(const pugi::xml_node& particle_node) {
 void Continuous::Capture(Particle& p) const noexcept { p.Kill(); }
 
 void Continuous::Scatter(Particle& p) const noexcept {
-  if (tsl->IsValid(p)) {
+  if (tsl.has_value() && tsl->IsValid(p)) {
     tsl->Scatter(p);
   }
   else {
