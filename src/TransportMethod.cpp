@@ -37,14 +37,7 @@ TransportMethod::Create(const pugi::xml_node& root, const World& world) {
   // default to surface tracking
   if (tracking_type.empty() || tracking_type == "surface") {
     if (world.HasConstantTemperature()) {
-      if (!world.HasContinuousTemperatureThermalScattering()) {
-        transport_method = std::make_unique<const SurfaceTracking>();
-      }
-      else {
-        throw std::runtime_error(
-            "Surface tracking with constant global temperature and continuous "
-            "temperature thermal scattering not currently supported");
-      }
+      transport_method = std::make_unique<const SurfaceTracking>();
     }
     else {
       throw std::runtime_error(
@@ -52,20 +45,7 @@ TransportMethod::Create(const pugi::xml_node& root, const World& world) {
     }
   }
   else if (tracking_type == "cell delta") {
-    if (world.HasConstantTemperature()){
-      if (!world.HasContinuousTemperatureThermalScattering()) {
-        transport_method = std::make_unique<const CellDeltaTracking>();
-      }
-      else {
-        throw std::runtime_error(
-            "Delta tracking with constant global temperature and continuous "
-            "temperature thermal scattering not currently supported");
-      }
-    }
-    else {
-      // free gas scattering majorant cross section must be calculated
-      transport_method = std::make_unique<const CellDeltaTracking>();
-    }
+    transport_method = std::make_unique<const CellDeltaTracking>();
   }
   else {
     assert(false); // this should have been caught by the validator

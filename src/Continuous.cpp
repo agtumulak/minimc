@@ -42,10 +42,6 @@ Continuous::Continuous(const pugi::xml_node& particle_node)
           particle_node.child("total").attribute("file").as_string())},
       awr{particle_node.parent().attribute("awr").as_double()}{}
 
-bool Continuous::HasContinuousTemperatureThermalScattering() const noexcept {
-  return tsl.has_value();
-}
-
 MicroscopicCrossSection
 Continuous::GetMajorant(const Particle& p) const noexcept {
   if (tsl->IsValid(p)) {

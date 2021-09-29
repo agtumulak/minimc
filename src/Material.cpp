@@ -36,14 +36,6 @@ Material::Material(
     : name{name}, afracs{AssignNuclides(root, name, all_nuclides)},
       number_density{FindNode(root, name).attribute("aden").as_double()} {}
 
-bool Material::HasContinuousTemperatureThermalScattering() const noexcept {
-  return std::any_of(
-      afracs.cbegin(), afracs.cend(), [](const auto& nuclide_ptr_afrac_pair) {
-        const auto [nuclide_ptr, afrac] = nuclide_ptr_afrac_pair;
-        return nuclide_ptr->HasContinuousTemperatureThermalScattering();
-      });
-}
-
 MicroscopicCrossSection
 Material::GetMicroscopicMajorant(const Particle& p) const noexcept {
   // TODO: Memoize this call for performance

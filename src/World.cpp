@@ -38,13 +38,6 @@ bool World::HasConstantTemperature() const noexcept {
   return temperature->IsConstant();
 }
 
-bool World::HasContinuousTemperatureThermalScattering() const noexcept {
-  return std::any_of(
-      materials.cbegin(), materials.cend(), [](const auto material_ptr) {
-        return material_ptr->HasContinuousTemperatureThermalScattering();
-      });
-}
-
 //// private
 
 std::vector<std::shared_ptr<const CSGSurface>>

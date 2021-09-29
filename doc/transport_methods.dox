@@ -19,15 +19,18 @@ find a distance to collision.
 <table>
 <caption id="multi_row">Transport Methods and Features</caption>
 <tr><th> Transport Method                      <th> @f$ T @f$ Dependence in %Cell  <th> %Continuous @f$ T @f$ Thermal Scattering? <th> Supported?
-<tr><td rowspan="4"> Surface Tracking          <td rowspan="2"> Constant           <td> No                                        <td> Yes
-<tr>                                                                               <td> Yes                                       <td> No, but possible. See @ref transport_methods_bound_targets_constant_temperature "Constant Temperature".
-<tr>                                           <td rowspan="2"> %Continuous        <td> No                                        <td rowspan=2> No, surface tracking does not support continuous temperature dependence
+<tr><td rowspan="4"> Surface Tracking          <td rowspan="2"> Constant           <td> No                                        <td rowspan=2> Yes
 <tr>                                                                               <td> Yes
-<tr><td rowspan="4"> Intracell Delta Tracking  <td rowspan="2"> Constant           <td> No                                        <td> Yes, but somewhat pointless
-<tr>                                                                               <td> Yes                                       <td> No, but possible. See @ref transport_methods_bound_targets_constant_temperature "Constant Temperature".
-<tr>                                           <td rowspan="2"> %Continuous        <td> No                                        <td rowspan=2> Yes. See @ref transport_methods_bound_targets_continuous_temperature "Continuous Temperature".
+<tr>                                           <td rowspan="2"> %Continuous        <td> No                                        <td rowspan=2> No, surface tracking assumes constant cross section within a Cell
+<tr>                                                                               <td> Yes
+<tr><td rowspan="4"> Intracell Delta Tracking  <td rowspan="2"> Constant           <td> No                                        <td rowspan=2> Yes, but somewhat pointless
+<tr>                                                                               <td> Yes
+<tr>                                           <td rowspan="2"> %Continuous        <td> No                                        <td rowspan=2> Yes, see @ref transport_methods_continuous_temperature "Continuous Temperature"
 <tr>                                                                               <td> Yes
 </table>
+
+The above table roughly corresponds to logic implemented in the definition of
+TransportMethod::Create.
 
 @section transport_methods_energy_regimes Energy Regimes
 
@@ -49,6 +52,7 @@ There are three regimes defined by two incident neutron threshold energies:
 For unbound targets and incident neutron energies @f$ E < E_{\text{static}}
 @f$, the target velocity is non-negligible so free gas scattering adjustments
 must be made to the scattering (and consequently, total) cross section
+@anchor free_gas_adjustment
 @f[
   \Sigma_s(E) =
   \Sigma_{\text{fr}} \left[
@@ -78,28 +82,28 @@ so the maximum value of @f$ \Sigma_s @f$ occurs at the minimum value of @f$ x
 For bound targets, if @f$ E_{\text{thermal}} \leq E @f$, then the target is
 treated as a free gas and the same rules for unbound targets apply. If @f$ E <
 E_{\text{thermal}} @f$, then thermal scattering is valid and adjustments must
-be made to the scattering and total cross sections.
-
-@subsection transport_methods_bound_targets_constant_temperature Constant Temperature
-
-If there is a constant temperature @f$ T_0 @f$ within a Cell, then one could in
-principle evaluate @f$ S(\alpha, \beta, T_{0}) @f$ and perform the integral
+be made to the scattering (and consequently, the total) cross section. The
+scattering cross section for a thermal neutron with incident energy @f$ E @f$
+on a target at temperature @f$ T @f$ is
 @anchor sab_integral
 @f[
-  \sigma_{s} (E \mid T_0) =
+  \sigma_{s} (E \mid T) =
   \frac{\sigma_b A k T}{4 E} e^{-\beta / 2}
   \int_{\beta_\text{min}}^{\beta_{\text{max}}}
   \int_{\alpha_\text{min}}^{\alpha_{\text{max}}}
-  S(\alpha, \beta, T_0) \, d\alpha \, d\beta
+  S(\alpha, \beta, T) \, d\alpha \, d\beta
 @f]
-to compute temperature-adjusted scattering and total cross sections during
-runtime. Alternatively, the user could simply compute @f$ \sigma_{s} (E \mid
-T_0) @f$ for @f$ T_0 @f$ (which is known during nuclear data processing) and
-provide it as nuclear data during runtime. In such cases, the temperature-adjusted cross
-sections are constant throughout the Cell so both surface tracking and delta
-tracking are possible.
+Though in principle this integral could be performed on-the-fly, this is
+currently evaluated by choosing some energy and temperature grid and
+precomputing the integral at specific values. Actual values of @f$ E @f$ and
+@f$ T @f$ encountered during transport are used to interpolate values from the
+grid.
 
-@subsection transport_methods_bound_targets_continuous_temperature Continuous Temperature
+@note Address situations where linear interpolation is insufficient for
+approximating @f$ \sigma_{s} (E \mid T) @f$ for certain values of @f$ E @f$ and
+@f$ T @f$.
+
+@section transport_methods_continuous_temperature Continuous Temperature
 
 If there is continuous temperature dependence within in a Cell, then
 transporting a neutron within that Cell will require the use of delta tracking.
@@ -107,7 +111,11 @@ A majorant cross section for that Cell will have to account for all possible
 temperatures @f$ T @f$ within the Cell. Moreover, the majorant cross section
 @f$ \Sigma_{m}(E) @f$ for a particular nuclide will have to include adjustments
 due to free gas scattering and thermal scattering where applicable.
-Specifically, if @f$ E < E_{\text{thermal}} @f$, then we require that
+Specifically, if
+
+- the target is a bound to a molecule and @f$ E < E_{\text{thermal}} @f$,
+
+then we require that
 @f[
   \forall T, \quad
   \Sigma_{t, \text{tsl}}(E \mid T) \leq \Sigma_{m}(E)
@@ -115,15 +123,21 @@ Specifically, if @f$ E < E_{\text{thermal}} @f$, then we require that
 where @f$ \Sigma_{t, \text{tsl}} @f$ is the total cross section after the
 scattering cross section has been adjusted by @ref sab_integral "integrating"
 @f$ S(\alpha, \beta, T) @f$ (usually during data processing). Otherwise, if
-@f$ E_{\text{thermal}} \leq E < E_\text{static} @f$, then we require that
+
+- the target is not bound to a molecule and @f$ E < E_{\text{static}} @f$, or
+- the target is bound to a molecule and @f$ E_{\text{thermal}} \leq E <
+  E_\text{static} @f$,
+
+then we require that
 @f[
   \forall T, \quad
   \Sigma_{t, \text{free gas}}(E \mid T) \leq \Sigma_{m}(E)
 @f]
 where @f$ \Sigma_{t, \text{free gas}} @f$ is the total cross section after the
-scattering cross section has been adjusted due to free gas scattering. If
-neither case applies, then it must be the case that @f$ E_\text{thermal} \leq E
-@f$ and @f$ E_\text{static} \leq E @f$ so no thermal scattering adjustment or
-free gas adjustment is necessary, respectively.
+scattering cross section has been @ref free_gas_adjustment
+"adjusted due to free gas scattering". If neither case applies, then it must be
+the case that @f$ E_\text{thermal} \leq E @f$ and @f$ E_\text{static}
+\leq E @f$ so no thermal scattering adjustment or free gas adjustment is
+necessary, respectively.
 
 */

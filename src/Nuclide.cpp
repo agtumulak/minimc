@@ -11,11 +11,6 @@ Nuclide::Nuclide(const pugi::xml_node& nuclide_node)
     : name{nuclide_node.attribute("name").as_string()}, xs{Interaction::Create(
                                                             nuclide_node)} {}
 
-bool Nuclide::HasContinuousTemperatureThermalScattering() const noexcept {
-  return xs.at(Particle::Type::neutron)
-      ->HasContinuousTemperatureThermalScattering();
-}
-
 MicroscopicCrossSection Nuclide::GetMajorant(const Particle& p) const noexcept {
   return xs.at(p.type)->GetMajorant(p);
 }

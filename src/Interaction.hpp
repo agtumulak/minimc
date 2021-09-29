@@ -25,9 +25,6 @@ public:
   static Map Create(const pugi::xml_node& nuclide_node);
   /// @brief Virtual destructor (C++ Core Guidelines C.127)
   virtual ~Interaction() noexcept;
-  /// @brief Returns true if continuous temperature thermal scattering for
-  ///        neutrons is present
-  virtual bool HasContinuousTemperatureThermalScattering() const noexcept = 0;
   /// @brief Returns the majorant cross section for a given Particle
   virtual MicroscopicCrossSection
   GetMajorant(const Particle& p) const noexcept = 0;

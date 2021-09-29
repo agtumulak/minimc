@@ -28,9 +28,6 @@ public:
   ///        dependence
   /// @todo Check each Cell if it has constant temperature dependence
   bool HasConstantTemperature() const noexcept;
-  /// @brief Returns true if continuous temperature thermal scattering is
-  ///        present in any Material
-  bool HasContinuousTemperatureThermalScattering() const noexcept;
 
 private:
   // Helper function to create all CSGSurface objects that appear in Cell
