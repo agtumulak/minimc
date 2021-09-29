@@ -63,9 +63,14 @@ private:
   void Scatter(Particle& p) const noexcept;
   // Fissions the Nuclide and produces secondaries
   void Fission(Particle& p) const noexcept;
+  // Returns true if free gas scattering adjustments are applicable. Because
+  // downscattering is always possible if the target is hydrogen-1, free gas
+  // adjustments are always made if the atomic weight ratio is less than one.
+  bool IsFreeGasScatteringValid(
+      const Particle& p, const Temperature& T) const noexcept;
   // Returns adjusted free gas scattering cross section for given temperature
-  MicroscopicCrossSection GetAdjustedFreeGasScatter(
-      const Particle& p, ContinuousEnergy E, Temperature T) const noexcept;
+  MicroscopicCrossSection
+  GetAdjustedFreeGasScatter(const Particle& p, Temperature T) const noexcept;
   // Average number of secondary particles produced per fission
   const std::optional<ContinuousMap<ContinuousEnergy, Real>> nubar;
   // Outgoing energy distribution of fission neutrons

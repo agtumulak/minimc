@@ -51,14 +51,11 @@ Continuous::GetMajorant(const Particle& p) const noexcept {
     return GetReaction(p, Reaction::capture) +
            GetReaction(p, Reaction::fission) + tsl->GetMajorant(p);
   }
-  else if (const auto [E, T_max] = std::make_tuple(
-               std::get<ContinuousEnergy>(p.GetEnergy()),
-               p.GetCell().temperature->upper_bound);
-           p.type == Particle::Type::neutron &&
-           E < 500 * constants::boltzmann * T_max / awr) {
+  else if (const auto T_max = p.GetCell().temperature->upper_bound;
+           IsFreeGasScatteringValid(p, T_max)) {
     return GetReaction(p, Reaction::capture) +
            GetReaction(p, Reaction::fission) +
-           GetAdjustedFreeGasScatter(p, E, T_max);
+           GetAdjustedFreeGasScatter(p, T_max);
   }
   else {
     return GetTotal(p);
@@ -70,14 +67,10 @@ MicroscopicCrossSection Continuous::GetTotal(const Particle& p) const noexcept {
     return GetReaction(p, Reaction::capture) +
            GetReaction(p, Reaction::fission) + tsl->GetTotal(p);
   }
-  else if (const auto [E, T] = std::make_tuple(
-               std::get<ContinuousEnergy>(p.GetEnergy()),
-               p.GetCell().temperature->at(p.GetPosition()));
-           p.type == Particle::Type::neutron &&
-           E < 500 * constants::boltzmann * T / awr) {
+  else if (const auto T = p.GetCell().temperature->at(p.GetPosition());
+           IsFreeGasScatteringValid(p, T)) {
     return GetReaction(p, Reaction::capture) +
-           GetReaction(p, Reaction::fission) +
-           GetAdjustedFreeGasScatter(p, E, T);
+           GetReaction(p, Reaction::fission) + GetAdjustedFreeGasScatter(p, T);
   }
   else {
     return total.at(std::get<ContinuousEnergy>(p.GetEnergy()));
@@ -313,9 +306,28 @@ void Continuous::Fission(Particle& p) const noexcept {
   }
 }
 
+bool Continuous::IsFreeGasScatteringValid(
+    const Particle& p, const Temperature& T) const noexcept {
+  if (p.type != Particle::Type::neutron) {
+    return false;
+  }
+  else if (awr <= 1.0) {
+    return true; // hydrogen must always be treated with free gas scattering
+  }
+  else if (
+      std::get<ContinuousEnergy>(p.GetEnergy()) <
+      500 * constants::boltzmann * T / awr) {
+    return true;
+  }
+  else {
+    return false;
+  }
+}
+
 MicroscopicCrossSection Continuous::GetAdjustedFreeGasScatter(
-    const Particle& p, ContinuousEnergy E, Temperature T) const noexcept {
-  const Real x = std::sqrt(E / (constants::boltzmann * T));
+    const Particle& p, Temperature T) const noexcept {
+  const auto E = std::get<ContinuousEnergy>(p.GetEnergy());
+  const auto x = std::sqrt(E / (constants::boltzmann * T));
   const auto arg = awr * x * x;
   return GetReaction(p, Reaction::scatter) *
          ((1 + 1 / (2 * arg)) * std::erf(std::sqrt(arg)) +
