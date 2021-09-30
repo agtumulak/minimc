@@ -112,8 +112,8 @@ Direction::Direction(
   const Direction v{d.Cross(u)};
   // `u` and `v` span a plane of points which are orthogonal to `d`. Use the
   // three vectors to construct the new direction
-  const auto u_comp = std::cos(phi) * u;
-  const auto v_comp = std::sin(phi) * v;
+  const auto u_comp = std::sqrt(1 - mu * mu) * std::cos(phi) * u;
+  const auto v_comp = std::sqrt(1 - mu * mu) * std::sin(phi) * v;
   const auto d_comp = mu * d;
   const Direction omega{u_comp + v_comp + d_comp};
   x = omega.x;
