@@ -286,7 +286,7 @@ void Continuous::Scatter(Particle& p) const noexcept {
                                ((awr + 1) * (awr + 1));
     // mu_lab is the scattering cosine in the lab frame.
     const auto mu_lab =
-        mu * std::sqrt(E_n / e_n) + 1 / (awr + 1) * std::sqrt(E / e_n);
+        mu_cm * std::sqrt(E_n / e_n) + 1 / (awr + 1) * std::sqrt(E / e_n);
     // Update particle state
     p.Scatter(mu_lab, e_n);
   }
