@@ -263,7 +263,7 @@ void Continuous::Scatter(Particle& p) const noexcept {
         x = std::sqrt(-std::log(xi_1) - std::log(xi_2) * z * z); // lanl C61
       }
       mu = 2 * p.Sample() - 1; // TODO: Check if this can be factored out
-    } while (p.Sample() < std::sqrt(x * x + y * y - 2 * x * y * mu) / (x + y));
+    } while (p.Sample() >= std::sqrt(x * x + y * y - 2 * x * y * mu) / (x + y));
     // the sampled speed of the target in the lab frame
     const auto s_T = x / beta;
     // sample phi, the azimuthal angle about v_n
