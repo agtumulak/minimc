@@ -252,13 +252,15 @@ void Continuous::Scatter(Particle& p) const noexcept {
     // frame before collision. TODO: Check if this can be made const
     Real mu;
     do {
+      // order random numbers are sampled matters: stackoverflow.com/a/40773451
+      const auto xi_1 = p.Sample(), xi_2 = p.Sample();
       if (p.Sample() <
           2 / (std::sqrt(constants::pi) * y + 2)) {        // openmc Eq. 75
-        x = std::sqrt(-std::log(p.Sample() * p.Sample())); // lanl C49
+        x = std::sqrt(-std::log(xi_1 * xi_2)); // lanl C49
       }
       else {
         // order random numbers are sampled matters: stackoverflow.com/a/40773451
-        const auto xi_1 = p.Sample(), xi_2 = p.Sample(), xi_3 = p.Sample();
+        const auto xi_3 = p.Sample();
         const auto z = std::cos(constants::pi * xi_3 / 2);
         x = std::sqrt(-std::log(xi_1) - std::log(xi_2) * z * z); // lanl C61
       }
