@@ -270,7 +270,8 @@ void Continuous::Scatter(Particle& p) const noexcept {
     const auto phi = 2 * constants::pi * p.Sample();
     // given v_n, s_T, mu, and phi, construct v_T, the velocity of the target
     // in the lab frame.
-    const auto v_T = s_T * Direction{p.GetDirection(), mu, phi};
+    const auto v_T =
+        s_T * Direction::CreateAboutDirection(p.GetDirection(), mu, phi);
     // Now v_T is known. Compute v_cm, the velocity of the center of mass,
     // followed by V_n, the velocity of the neutron in the CM frame.
     const auto v_cm = (v_n + awr * v_T) / (1 + awr);

@@ -40,7 +40,7 @@ void Particle::Stream(const Real distance) noexcept {
 
 void Particle::Scatter(const Real& mu, const Energy& e) noexcept {
   const Real phi = 2 * constants::pi * std::uniform_real_distribution{}(rng);
-  direction = Direction{direction, mu, phi};
+  direction = Direction::CreateAboutDirection(direction, mu, phi);
   energy = e;
 }
 
