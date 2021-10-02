@@ -2,6 +2,7 @@
 
 #include "BasicTypes.hpp"
 
+#include <iterator>
 #include <map>
 #include <utility>
 
@@ -19,10 +20,45 @@ public:
   /// @todo Deprecate in favor of construction from
   ///       HDF5DataSet::ToContinuousMap
   ContinuousMap(elements_type&& other) : elements{std::move(other)} {}
-  /// @brief Returns a const reference to the value at a given key
-  /// @todo Interpolate and handle edge cases
-  const T& at(const Key k) const noexcept {
-    return elements.upper_bound(k)->second;
+  /// @brief Returns a linearly interpolated value at the given key
+  /// @tparam Args Type of inner keys
+  /// @todo Support other interpolation methods
+  template <typename... Args>
+  decltype(auto) at(const Key k, Args... inner_keys) const noexcept {
+    const auto it_hi = elements.upper_bound(k);
+    if constexpr (sizeof...(Args) == 0){
+      // base case
+      if (it_hi == elements.cend()){
+        // snap to last entry
+        return std::prev(it_hi, 1)->second;
+      }
+      else if (it_hi == elements.cbegin()) {
+        // snap to first entry
+        return it_hi->second;
+      }
+      else {
+        // linearly interpolate
+        const auto& [k_hi, v_hi] = *it_hi;
+        const auto& [k_lo, v_lo] = *std::prev(it_hi, 1);
+        return v_lo + (v_hi - v_lo) / (k_hi - k_lo) * (k - k_lo);
+      }
+    }
+    else {
+      // nested case
+      if (it_hi == elements.cend()){
+        return std::prev(it_hi, 1)->second.at(inner_keys...);
+      }
+      else if (it_hi == elements.cbegin()){
+        return it_hi->second.at(inner_keys...);
+      }
+      else {
+        const auto& k_hi = it_hi->first;
+        const auto& v_hi = it_hi->second.at(inner_keys...);
+        const auto& k_lo = std::prev(it_hi, 1)->first;
+        const auto& v_lo = std::prev(it_hi, 1)->second.at(inner_keys...);
+        return v_lo + (v_hi - v_lo) / (k_hi - k_lo) * (k - k_lo);
+      }
+    }
   }
   /// @brief Returns a reference to the value at a given key
   T& operator[](const Key& k) { return elements[k]; }

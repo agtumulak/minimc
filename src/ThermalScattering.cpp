@@ -42,8 +42,9 @@ ThermalScattering::GetMajorant(const Particle& p) const noexcept {
 
 MicroscopicCrossSection
 ThermalScattering::GetTotal(const Particle& p) const noexcept {
-  return total.at(p.GetCell().temperature->at(p.GetPosition()))
-      .at(std::get<ContinuousEnergy>(p.GetEnergy()));
+  return total.at(
+      p.GetCell().temperature->at(p.GetPosition()),
+      std::get<ContinuousEnergy>(p.GetEnergy()));
 }
 
 void ThermalScattering::Scatter(Particle& p) const noexcept {
