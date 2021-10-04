@@ -55,7 +55,8 @@ Continuous::GetMajorant(const Particle& p) const noexcept {
            IsFreeGasScatteringValid(p, T_max)) {
     return GetReaction(p, Reaction::capture) +
            GetReaction(p, Reaction::fission) +
-           GetAdjustedFreeGasScatter(p, T_max);
+           GetReaction(p, Reaction::scatter) *
+               GetFreeGasScatterAdjustment(p, T_max);
   }
   else {
     return GetTotal(p);
@@ -70,7 +71,9 @@ MicroscopicCrossSection Continuous::GetTotal(const Particle& p) const noexcept {
   else if (const auto T = p.GetCell().temperature->at(p.GetPosition());
            IsFreeGasScatteringValid(p, T)) {
     return GetReaction(p, Reaction::capture) +
-           GetReaction(p, Reaction::fission) + GetAdjustedFreeGasScatter(p, T);
+           GetReaction(p, Reaction::fission) +
+           GetReaction(p, Reaction::scatter) *
+               GetFreeGasScatterAdjustment(p, T);
   }
   else {
     return total.at(std::get<ContinuousEnergy>(p.GetEnergy()));
@@ -327,12 +330,11 @@ bool Continuous::IsFreeGasScatteringValid(
   }
 }
 
-MicroscopicCrossSection Continuous::GetAdjustedFreeGasScatter(
+Real Continuous::GetFreeGasScatterAdjustment(
     const Particle& p, Temperature T) const noexcept {
   const auto E = std::get<ContinuousEnergy>(p.GetEnergy());
   const auto x = std::sqrt(E / (constants::boltzmann * T));
   const auto arg = awr * x * x;
-  return GetReaction(p, Reaction::scatter) *
-         ((1 + 1 / (2 * arg)) * std::erf(std::sqrt(arg)) +
-          std::exp(-arg) / std::sqrt(constants::pi * arg));
+  return (1 + 1 / (2 * arg)) * std::erf(std::sqrt(arg)) +
+         std::exp(-arg) / std::sqrt(constants::pi * arg);
 }

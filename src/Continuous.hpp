@@ -70,7 +70,7 @@ private:
       const Particle& p, const Temperature& T) const noexcept;
   // Returns adjusted free gas scattering cross section for given temperature
   MicroscopicCrossSection
-  GetAdjustedFreeGasScatter(const Particle& p, Temperature T) const noexcept;
+  GetFreeGasScatterAdjustment(const Particle& p, Temperature T) const noexcept;
   // Average number of secondary particles produced per fission
   const std::optional<ContinuousMap<ContinuousEnergy, Real>> nubar;
   // Outgoing energy distribution of fission neutrons
