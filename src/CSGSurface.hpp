@@ -17,6 +17,8 @@ public:
   ///          Guidelines R.30)
   /// @exception std::runtime_error `surface` node with matching `name`
   ///            attribute not found
+  /// @todo Throw exception when there exist more than one `surface` node with
+  ///       the same `name` attribute
   static std::unique_ptr<const CSGSurface>
   Create(const pugi::xml_node& root, const std::string& name);
   /// @brief Virtual destructor (C++ Core Guidelines C.127)
