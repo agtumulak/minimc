@@ -225,9 +225,12 @@ Continuous::CreateReactions(const pugi::xml_node& particle_node) {
   return reactions;
 }
 
-void Continuous::Capture(Particle& p) const noexcept { p.Kill(); }
+void Continuous::Capture(Particle& p) const noexcept {
+  p.event = Particle::Event::capture;
+}
 
 void Continuous::Scatter(Particle& p) const noexcept {
+  p.event = Particle::Event::scatter;
   if (tsl.has_value() && tsl->IsValid(p)) {
     tsl->Scatter(p);
   }
@@ -299,7 +302,7 @@ void Continuous::Scatter(Particle& p) const noexcept {
 }
 
 void Continuous::Fission(Particle& p) const noexcept {
-  p.Kill();
+  p.event = Particle::Event::fission;
   // rely on the fact that double to int conversions essentially do a floor()
   size_t fission_yield(
       nubar.value().at(std::get<ContinuousEnergy>(p.GetEnergy())) +
@@ -308,7 +311,7 @@ void Continuous::Fission(Particle& p) const noexcept {
     // evaluation order of arguments is undefined so do evaluation here
     const auto direction{Direction::CreateIsotropic(p.rng)};
     const auto energy{Energy{ContinuousEnergy{chi.value().Sample(p.rng)}}};
-    p.Bank(direction, energy);
+    p.BankSecondaries(direction, energy);
   }
 }
 

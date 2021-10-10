@@ -1,6 +1,8 @@
 # Add new source files here
 set(MINIMC_SOURCES
   BasicTypes.hpp
+  Bank.cpp
+  Bank.hpp
   Bins.cpp
   Bins.hpp
   CSGSurface.cpp

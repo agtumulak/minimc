@@ -259,9 +259,12 @@ Multigroup::OneDimensional Multigroup::CreateTotalXS(
       });
 }
 
-void Multigroup::Capture(Particle& p) const noexcept { p.Kill(); }
+void Multigroup::Capture(Particle& p) const noexcept {
+  p.event = Particle::Event::capture;
+}
 
 void Multigroup::Scatter(Particle& p) const noexcept {
+  p.event = Particle::Event::scatter;
   const Real threshold = std::uniform_real_distribution{}(p.rng);
   Real accumulated{0};
   const auto& group_probs{
@@ -279,7 +282,7 @@ void Multigroup::Scatter(Particle& p) const noexcept {
 }
 
 void Multigroup::Fission(Particle& p) const noexcept {
-  p.Kill();
+  p.event = Particle::Event::fission;
   auto incident_group{std::get<Group>(p.GetEnergy())};
   // rely on the fact that double to int conversions essentially do a floor()
   size_t fission_yield(
@@ -294,7 +297,7 @@ void Multigroup::Fission(Particle& p) const noexcept {
       accumulated += group_probs.at(g);
       if (accumulated > threshold) {
         auto direction{Direction::CreateIsotropic(p.rng)};
-        p.Bank(direction, g);
+        p.BankSecondaries(direction, g);
         break;
       }
     }

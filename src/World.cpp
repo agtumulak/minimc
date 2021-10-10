@@ -38,6 +38,26 @@ bool World::HasConstantTemperature() const noexcept {
   return temperature->IsConstant();
 }
 
+std::shared_ptr<const CSGSurface>
+World::FindSurfaceByName(const std::string& name) const {
+  const auto surface_it = std::find_if(
+      surfaces.cbegin(), surfaces.cend(),
+      [&name](const auto surface_ptr) { return surface_ptr->name == name; });
+  if (surface_it == surfaces.cend()) {
+    throw std::runtime_error(
+        "Surface \"" + name + "\" not found. Must be one of: [" +
+        std::accumulate(
+            surfaces.cbegin(), surfaces.cend(), std::string{},
+            [](const auto& accumulated, const auto surface_ptr) noexcept {
+              return accumulated + "\"" + surface_ptr->name + "\", ";
+            }) +
+        "]");
+  }
+  else {
+    return *surface_it;
+  }
+}
+
 //// private
 
 std::vector<std::shared_ptr<const CSGSurface>>

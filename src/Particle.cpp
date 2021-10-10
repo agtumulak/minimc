@@ -32,8 +32,6 @@ Particle::Particle(
     : position{position}, direction{direction}, energy{energy}, cell{cell},
       rng{seed}, type{type} {}
 
-void Particle::Kill() noexcept { alive = false; }
-
 void Particle::Stream(const Real distance) noexcept {
   position += direction * distance;
 }
@@ -67,9 +65,14 @@ const Cell& Particle::GetCell() const {
 
 void Particle::SetCell(const Cell& c) noexcept { cell = &c; };
 
-void Particle::Bank(const Direction& direction, const Energy& energy) noexcept {
+void Particle::BankSecondaries(
+    const Direction& direction, const Energy& energy) noexcept {
   secondaries.emplace_back(
       position, direction, energy, Type::neutron, rng(), cell);
+}
+
+void Particle::MoveSecondariesToFrontOf(std::list<Particle>& bank) noexcept {
+  bank.splice(bank.begin(), secondaries);
 }
 
 Real Particle::Sample() noexcept {
@@ -90,4 +93,9 @@ const Nuclide& Particle::SampleNuclide() noexcept {
   // This should never be reached since Material total cross section is
   // computed from constituent Nuclide total cross sections
   assert(false);
+}
+
+bool Particle::IsAlive() const noexcept {
+  return event != Event::capture && event != Event::leak &&
+         event != Event::fission;
 }

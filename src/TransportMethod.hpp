@@ -1,27 +1,18 @@
 #pragma once
 
-#include "Estimator.hpp"
-#include "Particle.hpp"
+#include "Bank.hpp"
 #include "pugixml.hpp"
 
-#include <list>
 #include <memory>
 
+class Particle;
+class EstimatorSet;
 class World;
 
 /// @brief Performs the transport of a Particle after it is born up until its
 ///        death
 class TransportMethod {
 public:
-  /// @brief The result of a Transport call
-  struct Outcome {
-    /// @brief Adds the result of another transport result to this result
-    Outcome& operator+=(Outcome&& rhs) noexcept;
-    /// @brief Estimators scored during transport
-    Estimator estimator;
-    /// @brief Secondary particles banked during transport
-    std::list<Particle> banked;
-  };
   /// @brief Factory method to create new TransportMethod from an XML document
   ///        and World
   /// @details This class is meant to compose the various tracking techniques
@@ -37,8 +28,11 @@ public:
   /// @brief Virtual destructor (C++ Core Guidelines C.127)
   virtual ~TransportMethod() noexcept;
   /// @brief Moves a Particle through its states until it dies.
-  virtual Outcome Transport(Particle& p, const World& w) const noexcept = 0;
-
+  /// @param p Particle to transport
+  /// @param e EstimatorSet to score upon, typically owned by a single thread
+  /// @param w World the Particle transports within
+  virtual Bank
+  Transport(Particle& p, EstimatorSet& e, const World& w) const noexcept = 0;
 };
 
 /// @brief Loops over each CSGSurface in the current Cell to find the next
@@ -46,7 +40,8 @@ public:
 class SurfaceTracking : public TransportMethod {
 public:
   /// @brief Implements delta tracking
-  Outcome Transport(Particle& p, const World& w) const noexcept override;
+  Bank Transport(
+      Particle& p, EstimatorSet& e, const World& w) const noexcept override;
 };
 
 /// @brief Tracks a particle using delta tracking within a Cell. Surface
@@ -54,5 +49,6 @@ public:
 class CellDeltaTracking : public TransportMethod {
 public:
   /// @brief Implements cell delta tracking
-  Outcome Transport(Particle& p, const World& w) const noexcept override;
+  Bank Transport(
+      Particle& p, EstimatorSet& e, const World& w) const noexcept override;
 };

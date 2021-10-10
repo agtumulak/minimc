@@ -1,6 +1,7 @@
 #pragma once
 
 #include "BasicTypes.hpp"
+#include "Estimator.hpp"
 #include "World.hpp"
 #include "pugixml.hpp"
 
@@ -8,7 +9,6 @@
 #include <filesystem>
 #include <memory>
 
-class Estimator;
 class TransportMethod;
 
 /// @brief A Driver owns all the data needed to perform radiation transport
@@ -24,11 +24,13 @@ public:
   /// @brief Virtual destructor (C++ Core Guidelines C.127)
   virtual ~Driver() noexcept;
   /// @brief Solves the problem
-  virtual Estimator Solve() = 0;
+  virtual EstimatorSet Solve() = 0;
 
 protected:
   /// @brief Global, read-only description of geometric and material properties
   const World world;
+  /// @brief Initial value of an EstimatorSet used to initialize workers
+  const EstimatorSet init_estimator_set;
   /// @brief Used to update Particle state
   const std::unique_ptr<const TransportMethod> transport_method;
   /// @brief Number of threads dedicated to particle transport

@@ -1,0 +1,71 @@
+/**
+
+@page estimators Estimators
+
+@tableofcontents
+
+@section estimators_phase_space Phase Space
+
+All particle transport occurs inside a multidimensional <em> phase space </em>
+which is characterized by a position @f$ \boldsymbol{x} @f$,
+direction-of-flight@f$ \hat{\boldsymbol{\Omega}} @f$, energy @f$ E @f$, time
+@f$ t @f$, and reaction label @f$ r @f$. Together, these form a random vector
+@f$ X @f$ for which one realization looks like
+@f[
+  x_{i} =
+  \begin{bmatrix}
+    \boldsymbol{x}_{i} \\
+    \hat{\boldsymbol{\Omega}}_{i} \\
+    E_{i} \\
+    t_{i} \\
+    r_{i}
+  \end{bmatrix}
+@f]
+A realization of @f$ X_{i} @f$ (here denoted @f$ x_{i}) @f$ and a
+realizaton of position (here denoted @f$ \boldsymbol{x}_{i} @f$) must not be
+confused with each other.
+
+@section estimators_particle Particle
+
+Fundamentally, a Monte Carlo radiation transport code is a simulation of a
+discrete random process @f$ \Omega = \left( X_{0}, X_{1}, X_{2}, \ldots
+\right) @f$ for which we are interested in estimating the expected value of
+random variables @f$ S: \Omega \rightarrow \mathbb{R} @f$. At each step of a
+<em>history</em>, a Particle takes on some definite state in phase
+space @f$ X_{i} = x_{i} @f$. For this reason, the Particle class is heavily
+encapsulated and internally performs most of the operations required to update
+its state. Should other classes use a Particle object as a function parameter,
+they should only do so using a `const` qualifier. For instance,
+Material::GetMicroscopicTotal accepts a `const` Particle reference as a
+parameter to look up relevant cross sections. Two notable exceptions, the
+Interaction class and the TransportMethod class, use non-`const` Particle
+arguments but still update a Particle state using its public methods.
+
+@section estimators_scoring_functions Scoring Functions
+
+An <em> Estimator </em> @f$ S: \Omega \rightarrow \mathbb{R} @f$ maps
+from the <em> history space </em> @f$ \Omega @f$ to the <em> score space </em>
+@f$ \mathbb{R} @f$. In general an estimator is a function of all states that a
+Particle undergoes during transport @f$ S(\Omega) = S(X_{1}, \ldots, X_{N})
+@f$. However, a special class of estimators can be expressed
+@f[
+  S(\Omega) = \sum_{i} f(X_{i})
+@f]
+where the <em> scoring function </em> @f$ f: X \rightarrow \mathbb{R} @f$ is
+only a function of the @f$ i @f$-th state. One example of a scoring function
+is
+@f[
+  f(X_{i}) = \delta_{R_{i}, \text{scatter}}
+@f]
+which scores @f$ 1 @f$ if the particle underwent a scatter in step @f$ i @f$,
+zero otherwise. Using this scoring function results in an estimator for the
+total scatter rate. Another scoring function is
+@f[
+  f(X_{i}) =
+  \frac {\delta_{R_{i}, \text{capture}} + \delta_{R_{i}, \text{scatter}}}
+        {\Sigma_{t}(X_{i})}
+@f]
+which scores @f$ \Sigma^{-1}_{t}(X_{i}) @f$ whenever a Particle collides. Using
+this scoring funtion results in an estimator for the scalar flux.
+
+*/

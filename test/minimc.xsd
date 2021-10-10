@@ -130,6 +130,7 @@
           </xs:choice>
         </xs:complexType>
       </xs:element>
+      <xs:element name="estimators" type="EstimatorDefinition" minOccurs="0"/>
     </xs:all>
   </xs:complexType>
 </xs:element>

@@ -5,8 +5,10 @@
 
 #include <iosfwd>
 #include <list>
+#include <memory>
 
 class Cell;
+class CSGSurface;
 class Nuclide;
 
 /// @brief The primary entity performing random walks in a World.
@@ -23,6 +25,16 @@ public:
     neutron,
     photon,
   };
+  /// @brief Mutually exclusive events which can occur
+  enum class Event {
+    birth,
+    scatter,
+    capture,
+    fission,
+    surface_cross,
+    leak,
+    virtual_collision,
+  };
   /// @brief Helper function to convert from std::string to Type
   static Type ToType(const std::string& name) noexcept;
   /// @brief Member constructor. Explicitly assigns phase-space members.
@@ -30,8 +42,6 @@ public:
       const Point& position, const Direction& direction, const Energy& energy,
       const Type type, RNG::result_type seed,
       const Cell* cell = nullptr) noexcept;
-  /// @brief Kill the Particle, stopping the history
-  void Kill() noexcept;
   /// @brief Moves the particle along its current direction a given distance
   void Stream(const Real distance) noexcept;
   /// @brief Scatters the Particle with an outgoing direction and energy.
@@ -58,7 +68,13 @@ public:
   void SetCell(const Cell& c) noexcept;
   /// @brief Banks secondaries produced during transport using an outgoing
   ///        Direction and outgoing Energy
-  void Bank(const Direction& direction, const Energy& energy) noexcept;
+  void
+  BankSecondaries(const Direction& direction, const Energy& energy) noexcept;
+  /// @brief Transfers secondaries produced by this Particle to the front of
+  ///        a given list.
+  /// @details This is implemented using std::list::splice so this Particle's
+  ///          own list of secondaries becomes empty after the operation.
+  void MoveSecondariesToFrontOf(std::list<Particle>& bank) noexcept;
   /// @brief Sample a random number uniformly in @f$ [0, 1) @f$
   /// @details This is provided as a convenience function because more
   ///          complicated sampling schemes require multiple uniformly
@@ -67,6 +83,8 @@ public:
   /// @brief Sample a Nuclide given that the Particle has collided inside its
   ///        Cell
   const Nuclide& SampleNuclide() noexcept;
+  /// @brief Returns true if the Particle should continue to be transported
+  bool IsAlive() const noexcept;
 
 private:
   // Secondaries produced
@@ -89,7 +107,14 @@ public:
   RNG rng;
   /// @brief Type of the Particle (C++ Core Guidelines C.131)
   const Type type{Type::neutron};
+  /// @brief Flag describing the event that occured at the current point in
+  ///        phase space
+  Event event{Event::birth};
+  /// @brief Pointer to most recent surface crossed
+  std::shared_ptr<const CSGSurface> current_surface;
   /// @brief Flag for determining if this Particle is still alive (C++ Core
   ///        Guidelines C.131)
   bool alive{true};
+  /// @brief Temporary
+  size_t collisions = 0;
 };

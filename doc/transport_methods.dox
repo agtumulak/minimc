@@ -17,7 +17,7 @@ a majorant cross section across <em>all</em> Cell objects in the World to
 find a distance to collision.
 
 <table>
-<caption id="multi_row">Transport Methods and Features</caption>
+<caption id="transport methods and features">Transport Methods and Features</caption>
 <tr><th> Transport Method                      <th> @f$ T @f$ Dependence in %Cell  <th> %Continuous @f$ T @f$ Thermal Scattering? <th> Supported?
 <tr><td rowspan="4"> Surface Tracking          <td rowspan="2"> Constant           <td> No                                        <td rowspan=2> Yes
 <tr>                                                                               <td> Yes

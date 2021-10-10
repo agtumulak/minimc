@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 - Implemented free gas scattering
 - Implemented global temperature specification
+- Implemented estimators with user-specified binning structures
 
 ## [0.0.3] - 2021-09-09
 - Moved RNG to be member of Particle

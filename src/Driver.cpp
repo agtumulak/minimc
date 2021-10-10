@@ -6,7 +6,7 @@
 #include "XMLDocument.hpp"
 
 #include <cassert>
-#include <string>
+#include <iosfwd>
 
 // Driver
 
@@ -30,7 +30,8 @@ Driver::Create(const std::filesystem::path& xml_filepath) {
 }
 
 Driver::Driver(const pugi::xml_node& root)
-    : world{root}, transport_method{TransportMethod::Create(root, world)},
+    : world{root}, init_estimator_set{root.child("estimators"), world},
+      transport_method{TransportMethod::Create(root, world)},
       threads{std::stoul(root.child("general").child("threads").child_value())},
       seed(std::stoi(
           root.child("general").child("seed")

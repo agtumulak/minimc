@@ -12,9 +12,8 @@ TEST_CASE("point source leakage probability") {
   XMLDocument doc{"point_source_leakage.xml"};
   const World w{doc.root};
   FixedSource f{doc.root};
-  auto estimators{f.Solve()};
-  auto estimated_leakage_rate =
-      estimators.at(Estimator::Event::surface_crossing);
+  const auto estimated_leakage_rate =
+      f.Solve().GetEstimator("leakage").GetScores().at(0);
   auto expected_leakage_rate = std::exp(-1);
   size_t samples = 1000; // set in point_source_leakage.xml
   REQUIRE(
