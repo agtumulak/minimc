@@ -84,8 +84,8 @@ TEST_CASE("Nuclide member methods work properly") {
         World{XMLDocument{"continuous_invalid_nuclide_data_path.xml"}.root},
         "File not found: /not/real");
 
-    REQUIRE(hydrogen.GetTotal(neutron) == 20.74762);
-    REQUIRE(oxygen.GetTotal(neutron) == 3.796956);
-    REQUIRE(uranium235.GetTotal(neutron) == 92.60272);
+    REQUIRE(hydrogen.GetTotal(neutron) == Approx(20.9918187012));
+    REQUIRE(oxygen.GetTotal(neutron) == Approx(3.796959472 ));
+    REQUIRE(uranium235.GetTotal(neutron) == Approx(92.35753856));
   }
 }
