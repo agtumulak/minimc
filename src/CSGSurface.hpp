@@ -81,14 +81,14 @@ private:
 };
 
 /// @brief Plane perpendicular to the x-axis
+/// @todo Add arbitrary Plane object which can be defined by a single Point
 class PlaneX : public CSGSurface {
 public:
   /// @brief Constructs a PlaneX from a `planex` node of an XML document
   /// @param planex_node The requested `planex` node in the XML document
   PlaneX(const pugi::xml_node& planex_node) noexcept;
-
-  /// Returns the distance from a given origin Point to the PlaneX along a
-  /// given Direction
+  /// @brief Returns the distance from a given origin Point to the PlaneX along
+  /// a given Direction
   Real Distance(
       const Point& origin, const Direction& direction) const noexcept override;
   /// @brief Implements CSGSurface method
