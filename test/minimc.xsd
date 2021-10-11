@@ -80,6 +80,12 @@
                 <xs:attribute name="x" type="xs:double" use="required"/>
               </xs:complexType>
             </xs:element>
+            <xs:element name="cylinderx">
+              <xs:complexType>
+                <xs:attribute name="name" type="xs:normalizedString" use="required"/>
+                <xs:attribute name="r" type="xs:double" use="required"/>
+              </xs:complexType>
+            </xs:element>
           </xs:choice>
         </xs:complexType>
         <xs:unique name="unique-surface-name">

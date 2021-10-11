@@ -50,6 +50,7 @@ private:
   enum class SurfaceType {
     Sphere,
     PlaneX,
+    CylinderX,
   };
   // Converts std::string to CSGSurface::SurfaceType
   static SurfaceType ToSurfaceType(const std::string& surface_name) noexcept;
@@ -94,4 +95,22 @@ public:
 private:
   // completely defines the plane x - c = 0
   const Real c;
+};
+
+/// @brief Infinitely long cylinder coaxial with the x-axis
+class CylinderX : public CSGSurface {
+public:
+  /// @brief Constructs a CylinderX from a `cylinderx` node of an XML document
+  /// @param cylinderx_node The requested `cylinderx` node in the XML document
+  CylinderX(const pugi::xml_node& cylinderx_node) noexcept;
+  /// @brief Returns the distance from a given origin Point to the CylinderX
+  ///        along a given Direction
+  Real Distance(
+      const Point& origin, const Direction& direction) const noexcept override;
+  /// @brief IMplements CSGSurface method
+  bool Contains(const Point& p) const noexcept override;
+
+private:
+  // completely defines the cylinder r^2 = y^2 + z^2
+  const Real radius;
 };
