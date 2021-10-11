@@ -46,7 +46,7 @@ public:
   size_t GetIndex(const Real&) const noexcept override;
 
 private:
-  /// @brief Prints string "none" to indicate absence of bins
+  // prints string "none" to indicate absence of bins
   void Print(std::ostream& os) const noexcept override;
 };
 
@@ -64,6 +64,7 @@ public:
   size_t GetIndex(const Real& v) const override;
 
 private:
+  // prints space-separated array of bin boundaries
   void Print(std::ostream& os) const noexcept override;
   // number of bins; equal to number of bin boundaries
   const size_t n_bins;
