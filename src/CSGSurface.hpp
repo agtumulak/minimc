@@ -19,6 +19,8 @@ public:
   ///            attribute not found
   /// @todo Throw exception when there exist more than one `surface` node with
   ///       the same `name` attribute
+  /// @todo Use abstract nodes in CSGSurface definitions; e.g. `name` attribute
+  ///       is common to all CSGSurface derived types.
   static std::unique_ptr<const CSGSurface>
   Create(const pugi::xml_node& root, const std::string& name);
   /// @brief Virtual destructor (C++ Core Guidelines C.127)
