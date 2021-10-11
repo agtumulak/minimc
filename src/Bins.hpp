@@ -54,13 +54,6 @@ private:
 /// @todo Handle case where `min` > `max`
 class LinspaceBins : public Bins {
 public:
-  /// @brief Helper visitor to convert Energy to Real
-  struct VisitEnergy {
-    /// @brief Returns Energy as ContinuousEnergy
-    Real operator()(const ContinuousEnergy& e) { return e; }
-    /// @brief Returns Energy as Group
-    Real operator()(const Group& g) { return g; }
-  };
   /// @brief Constructs a LinspaceBins from a `linspace` node of an XML
   ///        document
   LinspaceBins(const pugi::xml_node& linspace_node) noexcept;
