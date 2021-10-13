@@ -44,6 +44,10 @@ EstimatorSet FixedSource::StartWorker() {
   while (true) {
     // atomically update thread-local count of histories started
     auto elapsed = histories_elapsed++;
+    if (elapsed % (batchsize / 10000) == 0) {
+      std::cout << '\r' << static_cast<double>(elapsed) / batchsize * 100
+                << "% complete...";
+    }
     if (elapsed >= batchsize) {
       break;
     }
