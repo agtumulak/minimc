@@ -52,6 +52,7 @@ private:
 
 /// @brief A Bin with equally-spaced bin boundaries
 /// @todo Handle case where `min` > `max`
+/// @todo Handle case where n_bins == 1
 class LinspaceBins : public Bins {
 public:
   /// @brief Constructs a LinspaceBins from a `linspace` node of an XML
