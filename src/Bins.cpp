@@ -64,10 +64,11 @@ size_t LinspaceBins::size() const noexcept { return n_bins; }
 size_t LinspaceBins::GetIndex(const Real& v) const {
   const auto bin_index = (v - lower_bound) / bin_width;
   if (bin_index >= n_bins - 1) {
-    throw std::out_of_range(
-        "Value (" + std::to_string(v) +
-        ") is greater than or equal to largest bin boundary {" +
-        std::to_string(lower_bound + (n_bins - 1) * bin_width) + ")");
+    std::ostringstream s;
+    s << "Value (" << std::scientific << v
+      << ") is greater than or equal to largest bin boundary ("
+      << std::scientific << lower_bound + (n_bins - 1) * bin_width << ")";
+    throw std::out_of_range(s.str());
   }
   else if (bin_index < 0) {
     return 0;
