@@ -73,3 +73,28 @@ private:
   // bin width
   const Real bin_width;
 };
+
+/// @brief A Bin with logarithmically-spaced bin boundaries
+class LogspaceBins : public Bins {
+public:
+  /// @brief Constructs a LogspaceBins from a `logspace` node of an XML
+  ///        document
+  LogspaceBins(const pugi::xml_node& logspace_node) noexcept;
+  /// @brief User-specified nmber of bins
+  size_t size() const noexcept override;
+  /// @brief The logarithmically spaced bin structure can take advantage of
+  ///        arithmetic that speeds up bin index lookup
+  size_t GetIndex(const Real& v) const override;
+
+private:
+  // prints space-separated array of bin boundaries
+  void Print(std::ostream& os) const noexcept override;
+  // number of bins; equal to number of bin boundaries
+  const size_t n_bins;
+  // base of the log space
+  const Real base;
+  // exponent to use for lowest bin boundary
+  const Real lower_exp;
+  // bin width in log space
+  const Real bin_width;
+};

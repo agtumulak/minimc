@@ -1,6 +1,8 @@
 #include "Bins.hpp"
 
 #include <cassert>
+#include <cmath>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 
@@ -21,6 +23,9 @@ Bins::Create(const pugi::xml_node& bins_node) noexcept {
   }
   else if (bins_type == "linspace") {
     return std::make_unique<const LinspaceBins>(bins_node);
+  }
+  else if (bins_type == "logspace"){
+    return std::make_unique<const LogspaceBins>(bins_node);
   }
   else {
     assert(false); // this should have been caught by the validator
@@ -77,5 +82,47 @@ size_t LinspaceBins::GetIndex(const Real& v) const {
 void LinspaceBins::Print(std::ostream& os) const noexcept {
   for (size_t i = 0; i < n_bins; i++) {
     os << std::to_string(lower_bound + i * bin_width) << " ";
+  }
+}
+
+// LogspaceBins
+
+//// public
+
+LogspaceBins::LogspaceBins(const pugi::xml_node& logspace_node) noexcept
+    : n_bins{logspace_node.attribute("bins").as_ullong()},
+      base{logspace_node.attribute("base").as_double(10)},
+      lower_exp{logspace_node.attribute("min").as_double()},
+      bin_width{
+          (logspace_node.attribute("max").as_double() - lower_exp) /
+          (n_bins - 1)} {}
+
+size_t LogspaceBins::size() const noexcept { return n_bins; }
+
+size_t LogspaceBins::GetIndex(const Real& v) const {
+  const auto x = std::log(v);
+  const auto y = std::log(base);
+  const auto bin_index = (x / y - lower_exp) / bin_width;
+  if (bin_index >= n_bins - 1) {
+    std::ostringstream s;
+    s << "Value (" << std::scientific << v
+      << ") is greater than or equal to largest bin boundary ("
+      << std::scientific << std::pow(base, lower_exp + (n_bins - 1) * bin_width)
+      << ")";
+    throw std::out_of_range(s.str());
+  }
+  else if (bin_index < 0) {
+    return 0;
+  }
+  else {
+    return size_t(bin_index) + 1;
+  }
+}
+
+//// private
+
+void LogspaceBins::Print(std::ostream& os) const noexcept {
+  for (size_t i = 0; i < n_bins; i++) {
+    os << std::scientific << std::pow(base, lower_exp + i * bin_width) << " ";
   }
 }
