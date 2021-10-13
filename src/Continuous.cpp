@@ -284,19 +284,21 @@ void Continuous::Scatter(Particle& p) const noexcept {
     // followed by V_n, the velocity of the neutron in the CM frame.
     const auto v_cm = (v_n + awr * v_T) / (1 + awr);
     const auto V_n = v_n - v_cm;
-    // Compute neutron energy in CM frame. Use classical kinetic energy. Speed
-    // units are cm / s. Energy units are MeV.
-    const auto E_n = 0.5 * m_n * V_n.Dot(V_n);
-    // scattering cosine of the neutron in the CM frame
+    // scattering cosine and azimuthal angle of the neutron in the CM frame
     const auto mu_cm = 2 * p.Sample() - 1;
-    // Compute e_n, the outgoing energy in lab frame. From openmc Eq. 52
-    const auto e_n = E_n + (E + 2 * mu_cm * (awr + 1) * std::sqrt(E * E_n)) /
-                               ((awr + 1) * (awr + 1));
-    // mu_lab is the scattering cosine in the lab frame.
-    const auto mu_lab =
-        mu_cm * std::sqrt(E_n / e_n) + 1 / (awr + 1) * std::sqrt(E / e_n);
-    // Update particle state
-    p.Scatter(mu_lab, e_n);
+    const auto phi_cm = 2 * constants::pi * p.Sample();
+    // rotate incident neutron velocity to outgoing (primed) neutron velocity
+    // in CM
+    const auto V_n_prime_direction =
+        Direction::CreateAboutDirection(V_n, mu_cm, phi_cm);
+    // magnitude of incident velocity V_n is equal to magnitude of outgoing
+    // velocity V_n_prime in CM
+    const auto V_n_prime = std::sqrt(V_n.Dot(V_n)) * V_n_prime_direction;
+    // outgoing velocity in lab frame
+    const auto v_n_prime = V_n_prime + v_cm;
+    // outgoing energy in lab frame
+    const auto E_prime = 0.5 * m_n * v_n_prime.Dot(v_n_prime);
+    p.Scatter(p.GetDirection().Dot(Direction{v_n_prime}), E_prime);
   }
   return;
 }

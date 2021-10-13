@@ -14,6 +14,9 @@
 class Particle;
 
 /// @brief Contains cross sections which are indexed by continuous energy values
+/// @todo Compute @f$ \mu @f$ more directly in free gas scattering. Find
+///       analytic expression to avoid dot product between incident neutron
+///       velocity and outgoing neutron velocity when calling Particle::Scatter.
 class Continuous : public Interaction {
 public:
   /// @brief Constructs continuous energy nuclear data from a particle node of

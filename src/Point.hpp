@@ -74,6 +74,8 @@ public:
   Direction(const pugi::xml_node& pointtype_node) noexcept;
   /// @brief Constructs a Direction with the given components
   Direction(const Real& x, const Real& y, const Real& z) noexcept;
+  /// @brief Constructs the Direction with the contents of a Point.
+  Direction(const Point& other) noexcept;
   /// @brief Move constructor. Constructs the Direction with the contents of a
   ///        Point. The given Point is normalized.
   Direction(Point&& other) noexcept;

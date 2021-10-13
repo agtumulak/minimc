@@ -118,6 +118,10 @@ Direction::Direction(const Real& x, const Real& y, const Real& z) noexcept
   Normalize();
 }
 
+Direction::Direction(const Point& other) noexcept : Point{other} {
+  Normalize();
+}
+
 Direction::Direction(Point&& other) noexcept : Point{std::move(other)} {
   Normalize();
 }
