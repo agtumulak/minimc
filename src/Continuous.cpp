@@ -82,10 +82,11 @@ MicroscopicCrossSection Continuous::GetTotal(const Particle& p) const noexcept {
 
 MicroscopicCrossSection
 Continuous::GetReaction(const Particle& p, const Reaction r) const noexcept {
-  try {
-    return reactions.at(r).at(std::get<ContinuousEnergy>(p.GetEnergy()));
+  if (const auto reaction_it = reactions.find(r);
+      reaction_it != reactions.cend()) {
+    return reaction_it->second.at(std::get<ContinuousEnergy>(p.GetEnergy()));
   }
-  catch (const std::out_of_range& e) {
+  else {
     return 0;
   }
 }
