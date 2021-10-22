@@ -35,7 +35,6 @@
           <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-elastic.hdf5"/>
         </scatter>
         <fission>
-          <chi file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-chi.csv"/>
           <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-fission.hdf5"/>
           <nubar file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-nubar.hdf5"/>
         </fission>

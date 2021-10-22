@@ -112,7 +112,6 @@
         <xs:all>
           <xs:element name="xs" type="ContinuousReactionFilepath"/>
           <xs:element name="nubar" type="ContinuousReactionFilepath"/>
-          <xs:element name="chi" type="ContinuousReactionFilepath"/>
       </xs:all>
       </xs:complexType>
     </xs:element>

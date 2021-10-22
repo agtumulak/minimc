@@ -24,12 +24,6 @@
 //// public
 
 Continuous::Continuous(const pugi::xml_node& particle_node)
-      chi{particle_node.child("fission").child("chi")
-              ? std::make_optional(
-                  ReadJanisWebCDF(
-                  particle_node.child("fission").child("chi").attribute("file")
-                  .as_string()))
-              : std::nullopt},
     : nubar{
       particle_node.child("fission").child("nubar")
         ? std::make_optional(
@@ -256,7 +250,8 @@ void Continuous::Fission(Particle& p) const noexcept {
   for (size_t i = 0; i < fission_yield; i++) {
     // evaluation order of arguments is undefined so do evaluation here
     const auto direction{Direction::CreateIsotropic(p.rng)};
-    const auto energy{Energy{ContinuousEnergy{chi.value().Sample(p.rng)}}};
+    // todo: add energy sampling
+    const auto energy{p.GetEnergy()};
     p.BankSecondaries(direction, energy);
   }
 }

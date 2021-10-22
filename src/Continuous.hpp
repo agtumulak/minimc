@@ -67,8 +67,6 @@ private:
   GetFreeGasScatterAdjustment(const Particle& p, Temperature T) const noexcept;
   // Average number of secondary particles produced per fission
   const std::optional<ContinuousMap<ContinuousEnergy, Real>> nubar;
-  // Outgoing energy distribution of fission neutrons
-  const std::optional<CDF<ContinuousEnergy>> chi;
   // Neutron thermal scattering law S(a,b,T)
   const std::optional<ThermalScattering> tsl;
   // Cross section data for each Reaction
