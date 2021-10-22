@@ -30,6 +30,7 @@ EstimatorSet FixedSource::Solve() {
   for (auto& worker_estimator_set : worker_estimator_sets) {
     solver_estimator_set += worker_estimator_set.get();
   }
+  std::cout << '\r' << "Done!          " << std::endl;
   return solver_estimator_set.Normalize(batchsize);
 }
 
@@ -44,12 +45,13 @@ EstimatorSet FixedSource::StartWorker() {
   while (true) {
     // atomically update thread-local count of histories started
     auto elapsed = histories_elapsed++;
-    if (elapsed % (batchsize / 10000) == 0) {
-      std::cout << '\r' << static_cast<double>(elapsed) / batchsize * 100
-                << "% complete...";
-    }
     if (elapsed >= batchsize) {
       break;
+    }
+    if (const auto interval_period = batchsize / 10000;
+        interval_period != 0 && elapsed % interval_period == 0) {
+      std::cout << '\r' << static_cast<double>(elapsed) / batchsize * 100
+                << "% complete...";
     }
     std::list<Particle> bank;
     // Use the remaining number of histories run for the seed
