@@ -33,9 +33,7 @@ Continuous::Continuous(const pugi::xml_node& particle_node)
         : std::nullopt},
       tsl{ReadPandasSAB(particle_node.child("scatter").child("tsl"))},
       reactions{CreateReactions(particle_node)},
-      total{HDF5DataSet<1>{
-          particle_node.child("total").attribute("file").as_string()}
-                .ToContinuousMap()},
+      total{particle_node.child("total")},
       awr{particle_node.parent().attribute("awr").as_double()} {}
 
 MicroscopicCrossSection
@@ -72,7 +70,7 @@ MicroscopicCrossSection Continuous::GetTotal(const Particle& p) const noexcept {
                GetFreeGasScatterAdjustment(p, T);
   }
   else {
-    return total.at(std::get<ContinuousEnergy>(p.GetEnergy()));
+    return total.xs.at(std::get<ContinuousEnergy>(p.GetEnergy()));
   }
 }
 
@@ -80,7 +78,7 @@ MicroscopicCrossSection
 Continuous::GetReaction(const Particle& p, const Reaction r) const noexcept {
   if (const auto reaction_it = reactions.find(r);
       reaction_it != reactions.cend()) {
-    return reaction_it->second.at(std::get<ContinuousEnergy>(p.GetEnergy()));
+    return reaction_it->second.xs.at(std::get<ContinuousEnergy>(p.GetEnergy()));
   }
   else {
     return 0;
@@ -100,8 +98,8 @@ void Continuous::Interact(Particle& p) const noexcept {
   const MicroscopicCrossSection threshold =
       std::uniform_real_distribution{}(p.rng) * GetTotal(p);
   MicroscopicCrossSection accumulated{0};
-  for (const auto& [reaction, xs] : reactions) {
-    accumulated += xs.at(std::get<ContinuousEnergy>(p.GetEnergy()));
+  for (const auto& [reaction, evaluation] : reactions) {
+    accumulated += evaluation.xs.at(std::get<ContinuousEnergy>(p.GetEnergy()));
     if (accumulated > threshold) {
       switch (reaction) {
       case Reaction::capture:
@@ -121,6 +119,17 @@ void Continuous::Interact(Particle& p) const noexcept {
   return Interact(p);
 }
 
+// Continuous::Evaluation1D
+
+//// public
+
+Continuous::Evaluation1D::Evaluation1D(const pugi::xml_node& evaluation_node)
+    : xs{HDF5DataSet<1>{evaluation_node.attribute("file").as_string()}
+             .ToContinuousMap()},
+      temperature{evaluation_node.attribute("temperature").as_double()} {}
+
+// Continuous
+
 //// private
 
 std::optional<ThermalScattering>
@@ -137,27 +146,20 @@ Continuous::ReadPandasSAB(const pugi::xml_node& tsl_node) {
   return ThermalScattering{tsl_node};
 }
 
-std::map<Reaction, ContinuousMap<ContinuousEnergy, MicroscopicCrossSection>>
+std::map<Reaction, Continuous::Evaluation1D>
 Continuous::CreateReactions(const pugi::xml_node& particle_node) {
-  std::map<Reaction, ContinuousMap<ContinuousEnergy, MicroscopicCrossSection>>
-      reactions;
-  for (const auto& reaction_node : particle_node) {
-    const std::string reaction_name = reaction_node.name();
+  std::map<Reaction, Continuous::Evaluation1D> reactions;
+  for (const auto& evaluation_node : particle_node) {
+    const std::string reaction_name = evaluation_node.name();
     if (reaction_name == "total") {
       continue; // skip total cross section
     }
     const auto reaction{ToReaction(reaction_name)};
     if (reaction == Reaction::capture) {
-      reactions.emplace(
-          reaction, HDF5DataSet<1>{reaction_node.attribute("file").as_string()}
-                        .ToContinuousMap());
+      reactions.emplace(reaction, evaluation_node);
     }
     else {
-      reactions.emplace(
-          reaction,
-          HDF5DataSet<1>{
-              reaction_node.child("xs").attribute("file").as_string()}
-              .ToContinuousMap());
+      reactions.emplace(reaction, evaluation_node.child("xs"));
     }
   }
   return reactions;

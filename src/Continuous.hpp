@@ -44,12 +44,20 @@ public:
   void Interact(Particle& p) const noexcept override;
 
 private:
+  // Bundles cross section and temperature data
+  struct Evaluation1D {
+    // Constructs evaluation from an evaluation node of an XML document
+    Evaluation1D(const pugi::xml_node& evaluation_node);
+    // Pointwise values of the evaluation
+    const ContinuousMap<ContinuousEnergy, MicroscopicCrossSection> xs;
+    // The temperature at which the data was evaluated
+    const Temperature temperature;
+  };
   // Helper function for constructing thermal scattering data S(a,b,T) if found
   static std::optional<ThermalScattering>
   ReadPandasSAB(const pugi::xml_node& tsl_node);
   // Helper function for reaction cross section construction
-  static std::map<
-      Reaction, ContinuousMap<ContinuousEnergy, MicroscopicCrossSection>>
+  static std::map<Reaction, Evaluation1D>
   CreateReactions(const pugi::xml_node& particle_node);
   // Captures the Particle, killing it
   void Capture(Particle& p) const noexcept;
@@ -70,11 +78,9 @@ private:
   // Neutron thermal scattering law S(a,b,T)
   const std::optional<ThermalScattering> tsl;
   // Cross section data for each Reaction
-  const std::map<
-      Reaction, ContinuousMap<ContinuousEnergy, MicroscopicCrossSection>>
-      reactions;
+  const std::map<Reaction, Evaluation1D> reactions;
   // Total cross section provided in nuclear data files
-  const ContinuousMap<ContinuousEnergy, MicroscopicCrossSection> total;
+  const Evaluation1D total;
   // Atomic weight ratio of target, yes this is duplicated in tsl::awr
   const Real awr;
 };
