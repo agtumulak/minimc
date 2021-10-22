@@ -24,23 +24,25 @@
 //// public
 
 Continuous::Continuous(const pugi::xml_node& particle_node)
-    : nubar{particle_node.child("fission").child("nubar")
-              ? std::make_optional(
-                  ReadJanisWeb(
-                  particle_node.child("fission").child("nubar")
-                  .attribute("file").as_string()))
-              : std::nullopt},
       chi{particle_node.child("fission").child("chi")
               ? std::make_optional(
                   ReadJanisWebCDF(
                   particle_node.child("fission").child("chi").attribute("file")
                   .as_string()))
               : std::nullopt},
+    : nubar{
+      particle_node.child("fission").child("nubar")
+        ? std::make_optional(
+            HDF5DataSet<1>{
+            particle_node.child("fission").child("nubar").attribute("file")
+            .as_string()}.ToContinuousMap())
+        : std::nullopt},
       tsl{ReadPandasSAB(particle_node.child("scatter").child("tsl"))},
       reactions{CreateReactions(particle_node)},
-      total{ReadJanisWeb(
-          particle_node.child("total").attribute("file").as_string())},
-      awr{particle_node.parent().attribute("awr").as_double()}{}
+      total{HDF5DataSet<1>{
+          particle_node.child("total").attribute("file").as_string()}
+                .ToContinuousMap()},
+      awr{particle_node.parent().attribute("awr").as_double()} {}
 
 MicroscopicCrossSection
 Continuous::GetMajorant(const Particle& p) const noexcept {
@@ -127,67 +129,6 @@ void Continuous::Interact(Particle& p) const noexcept {
 
 //// private
 
-Continuous::CE_XS::elements_type
-Continuous::ReadJanisWeb(const std::filesystem::path& datapath) {
-  CE_XS::elements_type map;
-  std::ifstream datafile{datapath};
-  if (!datafile) {
-    throw std::runtime_error("File not found: " + datapath.string());
-  }
-  for (size_t i = 1; i <= 3; i++) {
-    // first three lines are header
-    datafile.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-  }
-  ContinuousEnergy energy;
-  MicroscopicCrossSection xs;
-  while (datafile >> energy) {
-    datafile.ignore(
-        std::numeric_limits<std::streamsize>::max(), ';'); // delimiter
-    datafile >> xs;
-    map[energy / 1e6] = xs; // datafile is given in eV
-  }
-  return map;
-}
-
-CDF<ContinuousEnergy>::elements_type
-Continuous::ReadJanisWebCDF(const std::filesystem::path& datapath) {
-  // scratch contains PDF values
-  auto scratch = ReadJanisWeb(datapath);
-  if (scratch.size() < 2) {
-    throw std::runtime_error(
-        "In file " + datapath.string() +
-        ": at least two entries required to define a CDF");
-  }
-  // Multiply each probability density by bin width. Use trapezoid rule.
-  for (auto it = scratch.rbegin(); it != std::prev(scratch.rend()); it++) {
-    // multiplication by 1e6 is because energies were stored as MeV and
-    // datafile PDF is given in per eV
-    it->second = (it->first - std::next(it)->first) * 0.5 *
-                 (it->second + std::next(it)->second) * 1e6;
-  }
-  // set first element to zero to make accumulation pass look clean af
-  scratch.begin()->second = 0;
-  for (auto it = std::next(scratch.begin()); it != scratch.end(); it++) {
-    it->second += std::prev(it)->second;
-  }
-  scratch.erase(scratch.cbegin());
-  // normalize CDF
-  const auto total_weight = scratch.crbegin()->second;
-  if (total_weight == 0.) {
-    throw std::runtime_error(
-        "In file " + datapath.string() + ": total weight is zero.");
-  }
-  std::for_each(scratch.begin(), scratch.end(), [&total_weight](auto& element) {
-    element.second /= total_weight;
-  });
-  // swap keys and values, this will remove any zero probability values
-  CDF<ContinuousEnergy>::elements_type swapped;
-  for (const auto& element : scratch) {
-    swapped.emplace(element.second, element.first);
-  }
-  return swapped;
-}
-
 std::optional<ThermalScattering>
 Continuous::ReadPandasSAB(const pugi::xml_node& tsl_node) {
   if (!tsl_node) {
@@ -202,9 +143,10 @@ Continuous::ReadPandasSAB(const pugi::xml_node& tsl_node) {
   return ThermalScattering{tsl_node};
 }
 
-std::map<Reaction, Continuous::CE_XS>
+std::map<Reaction, ContinuousMap<ContinuousEnergy, MicroscopicCrossSection>>
 Continuous::CreateReactions(const pugi::xml_node& particle_node) {
-  std::map<Reaction, Continuous::CE_XS> reactions;
+  std::map<Reaction, ContinuousMap<ContinuousEnergy, MicroscopicCrossSection>>
+      reactions;
   for (const auto& reaction_node : particle_node) {
     const std::string reaction_name = reaction_node.name();
     if (reaction_name == "total") {
@@ -213,14 +155,15 @@ Continuous::CreateReactions(const pugi::xml_node& particle_node) {
     const auto reaction{ToReaction(reaction_name)};
     if (reaction == Reaction::capture) {
       reactions.emplace(
-          ToReaction(reaction_name),
-          ReadJanisWeb(reaction_node.attribute("file").as_string()));
+          reaction, HDF5DataSet<1>{reaction_node.attribute("file").as_string()}
+                        .ToContinuousMap());
     }
     else {
       reactions.emplace(
           reaction,
-          ReadJanisWeb(
-              reaction_node.child("xs").attribute("file").as_string()));
+          HDF5DataSet<1>{
+              reaction_node.child("xs").attribute("file").as_string()}
+              .ToContinuousMap());
     }
   }
   return reactions;

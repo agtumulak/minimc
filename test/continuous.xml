@@ -11,33 +11,33 @@
   <continuous>
     <nuclide name="hydrogen" awr="0.999167339">
       <neutron>
-        <total file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-total.csv"/>
-        <capture file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-gamma.csv"/>
+        <total file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-total.hdf5"/>
+        <capture file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-gamma.hdf5"/>
         <scatter>
-          <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-elastic.csv"/>
+          <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-elastic.hdf5"/>
         </scatter>
       </neutron>
     </nuclide>
     <nuclide name="oxygen" awr="15.8575107">
       <neutron>
-        <total file="/Users/atumulak/Developer/minimc/data/endfb8/n-O16_0-total.csv"/>
-        <capture file="/Users/atumulak/Developer/minimc/data/endfb8/n-O16_0-gamma.csv"/>
+        <total file="/Users/atumulak/Developer/minimc/data/endfb8/n-O16_0-total.hdf5"/>
+        <capture file="/Users/atumulak/Developer/minimc/data/endfb8/n-O16_0-gamma.hdf5"/>
         <scatter>
-          <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-O16_0-elastic.csv"/>
+          <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-O16_0-elastic.hdf5"/>
         </scatter>
       </neutron>
     </nuclide>
     <nuclide name="uranium235" awr="233.024791">
       <neutron>
-        <total file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-total.csv"/>
-        <capture file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-gamma.csv"/>
+        <total file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-total.hdf5"/>
+        <capture file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-gamma.hdf5"/>
         <scatter>
-          <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-elastic.csv"/>
+          <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-elastic.hdf5"/>
         </scatter>
         <fission>
-          <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-fission.csv"/>
-          <nubar file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-nubar.csv"/>
           <chi file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-chi.csv"/>
+          <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-fission.hdf5"/>
+          <nubar file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-nubar.hdf5"/>
         </fission>
       </neutron>
     </nuclide>

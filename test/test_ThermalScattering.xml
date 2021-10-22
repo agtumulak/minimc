@@ -12,10 +12,10 @@
   <continuous>
     <nuclide name="hydrogen in water" awr="0.999167339">
       <neutron>
-        <total file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-total.csv"/>
-        <capture file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-gamma.csv"/>
+        <total file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-total.hdf5"/>
+        <capture file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-gamma.hdf5"/>
         <scatter>
-          <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-elastic.csv"/>
+          <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-elastic.hdf5"/>
           <tsl
             beta_cdf_file="/Users/atumulak/Developer/minimc/data/beta_cdf_chapman_data.hdf5"
             alpha_cdf_file="/Users/atumulak/Developer/minimc/data/alpha_cdf_chapman_data.hdf5"

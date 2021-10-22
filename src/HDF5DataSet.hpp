@@ -45,6 +45,7 @@ public:
   /// @brief Returns an instance of ContinuousMap with D levels of nesting
   /// @tparam Args Type of outer indices
   /// @param outer_indices Indices of outer levels; populated during recursion
+  /// @todo Create ContinuousMap constructor which wraps this function
   template <typename... Args>
   typename NestedContinuousMap<D - sizeof...(Args)>::MappedType
   ToContinuousMap(Args... outer_indices) {
@@ -80,9 +81,15 @@ public:
   }
 
 private:
-  // Helper function to read HDF5 file from pandas and return flattened array
+  // Helper function to read HDF5 file from pandas and return flattened array.
+  // Of all the other helper function this is the one that checks for file
+  // existence just because it happens to be called first.
   static std::array<std::vector<double>, D>
   ReadPandasAxis(const std::filesystem::path& hdf5_filepath) {
+    if (!std::filesystem::exists(hdf5_filepath)) {
+      throw std::runtime_error(
+          std::string{"File not found: "} + hdf5_filepath.c_str());
+    }
     std::array<std::vector<double>, D> result;
     const H5::H5File file{hdf5_filepath, H5F_ACC_RDONLY};
     // Read number of levels in pandas MultiIndex

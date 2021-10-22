@@ -14,12 +14,6 @@ template <typename Key, typename T> class ContinuousMap {
 public:
   /// @brief Type used to store elements internally
   using elements_type = std::map<Key, T>;
-  /// @brief Default constructs an empty ContinuousMap
-  ContinuousMap() {}
-  /// @brief Constructs ContinuousMap by assigning elements directly
-  /// @todo Deprecate in favor of construction from
-  ///       HDF5DataSet::ToContinuousMap
-  ContinuousMap(elements_type&& other) : elements{std::move(other)} {}
   /// @brief Returns a linearly interpolated value at the given key
   /// @tparam Args Type of inner keys
   /// @todo Support other interpolation methods
