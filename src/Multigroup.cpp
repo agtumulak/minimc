@@ -44,25 +44,6 @@ MicroscopicCrossSection Multigroup::GetTotal(const Particle& p) const noexcept {
   return total.at(std::get<Group>(p.GetEnergy()));
 }
 
-MicroscopicCrossSection
-Multigroup::GetReaction(const Particle& p, const Reaction r) const noexcept {
-  try {
-    return reactions.at(r).at(std::get<Group>(p.GetEnergy()));
-  }
-  catch (const std::out_of_range& e) {
-    return 0;
-  }
-}
-
-Real Multigroup::GetNuBar(const Particle& p) const noexcept {
-  if (nubar) {
-    return nubar->at(std::get<Group>(p.GetEnergy()));
-  }
-  else {
-    return 0;
-  }
-}
-
 void Multigroup::Interact(Particle& p) const noexcept {
   const MicroscopicCrossSection threshold{
       std::uniform_real_distribution{}(p.rng) * GetTotal(p)};

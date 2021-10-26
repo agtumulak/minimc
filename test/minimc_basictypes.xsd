@@ -80,19 +80,19 @@
   <xs:attribute name="groups" type="xs:positiveInteger" use="required"/>
 </xs:complexType>
 
-<xs:complexType name="ContinuousReactionEvaluation">
+<xs:complexType name="ContinuousEvaluation">
   <xs:attribute name="file" type="xs:anyURI" use="required"/>
   <xs:attribute name="temperature" type="StrictlyPositiveDouble" use="required"/>
 </xs:complexType>
 
 <xs:complexType name="ContinuousXSReactions">
   <xs:all>
-    <xs:element name="total" type="ContinuousReactionEvaluation" minOccurs="0"/>
-    <xs:element name="capture" type="ContinuousReactionEvaluation" minOccurs="0"/>
+    <xs:element name="total" type="ContinuousEvaluation" minOccurs="0"/>
+    <xs:element name="capture" type="ContinuousEvaluation" minOccurs="0"/>
     <xs:element name="scatter" minOccurs="0">
       <xs:complexType>
         <xs:all>
-          <xs:element name="xs" type="ContinuousReactionEvaluation"/>
+          <xs:element name="xs" type="ContinuousEvaluation"/>
           <xs:element name="tsl" minOccurs="0">
             <xs:complexType>
               <xs:attribute name="beta_cdf_file" type="xs:anyURI" use="required"/>
@@ -111,8 +111,8 @@
     <xs:element name="fission" minOccurs="0">
       <xs:complexType>
         <xs:all>
-          <xs:element name="xs" type="ContinuousReactionEvaluation"/>
-          <xs:element name="nubar" type="ContinuousReactionEvaluation"/>
+          <xs:element name="xs" type="ContinuousEvaluation"/>
+          <xs:element name="nubar" type="ContinuousEvaluation"/>
       </xs:all>
       </xs:complexType>
     </xs:element>

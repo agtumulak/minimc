@@ -1,7 +1,8 @@
 #include "Nuclide.hpp"
 
 #include "Particle.hpp"
-#include "Reaction.hpp"
+
+#include <map>
 
 // Nuclide
 
@@ -17,15 +18,6 @@ MicroscopicCrossSection Nuclide::GetMajorant(const Particle& p) const noexcept {
 
 MicroscopicCrossSection Nuclide::GetTotal(const Particle& p) const noexcept {
   return xs.at(p.type)->GetTotal(p);
-}
-
-MicroscopicCrossSection
-Nuclide::GetReaction(const Particle& p, const Reaction r) const noexcept {
-  return xs.at(p.type)->GetReaction(p, r);
-}
-
-Real Nuclide::GetNuBar(const Particle& p) const noexcept {
-  return xs.at(p.type)->GetNuBar(p);
 }
 
 void Nuclide::Interact(Particle& p) const noexcept {

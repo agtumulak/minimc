@@ -14,6 +14,8 @@ class Particle;
 /// @brief Contains cross sections which are indexed by discrete energy groups
 /// @details Groups are integers in `[1,G]`. Group `1` corresponds to the
 ///          highest energy. Group `G` corresponds to the lowest energy.
+/// @todo Refactor Multigroup::reactions into vector instead of map as is now
+///       done with Continuous::reactions
 class Multigroup : public Interaction {
 public:
   /// @brief Constructs multigroup nuclear data from a particle node of an XML
@@ -30,11 +32,6 @@ public:
   GetMajorant(const Particle& p) const noexcept override;
   /// @brief Returns the total cross section for a given Particle
   MicroscopicCrossSection GetTotal(const Particle& p) const noexcept override;
-  /// @brief Returns the cross section for a given Particle and Reaction
-  MicroscopicCrossSection
-  GetReaction(const Particle& p, const Reaction r) const noexcept override;
-  /// @brief Returns the average fission neutron yield for a given Particle
-  Real GetNuBar(const Particle& p) const noexcept override;
   /// @brief Interact with a Particle, updating its state
   void Interact(Particle& p) const noexcept override;
 

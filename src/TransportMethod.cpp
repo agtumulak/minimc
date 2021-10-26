@@ -6,10 +6,10 @@
 #include "Material.hpp"
 #include "Nuclide.hpp"
 #include "Particle.hpp"
-#include "Reaction.hpp"
 #include "World.hpp"
 
 #include <cassert>
+#include <iosfwd>
 #include <random>
 #include <stdexcept>
 #include <string>

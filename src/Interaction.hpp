@@ -2,7 +2,6 @@
 
 #include "BasicTypes.hpp"
 #include "Particle.hpp"
-#include "Reaction.hpp"
 #include "pugixml.hpp"
 
 #include <map>
@@ -31,11 +30,6 @@ public:
   /// @brief Returns the total cross section for a given Particle
   virtual MicroscopicCrossSection
   GetTotal(const Particle& p) const noexcept = 0;
-  /// @brief Returns the cross section for a given Particle and Reaction
-  virtual MicroscopicCrossSection
-  GetReaction(const Particle& p, const Reaction r) const noexcept = 0;
-  /// @brief Returns the average fission neutron yield for a given Particle
-  virtual Real GetNuBar(const Particle& p) const noexcept = 0;
   /// @brief Interact with a Particle, updating its state
   virtual void Interact(Particle& p) const noexcept = 0;
 };

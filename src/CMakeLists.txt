@@ -14,6 +14,10 @@ set(MINIMC_SOURCES
   Continuous.cpp
   Continuous.hpp
   ContinuousMap.hpp
+  ContinuousEvaluation.cpp
+  ContinuousEvaluation.hpp
+  ContinuousReaction.cpp
+  ContinuousReaction.hpp
   Estimator.cpp
   Estimator.hpp
   Constants.hpp
