@@ -53,6 +53,7 @@ public:
   /// @details For thermal inelastic scattering, this is larger than @f$
   ///          \Sigma_{\text{elastic}}(E) + \Sigma_{\text{inelastic}}(E) @f$
   ///          because @f$ \beta = 0 @f$ corresponds to elastic scattering.
+  /// @todo Throw exception when temperature is out of range
   MicroscopicCrossSection GetMajorant(const Particle& p) const noexcept;
   /// @brief Returns the total cross section
   MicroscopicCrossSection GetTotal(const Particle& p) const noexcept;
