@@ -56,8 +56,8 @@ void ThermalScattering::Scatter(Particle& p) const noexcept {
   const auto alpha = SampleAlpha(p, beta, E, T);
   // convert to outgoing energy and cosine
   const auto E_p = E + beta * constants::boltzmann * T;
-  const auto mu =
-      (E + E_p - alpha * awr * constants::boltzmann * T) / std::sqrt(E * E_p);
+  const auto mu = (E + E_p - alpha * awr * constants::boltzmann * T) /
+                  (2 * std::sqrt(E * E_p));
   p.Scatter(mu, E_p);
 }
 
