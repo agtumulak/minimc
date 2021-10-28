@@ -35,6 +35,9 @@ private:
   // Helper function for reaction cross section construction
   static std::vector<std::unique_ptr<const ContinuousReaction>>
   CreateReactions(const pugi::xml_node& particle_node);
+  // Returns true if any reaction modifies the total cross section even if the
+  // total cross section was evaluated at the target temperature
+  bool ReactionsModifyTotal(const Particle& p) const noexcept;
   // Cross section data for mutually exclusive reactions
   const std::vector<std::unique_ptr<const ContinuousReaction>> reactions;
   // Total cross section provided in nuclear data files

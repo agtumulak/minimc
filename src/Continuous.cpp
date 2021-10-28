@@ -6,6 +6,7 @@
 #include "Particle.hpp"
 #include "ScalarField.hpp"
 
+#include <algorithm>
 #include <iosfwd>
 #include <numeric>
 #include <random>
@@ -24,7 +25,7 @@ MicroscopicCrossSection
 Continuous::GetMajorant(const Particle& p) const noexcept {
   // majorant temperature is assumed to occur at maximum temperature in Cell
   const auto majorant_temperature = p.GetCell().temperature->upper_bound;
-  if (total.IsValid(majorant_temperature)) {
+  if (!ReactionsModifyTotal(p) && total.IsValid(majorant_temperature)) {
     return total.xs.at(std::get<ContinuousEnergy>(p.GetEnergy()));
   }
   else {
@@ -39,7 +40,7 @@ Continuous::GetMajorant(const Particle& p) const noexcept {
 MicroscopicCrossSection Continuous::GetTotal(const Particle& p) const noexcept {
   const auto requested_temperature =
       p.GetCell().temperature->at(p.GetPosition());
-  if (total.IsValid(requested_temperature)) {
+  if (!ReactionsModifyTotal(p) && total.IsValid(requested_temperature)) {
     return total.xs.at(std::get<ContinuousEnergy>(p.GetEnergy()));
   }
   else {
@@ -79,4 +80,10 @@ Continuous::CreateReactions(const pugi::xml_node& particle_node) {
     reactions.emplace_back(ContinuousReaction::Create(reaction_node));
   }
   return reactions;
+}
+
+bool Continuous::ReactionsModifyTotal(const Particle& p) const noexcept {
+  return std::any_of(
+      reactions.cbegin(), reactions.cend(),
+      [&p](const auto& reaction) { return reaction->ModifiesTotal(p); });
 }

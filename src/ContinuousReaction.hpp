@@ -24,6 +24,14 @@ public:
   ContinuousReaction(const pugi::xml_node& reaction_node);
   /// @brief Virtual destructor (C++ Core Guidelines C.127)
   virtual ~ContinuousReaction() noexcept;
+  /// @brief Returns true if the reaction's cross section will change the
+  ///        total cross section
+  /// @details Used when evaluation of the correct total cross section needs
+  ///          more information about the reaction. Currently used by
+  ///          ContinuousScatter to signal if thermal scattering exists,
+  ///          requiring an adjustment of the total cross section, even if the
+  ///          total cross section was processed at the correct temperature.
+  virtual bool ModifiesTotal(const Particle&) const noexcept;
   /// @brief Returns the largest cross section that may be found within the
   ///        current Cell
   /// @details Currently wraps GetCrossSection
@@ -62,6 +70,8 @@ public:
   /// @brief Constructs ContinuousScatter from a `scatter` node of an XML
   ///        document, loading thermal scattering data if found
   ContinuousScatter(const pugi::xml_node& scatter_node);
+  /// @brief Returns true if thermal scattering is present
+  bool ModifiesTotal(const Particle& p) const noexcept override;
   /// @brief Returns largest scattering cross section that may be found within
   ///        the current Cell.
   /// @details Used when there is a continuous dependence on temperature.

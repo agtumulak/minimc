@@ -36,6 +36,10 @@ ContinuousReaction::ContinuousReaction(const pugi::xml_node& reaction_node)
 
 ContinuousReaction::~ContinuousReaction() noexcept {}
 
+bool ContinuousReaction::ModifiesTotal(const Particle&) const noexcept {
+  return false;
+}
+
 MicroscopicCrossSection
 ContinuousReaction::GetMajorant(const Particle& p) const noexcept {
   return GetCrossSection(p);
@@ -63,6 +67,10 @@ ContinuousScatter::ContinuousScatter(const pugi::xml_node& scatter_node)
     : ContinuousReaction{scatter_node.child("xs")},
       tsl{ReadPandasSAB(scatter_node.child("tsl"))},
       awr{scatter_node.parent().parent().attribute("awr").as_double()} {}
+
+bool ContinuousScatter::ModifiesTotal(const Particle& p) const noexcept {
+  return tsl.has_value() && tsl->IsValid(p);
+}
 
 MicroscopicCrossSection
 ContinuousScatter::GetMajorant(const Particle& p) const noexcept {
