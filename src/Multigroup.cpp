@@ -35,27 +35,13 @@ Multigroup::Multigroup(const pugi::xml_node& particle_node)
       total{CreateTotalXS(particle_node, reactions)},
       max_group{GroupStructureSize(particle_node.root())} {}
 
+MicroscopicCrossSection
+Multigroup::GetMajorant(const Particle& p) const noexcept {
+  return GetTotal(p);
+}
+
 MicroscopicCrossSection Multigroup::GetTotal(const Particle& p) const noexcept {
   return total.at(std::get<Group>(p.GetEnergy()));
-}
-
-MicroscopicCrossSection
-Multigroup::GetReaction(const Particle& p, const Reaction r) const noexcept {
-  try {
-    return reactions.at(r).at(std::get<Group>(p.GetEnergy()));
-  }
-  catch (const std::out_of_range& e) {
-    return 0;
-  }
-}
-
-Real Multigroup::GetNuBar(const Particle& p) const noexcept {
-  if (nubar) {
-    return nubar->at(std::get<Group>(p.GetEnergy()));
-  }
-  else {
-    return 0;
-  }
 }
 
 void Multigroup::Interact(Particle& p) const noexcept {
@@ -254,9 +240,12 @@ Multigroup::OneDimensional Multigroup::CreateTotalXS(
       });
 }
 
-void Multigroup::Capture(Particle& p) const noexcept { p.Kill(); }
+void Multigroup::Capture(Particle& p) const noexcept {
+  p.event = Particle::Event::capture;
+}
 
 void Multigroup::Scatter(Particle& p) const noexcept {
+  p.event = Particle::Event::scatter;
   const Real threshold = std::uniform_real_distribution{}(p.rng);
   Real accumulated{0};
   const auto& group_probs{
@@ -274,7 +263,7 @@ void Multigroup::Scatter(Particle& p) const noexcept {
 }
 
 void Multigroup::Fission(Particle& p) const noexcept {
-  p.Kill();
+  p.event = Particle::Event::fission;
   auto incident_group{std::get<Group>(p.GetEnergy())};
   // rely on the fact that double to int conversions essentially do a floor()
   size_t fission_yield(
@@ -289,7 +278,7 @@ void Multigroup::Fission(Particle& p) const noexcept {
       accumulated += group_probs.at(g);
       if (accumulated > threshold) {
         auto direction{Direction::CreateIsotropic(p.rng)};
-        p.Bank(direction, g);
+        p.BankSecondaries(direction, g);
         break;
       }
     }

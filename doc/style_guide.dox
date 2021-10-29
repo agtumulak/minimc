@@ -11,6 +11,12 @@ MiniMC primarily adheres to the
 Guide</a> for source code style. Cases which are not addressed in the Google
 C++ Style Guide are addressed individually here.
 
+@section style_guide_function_names Function Names
+
+Function names should generally begin with a verb describing what it <em>does
+</em>. For instance, class methods which sample a random distribution are
+prefixed with `Sample`.
+
 @section style_guide_declaration_order Declaration Order
 
 <a href="https://google.github.io/styleguide/cppguide.html#Declaration_Order">
@@ -50,5 +56,25 @@ Of course, there will always be cases where copy initialization is simply
 clearer without the cost of an expensive copy (such as initializing a reference
 or copying an rvalue for which there is a move constructor) so the choice is
 ultimately up to an informed developer's discretion.
+
+@section style_guide_documentation Documentation
+
+- Use the <code>boldsymbol</code> environment to denote vectors
+- Use the <code>bmatrix</code> environment for displaying matrices in
+documentation
+
+@code{.tex}
+  \boldsymbol{p} =
+  \begin{bmatrix}
+    x \\ y \\ z
+  \end{bmatrix}
+@endcode
+
+@f[
+  \boldsymbol{p} =
+  \begin{bmatrix}
+  x \\ y \\ z
+  \end{bmatrix}
+@f]
 
 */

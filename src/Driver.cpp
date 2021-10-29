@@ -2,10 +2,11 @@
 
 #include "FixedSource.hpp"
 #include "KEigenvalue.hpp"
+#include "TransportMethod.hpp"
 #include "XMLDocument.hpp"
 
 #include <cassert>
-#include <string>
+#include <iosfwd>
 
 // Driver
 
@@ -29,8 +30,9 @@ Driver::Create(const std::filesystem::path& xml_filepath) {
 }
 
 Driver::Driver(const pugi::xml_node& root)
-    : world{root}, threads{std::stoul(
-                       root.child("general").child("threads").child_value())},
+    : world{root}, init_estimator_set{root.child("estimators"), world},
+      transport_method{TransportMethod::Create(root, world)},
+      threads{std::stoul(root.child("general").child("threads").child_value())},
       seed(std::stoi(
           root.child("general").child("seed")
               ? root.child("general").child("seed").child_value()

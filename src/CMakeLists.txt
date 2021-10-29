@@ -1,6 +1,10 @@
 # Add new source files here
 set(MINIMC_SOURCES
   BasicTypes.hpp
+  Bank.cpp
+  Bank.hpp
+  Bins.cpp
+  Bins.hpp
   CSGSurface.cpp
   CSGSurface.hpp
   Cell.cpp
@@ -9,12 +13,16 @@ set(MINIMC_SOURCES
   Driver.hpp
   Continuous.cpp
   Continuous.hpp
+  ContinuousMap.hpp
+  ContinuousEvaluation.cpp
+  ContinuousEvaluation.hpp
+  ContinuousReaction.cpp
+  ContinuousReaction.hpp
   Estimator.cpp
   Estimator.hpp
   Constants.hpp
   FixedSource.cpp
   FixedSource.hpp
-  HDF5DataSet.cpp
   HDF5DataSet.hpp
   Interaction.cpp
   Interaction.hpp
@@ -32,10 +40,14 @@ set(MINIMC_SOURCES
   Point.hpp
   Reaction.cpp
   Reaction.hpp
+  ScalarField.cpp
+  ScalarField.hpp
   Source.cpp
   Source.hpp
   ThermalScattering.cpp
   ThermalScattering.hpp
+  TransportMethod.cpp
+  TransportMethod.hpp
   World.cpp
   World.hpp
   XMLDocument.cpp

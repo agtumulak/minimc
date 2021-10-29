@@ -44,6 +44,4 @@ Interaction::Map Interaction::Create(const pugi::xml_node& nuclide_node) {
   return xs;
 }
 
-//// protected
-
 Interaction::~Interaction() noexcept {}

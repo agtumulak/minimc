@@ -34,6 +34,13 @@
   <xs:list itemType="NonNegativeDouble"/>
 </xs:simpleType>
 
+<xs:simpleType name="TrackingType">
+  <xs:restriction base="xs:string">
+    <xs:enumeration value="surface"/>
+    <xs:enumeration value="cell delta"/>
+  </xs:restriction>
+</xs:simpleType>
+
 <!-- copmlex types -->
 
 <xs:complexType name="PointType">
@@ -73,22 +80,25 @@
   <xs:attribute name="groups" type="xs:positiveInteger" use="required"/>
 </xs:complexType>
 
-<xs:complexType name="ContinuousReactionFilepath">
+<xs:complexType name="ContinuousEvaluation">
   <xs:attribute name="file" type="xs:anyURI" use="required"/>
+  <xs:attribute name="temperature" type="StrictlyPositiveDouble" use="required"/>
 </xs:complexType>
 
 <xs:complexType name="ContinuousXSReactions">
   <xs:all>
-    <xs:element name="total" type="ContinuousReactionFilepath" minOccurs="0"/>
-    <xs:element name="capture" type="ContinuousReactionFilepath" minOccurs="0"/>
+    <xs:element name="total" type="ContinuousEvaluation" minOccurs="0"/>
+    <xs:element name="capture" type="ContinuousEvaluation" minOccurs="0"/>
     <xs:element name="scatter" minOccurs="0">
       <xs:complexType>
         <xs:all>
-          <xs:element name="xs" type="ContinuousReactionFilepath"/>
+          <xs:element name="xs" type="ContinuousEvaluation"/>
           <xs:element name="tsl" minOccurs="0">
             <xs:complexType>
               <xs:attribute name="beta_cdf_file" type="xs:anyURI" use="required"/>
               <xs:attribute name="alpha_cdf_file" type="xs:anyURI" use="required"/>
+              <xs:attribute name="majorant" type="xs:anyURI" use="required"/>
+              <xs:attribute name="total" type="xs:anyURI" use="required"/>
               <xs:attribute name="min_temperature" type="StrictlyPositiveDouble" use="required"/>
               <xs:attribute name="max_temperature" type="StrictlyPositiveDouble" use="required"/>
               <xs:attribute name="beta_cutoff" type="StrictlyPositiveDouble" use="required"/>
@@ -101,9 +111,8 @@
     <xs:element name="fission" minOccurs="0">
       <xs:complexType>
         <xs:all>
-          <xs:element name="xs" type="ContinuousReactionFilepath"/>
-          <xs:element name="nubar" type="ContinuousReactionFilepath"/>
-          <xs:element name="chi" type="ContinuousReactionFilepath"/>
+          <xs:element name="xs" type="ContinuousEvaluation"/>
+          <xs:element name="nubar" type="ContinuousEvaluation"/>
       </xs:all>
       </xs:complexType>
     </xs:element>
@@ -138,6 +147,34 @@
             </xs:restriction>
           </xs:simpleType>
         </xs:attribute>
+      </xs:complexType>
+    </xs:element>
+  </xs:choice>
+</xs:complexType>
+
+<xs:complexType name="ScalarField">
+  <xs:choice>
+    <xs:element name="constant">
+      <xs:complexType>
+        <xs:attribute name="c" type="xs:double" use="required"/>
+      </xs:complexType>
+    </xs:element>
+    <xs:element name="linear">
+      <xs:complexType>
+        <xs:all>
+          <xs:element name="bounds">
+            <xs:complexType>
+              <xs:attribute name="lower" type="xs:double" use="required"/>
+              <xs:attribute name="upper" type="xs:double" use="required"/>
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="intercept">
+            <xs:complexType>
+              <xs:attribute name="b" type="xs:double" use="required"/>
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="gradient" type="PointType"/>
+        </xs:all>
       </xs:complexType>
     </xs:element>
   </xs:choice>
@@ -183,6 +220,51 @@
     <xs:element name="energy" type="EnergyDistributionType"/>
     <xs:element name="particletype" type="ParticleTypeDistributionType"/>
   </xs:all>
+</xs:complexType>
+
+<xs:complexType name="BinType">
+  <xs:choice>
+    <xs:element name="linspace">
+      <xs:complexType>
+        <xs:attribute name="min" type="xs:double" use="required"/>
+        <xs:attribute name="max" type="xs:double" use="required"/>
+        <xs:attribute name="bins" type="xs:positiveInteger" use="required"/>
+      </xs:complexType>
+    </xs:element>
+    <xs:element name="logspace">
+      <xs:complexType>
+        <xs:attribute name="base" type="xs:double" use="optional"/>
+        <xs:attribute name="min" type="xs:double" use="required"/>
+        <xs:attribute name="max" type="xs:double" use="required"/>
+        <xs:attribute name="bins" type="xs:positiveInteger" use="required"/>
+      </xs:complexType>
+    </xs:element>
+  </xs:choice>
+</xs:complexType>
+
+<xs:complexType name="EstimatorDefinition">
+  <xs:choice minOccurs="1" maxOccurs="unbounded">
+    <xs:element name="current">
+      <xs:complexType>
+        <xs:all>
+          <xs:element name="energy" type="BinType" minOccurs="0"/>
+          <xs:element name="cosine" minOccurs="0">
+            <xs:complexType>
+              <xs:complexContent>
+                <xs:extension base="BinType" minOccurs="0">
+                  <xs:attribute name="u" type="xs:double" use="required"/>
+                  <xs:attribute name="v" type="xs:double" use="required"/>
+                  <xs:attribute name="w" type="xs:double" use="required"/>
+                </xs:extension>
+              </xs:complexContent>
+            </xs:complexType>
+          </xs:element>
+        </xs:all>
+        <xs:attribute name="name" type="xs:normalizedString" use="required"/>
+        <xs:attribute name="surface" type="xs:normalizedString" use="required"/>
+      </xs:complexType>
+    </xs:element>
+  </xs:choice>
 </xs:complexType>
 
 </xs:schema>

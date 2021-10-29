@@ -1,6 +1,7 @@
 #pragma once
 
 #include "BasicTypes.hpp"
+#include "ContinuousMap.hpp"
 #include "HDF5DataSet.hpp"
 #include "pugixml.hpp"
 
@@ -47,7 +48,15 @@ public:
   ThermalScattering(const pugi::xml_node& tsl_node) noexcept;
   /// @brief Returns true if Particle is Type::neutron and is strictly below
   ///        the cutoff energy
-  bool IsValid(Particle& p) const noexcept;
+  bool IsValid(const Particle& p) const noexcept;
+  /// @brief Returns the majorant cross section
+  /// @details For thermal inelastic scattering, this is larger than @f$
+  ///          \Sigma_{\text{elastic}}(E) + \Sigma_{\text{inelastic}}(E) @f$
+  ///          because @f$ \beta = 0 @f$ corresponds to elastic scattering.
+  /// @todo Throw exception when temperature is out of range
+  MicroscopicCrossSection GetMajorant(const Particle& p) const noexcept;
+  /// @brief Returns the total cross section
+  MicroscopicCrossSection GetTotal(const Particle& p) const noexcept;
   /// @brief The raison d'etre of this class
   void Scatter(Particle& p) const noexcept;
 
@@ -67,8 +76,15 @@ private:
   Alpha SampleAlpha(
       Particle& p, const Beta& b, ContinuousEnergy E,
       Temperature T) const noexcept;
-  // Raw cumulative distribution function data for beta and alpha
-  const HDF5DataSet beta_cdf, alpha_cdf;
+  // Raw cumulative distribution function data for beta and alpha (3
+  // independent axes each)
+  const HDF5DataSet<3> beta_cdf, alpha_cdf;
+  // Majorant cross section
+  const ContinuousMap<ContinuousEnergy, MicroscopicCrossSection> majorant;
+  // Total scattering cross section
+  const ContinuousMap<
+      Temperature, ContinuousMap<ContinuousEnergy, MicroscopicCrossSection>>
+      total;
   // Incident energies for beta
   const std::vector<ContinuousEnergy> beta_energies = beta_cdf.GetAxis(0);
   // CDF values for beta
@@ -87,7 +103,8 @@ private:
   const Alpha alpha_cutoff;
   // Range of valid temperatures
   const Temperature min_temperature, max_temperature;
-  // Atomic weight ratio of target
+  // Atomic weight ratio of target, yes this is a copy rather than giving a
+  // pointer to the parent Nuclide
   const Real awr;
 
 public:

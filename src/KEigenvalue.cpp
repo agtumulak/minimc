@@ -1,6 +1,8 @@
 #include "KEigenvalue.hpp"
 
+#include "Bank.hpp"
 #include "Source.hpp"
+#include "TransportMethod.hpp"
 
 #include <future>
 #include <iostream>
@@ -29,37 +31,43 @@ KEigenvalue::KEigenvalue(const pugi::xml_node& root)
   }
 }
 
-Estimator KEigenvalue::Solve() {
-  Estimator estimator;
+EstimatorSet KEigenvalue::Solve() {
+  EstimatorSet solver_estimators = init_estimator_set;
   // Perform inactive cycles
   for (Cycle c = 0; c < last_inactive; c++) {
     std::cout << "===== Cycle " << std::to_string(c) << " =====" << std::endl;
     std::cout << "source bank: " << std::to_string(source_bank.size())
               << std::endl;
-    std::vector<std::future<Particle::TransportOutcome>> thread_results;
+    std::vector<std::future<std::tuple<Bank, EstimatorSet>>>
+        thread_results;
     // start all the threads
     for (size_t i = 0; i < threads; i++) {
       thread_results.push_back(std::async(&KEigenvalue::StartWorker, this));
     }
     // collect results from each thread
-    Particle::TransportOutcome cycle_outcome;
+    Bank fission_bank;
     for (auto& thread_result : thread_results) {
-      cycle_outcome += thread_result.get();
+      auto [worker_bank, worker_estimators] = thread_result.get();
+      // TODO: Fix
+      // fission_bank += worker_bank;
+
     }
-    // swap fission and source bank
-    std::swap(cycle_outcome.banked, source_bank);
+    // TODO: Fix
+    // // swap fission and source bank
+    // std::swap(cycle_outcome.banked, source_bank);
   }
-  return estimator;
 }
 
 //// private
 
-Particle::TransportOutcome KEigenvalue::StartWorker() {
-  Particle::TransportOutcome worker_outcome;
+std::tuple<Bank, EstimatorSet> KEigenvalue::StartWorker() {
+  EstimatorSet worker_estimators = init_estimator_set;
+  Bank worker_bank;
   while (auto p = NextParticle()) {
-    worker_outcome += p->Transport(world);
+    worker_bank +=
+        transport_method->Transport(p.value(), worker_estimators, world);
   }
-  return worker_outcome;
+  return {worker_bank, worker_estimators};
 }
 
 std::optional<Particle> KEigenvalue::NextParticle() noexcept {

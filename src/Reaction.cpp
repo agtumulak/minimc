@@ -1,8 +1,9 @@
 #include "Reaction.hpp"
 
-#include <cassert>
+#include <stdexcept>
+#include <string>
 
-Reaction ToReaction(const std::string& name) noexcept {
+Reaction ToReaction(const std::string& name) {
   if (name == "capture") {
     return Reaction::capture;
   }
@@ -13,6 +14,6 @@ Reaction ToReaction(const std::string& name) noexcept {
     return Reaction::fission;
   }
   else {
-    assert(false); // only mutually exclusive reactions are valid
+    throw std::runtime_error("Unrecognized reaction name: " + name);
   };
 }

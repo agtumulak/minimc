@@ -1,4 +1,5 @@
 #include "Driver.hpp"
+#include "Estimator.hpp"
 
 #include <iostream>
 #include <stdexcept>
@@ -9,7 +10,6 @@ int main(int argc, char* argv[]) {
     throw std::runtime_error("MiniMC accepts exactly one argument");
   }
   auto driver = Driver::Create(argv[1]);
-  auto estimators{driver->Solve()};
-  std::cout << estimators << std::endl;
+  std::cout << driver->Solve() << std::endl;
   return 0;
 }

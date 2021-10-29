@@ -1,8 +1,10 @@
 #include "World.hpp"
 
+#include "Constants.hpp"
 #include "CSGSurface.hpp"
 #include "Material.hpp"
 #include "Nuclide.hpp"
+#include "ScalarField.hpp"
 
 #include <algorithm>
 #include <numeric>
@@ -15,9 +17,9 @@
 
 World::World(const pugi::xml_node& root)
     : surfaces{CreateCSGSurfaces(root)}, nuclides{CreateNuclides(root)},
-      materials{CreateMaterials(root, nuclides)}, cells{CreateCells(
-                                                      root, surfaces,
-                                                      materials)} {}
+      materials{CreateMaterials(root, nuclides)},
+      temperature{CreateTemperature(root.child("temperature"))},
+      cells{CreateCells(root, surfaces, materials, temperature)} {}
 
 const Cell& World::FindCellContaining(const Point& p) const {
   const auto cell_it =
@@ -30,6 +32,30 @@ const Cell& World::FindCellContaining(const Point& p) const {
   throw std::runtime_error(
       "Point does not belong to any Cell. Please check"
       "that all space is either assigned a material or void.");
+}
+
+bool World::HasConstantTemperature() const noexcept {
+  return temperature->IsConstant();
+}
+
+std::shared_ptr<const CSGSurface>
+World::FindSurfaceByName(const std::string& name) const {
+  const auto surface_it = std::find_if(
+      surfaces.cbegin(), surfaces.cend(),
+      [&name](const auto surface_ptr) { return surface_ptr->name == name; });
+  if (surface_it == surfaces.cend()) {
+    throw std::runtime_error(
+        "Surface \"" + name + "\" not found. Must be one of: [" +
+        std::accumulate(
+            surfaces.cbegin(), surfaces.cend(), std::string{},
+            [](const auto& accumulated, const auto surface_ptr) noexcept {
+              return accumulated + "\"" + surface_ptr->name + "\", ";
+            }) +
+        "]");
+  }
+  else {
+    return *surface_it;
+  }
 }
 
 //// private
@@ -119,16 +145,23 @@ std::vector<std::shared_ptr<const Material>> World::CreateMaterials(
   return all_materials;
 }
 
+std::unique_ptr<const ScalarField>
+World::CreateTemperature(const pugi::xml_node& temperature_node) {
+  if (!temperature_node) {
+    // default temperature is room temperature
+    return std::make_unique<const ConstantField>(constants::room_temperature);
+  }
+  return ScalarField::Create(temperature_node.first_child());
+}
+
 std::vector<Cell> World::CreateCells(
     const pugi::xml_node& root,
     const std::vector<std::shared_ptr<const CSGSurface>>& all_surfaces,
-    const std::vector<std::shared_ptr<const Material>>&
-        all_materials) noexcept {
+    const std::vector<std::shared_ptr<const Material>>& all_materials,
+    const std::shared_ptr<const ScalarField> temperature) noexcept {
   std::vector<Cell> cells;
   for (const auto& cell_node : root.child("cells")) {
-    cells.emplace_back(
-        root, cell_node.attribute("name").as_string(), all_surfaces,
-        all_materials);
+    cells.emplace_back(cell_node, all_surfaces, all_materials, temperature);
   }
   return cells;
 }

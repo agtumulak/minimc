@@ -1,3 +1,6 @@
+# macOS
+*.DS_Store
+
 # clang
 .cache/
 .clang-format
@@ -39,5 +42,5 @@ compile_commands.json
 
 # misc
 build/
-COMMIT.md
+COMMIT_EDITMSG
 TODO.md

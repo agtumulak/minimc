@@ -9,10 +9,12 @@ class Point {
   friend Point operator+(const Point& lhs, const Point& rhs) noexcept;
   /// @brief Returns the vector difference of two Point objects
   friend Point operator-(const Point& lhs, const Point& rhs) noexcept;
-  /// @brief Returns Point with each element multiplied by lhs
-  friend Point operator*(const Point& lhs, const Real& rhs) noexcept;
   /// @brief Returns Point with each element multiplied by rhs
+  friend Point operator*(const Point& lhs, const Real& rhs) noexcept;
+  /// @brief Returns Point with each element multiplied by lhs
   friend Point operator*(const Real& lhs, const Point& rhs) noexcept;
+  /// @brief Returns Point with each element divided by rhs
+  friend Point operator/(const Point& lhs, const Real& rhs) noexcept;
 
 public:
   /// @brief Default constructor. Creates a Point at the origin;
@@ -54,11 +56,6 @@ class Direction : public Point {
 public:
   /// @brief Constructs an isotropically sampled Direction
   static Direction CreateIsotropic(RNG& rng) noexcept;
-  /// @brief Constructs a Direction from a `PointType` node
-  /// @details `PointType` is a `complexType` defined in the minimc XML schema.
-  Direction(const pugi::xml_node& pointtype_node) noexcept;
-  /// @brief Constructs a Direction with the given components
-  Direction(const Real& x, const Real& y, const Real& z) noexcept;
   /// @brief Constructs a new Direction that has a given cosine @f$ \mu @f$
   ///        with respect to an exsiting Direction.
   /// @details Given a Direction @f$ \boldsymbol{\Omega}^{\prime} @f$, the new
@@ -70,7 +67,15 @@ public:
   /// @param phi The azimuthal angle about @f$ \boldsymbol{\Omega}^{\prime}
   ///            @f$. This is largely arbitrary since scattering is usually
   ///            azimuthally symmetric.
-  Direction(const Direction& d, const Real& mu, const Real& phi) noexcept;
+  static Direction CreateAboutDirection(
+      const Direction& d, const Real& mu, const Real& phi) noexcept;
+  /// @brief Constructs a Direction from a `PointType` node
+  /// @details `PointType` is a `complexType` defined in the minimc XML schema.
+  Direction(const pugi::xml_node& pointtype_node) noexcept;
+  /// @brief Constructs a Direction with the given components
+  Direction(const Real& x, const Real& y, const Real& z) noexcept;
+  /// @brief Constructs the Direction with the contents of a Point.
+  Direction(const Point& other) noexcept;
   /// @brief Move constructor. Constructs the Direction with the contents of a
   ///        Point. The given Point is normalized.
   Direction(Point&& other) noexcept;

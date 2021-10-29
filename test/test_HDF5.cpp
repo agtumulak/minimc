@@ -2,15 +2,15 @@
 #include "catch2/catch.hpp"
 
 TEST_CASE("valid HDF5 file passes") {
-  REQUIRE_NOTHROW(HDF5DataSet{"test_HDF5_valid.hdf5"});
+  REQUIRE_NOTHROW(HDF5DataSet<3>{"test_HDF5_valid.hdf5"});
 }
 
 TEST_CASE("invalid HDF5 file fails") {
-  REQUIRE_THROWS(HDF5DataSet{"test_HDF5_invalid.hdf5"});
+  REQUIRE_THROWS(HDF5DataSet<1>{"test_HDF5_invalid.hdf5"});
 }
 
 TEST_CASE("element access using variadic member function works"){
-  HDF5DataSet hdf5_dataset{"test_HDF5_valid.hdf5"};
+  HDF5DataSet<3> hdf5_dataset{"test_HDF5_valid.hdf5"};
   REQUIRE(hdf5_dataset.at(0, 0, 0) == Approx(4.628770e-02));
   REQUIRE(hdf5_dataset.at(0, 0, 1) == Approx(1.761820e-01));
   REQUIRE(hdf5_dataset.at(0, 1, 0) == Approx(9.757560e-03));

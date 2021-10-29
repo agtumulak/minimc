@@ -8,8 +8,11 @@
 
 #include <cstddef>
 #include <list>
-#include <optional>
 #include <mutex>
+#include <optional>
+#include <tuple>
+
+class Bank;
 
 /// @brief Creates and executes a k-eigenvalue calculation
 class KEigenvalue : public Driver {
@@ -19,12 +22,18 @@ public:
   KEigenvalue(const pugi::xml_node& root);
   /// @brief Solve sequential fixed-source calculations using a fission bank
   ///        passed between cycles
-  Estimator Solve() override;
+  /// @todo Fix fission bank sorting. It is not deterministically sampling the
+  ///       fission bank to populate the source bank. Consider using the fact
+  ///       that each Particle has a `secondaries` member. Consider creating a
+  ///       SortableParticle bank derived class with a
+  ///       `SortableParticle::parent_history` member.
+  /// @todo Reimplement implicit fission estimator
+  EstimatorSet Solve() override;
 
 private:
   using Cycle = size_t;
   // Function executed by a worker on a single thread
-  Particle::TransportOutcome StartWorker();
+  std::tuple<Bank, EstimatorSet> StartWorker();
   // Returns the next Particle from source_bank in a thread-safe manner
   std::optional<Particle> NextParticle() noexcept;
   // Allows mutually exclusive access to source_bank

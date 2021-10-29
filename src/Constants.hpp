@@ -24,4 +24,9 @@ constexpr Real on_axis_tolerance = 0.9;
 constexpr Temperature room_temperature = 293.6;
 /// @brief Boltzmann constant in MeV per kelvin
 constexpr Real boltzmann = 8.617333262145e-11;
+/// @brief Neutron mass in convenient units: MeV * (cm / s)^-2
+constexpr Real neutron_mass = 1.045354912280858e-18;
+/// @brief Relative temperature difference below which temperatures are to be
+///        considered equal for cross section evaluation purposes
+constexpr Real relative_temperature_difference_tolerance = 0.01;
 } // namespace constants

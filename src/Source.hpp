@@ -12,6 +12,8 @@
 template <typename T> class Distribution {
 public:
   /// @brief Factory method to create a new Distribution from an XML document
+  /// @returns A `std::unique_ptr` to the constructed Distribution (C++ Core
+  ///          Guidelines R.30)
   /// @param property_node Either a `position`, `direction`, `energy`, or
   ///        `particletype` node
   static std::unique_ptr<const Distribution<T>>

@@ -14,6 +14,7 @@
             <xs:element name="threads" type="xs:positiveInteger"/>
             <xs:element name="chunksize" type="xs:positiveInteger"/>
             <xs:element name="seed" type="xs:positiveInteger" minOccurs="0"/>
+            <xs:element name="tracking" type="TrackingType" minOccurs="0"/>
           </xs:all>
         </xs:complexType>
       </xs:element>
@@ -73,6 +74,18 @@
                 <xs:attribute name="name" type="xs:normalizedString" use="required"/>
               </xs:complexType>
             </xs:element>
+            <xs:element name="planex">
+              <xs:complexType>
+                <xs:attribute name="name" type="xs:normalizedString" use="required"/>
+                <xs:attribute name="x" type="xs:double" use="required"/>
+              </xs:complexType>
+            </xs:element>
+            <xs:element name="cylinderx">
+              <xs:complexType>
+                <xs:attribute name="name" type="xs:normalizedString" use="required"/>
+                <xs:attribute name="r" type="xs:double" use="required"/>
+              </xs:complexType>
+            </xs:element>
           </xs:choice>
         </xs:complexType>
         <xs:unique name="unique-surface-name">
@@ -106,6 +119,7 @@
           <xs:field xpath="@name"/>
         </xs:unique>
       </xs:element>
+      <xs:element name="temperature" type="ScalarField" minOccurs="0"/>
       <xs:element name="problemtype">
         <xs:complexType>
           <xs:choice>
@@ -122,6 +136,7 @@
           </xs:choice>
         </xs:complexType>
       </xs:element>
+      <xs:element name="estimators" type="EstimatorDefinition" minOccurs="0"/>
     </xs:all>
   </xs:complexType>
 </xs:element>

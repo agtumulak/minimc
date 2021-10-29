@@ -51,4 +51,8 @@
     </particletype>
   </fixedsource>
 </problemtype>
+<estimators>
+  <current name="leakage" surface="sphere">
+  </current>
+</estimators>
 </minimc>

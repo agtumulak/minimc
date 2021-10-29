@@ -1,7 +1,10 @@
 #include "ThermalScattering.hpp"
+
 #include "Cell.hpp"
 #include "Constants.hpp"
+#include "Continuous.hpp"
 #include "Particle.hpp"
+#include "ScalarField.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -17,28 +20,44 @@
 ThermalScattering::ThermalScattering(const pugi::xml_node& tsl_node) noexcept
     : beta_cdf{tsl_node.attribute("beta_cdf_file").as_string()},
       alpha_cdf{tsl_node.attribute("alpha_cdf_file").as_string()},
+      majorant{HDF5DataSet<1>{tsl_node.attribute("majorant").as_string()}
+                   .ToContinuousMap()},
+      total{HDF5DataSet<2>{tsl_node.attribute("total").as_string()}
+                .ToContinuousMap()},
       beta_cutoff{tsl_node.attribute("beta_cutoff").as_double()},
       alpha_cutoff{tsl_node.attribute("alpha_cutoff").as_double()},
       min_temperature{tsl_node.attribute("min_temperature").as_double()},
       max_temperature{tsl_node.attribute("max_temperature").as_double()},
-      awr{tsl_node.parent().parent().parent().attribute("awr").as_double()}{}
+      awr{tsl_node.parent().parent().parent().attribute("awr").as_double()} {}
 
-bool ThermalScattering::IsValid(Particle& p) const noexcept {
+bool ThermalScattering::IsValid(const Particle& p) const noexcept {
   const auto E = std::get<ContinuousEnergy>(p.GetEnergy());
   return p.GetType() == Particle::Type::neutron && E < cutoff_energy;
+}
+
+MicroscopicCrossSection
+ThermalScattering::GetMajorant(const Particle& p) const noexcept {
+  return majorant.at(std::get<ContinuousEnergy>(p.GetEnergy()));
+}
+
+MicroscopicCrossSection
+ThermalScattering::GetTotal(const Particle& p) const noexcept {
+  return total.at(
+      p.GetCell().temperature->at(p.GetPosition()),
+      std::get<ContinuousEnergy>(p.GetEnergy()));
 }
 
 void ThermalScattering::Scatter(Particle& p) const noexcept {
   // get incident energy and target temperature
   const auto E = std::get<ContinuousEnergy>(p.GetEnergy());
-  const Temperature T = p.GetCell().temperature;
+  const Temperature T = p.GetCell().temperature->at(p.GetPosition());
   // sample beta then alpha
   const auto beta = SampleBeta(p, E, T);
   const auto alpha = SampleAlpha(p, beta, E, T);
   // convert to outgoing energy and cosine
-  const auto E_p = E + beta * constants::boltzmann * p.GetCell().temperature;
-  const auto mu =
-      (E + E_p - alpha * awr * constants::boltzmann * T) / std::sqrt(E * E_p);
+  const auto E_p = E + beta * constants::boltzmann * T;
+  const auto mu = (E + E_p - alpha * awr * constants::boltzmann * T) /
+                  (2 * std::sqrt(E * E_p));
   p.Scatter(mu, E_p);
 }
 

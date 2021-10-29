@@ -1,15 +1,15 @@
 #pragma once
 
 #include "BasicTypes.hpp"
-#include "Estimator.hpp"
 #include "Point.hpp"
 
-#include <string>
+#include <iosfwd>
 #include <list>
+#include <memory>
 
 class Cell;
+class CSGSurface;
 class Nuclide;
-class World;
 
 /// @brief The primary entity performing random walks in a World.
 /// @details Particles are characterized by their position, direction, energy,
@@ -19,20 +19,21 @@ class World;
 ///       avoid extra computation.
 class Particle {
 public:
-  /// @brief The result of a Transport call
-  struct TransportOutcome {
-    /// @brief Adds the result of another transport result to this result
-    TransportOutcome& operator+=(TransportOutcome&& rhs) noexcept;
-    /// @brief Estimators scored during transport
-    Estimator estimator;
-    /// @brief Secondary particles banked during transport
-    std::list<Particle> banked;
-  };
   /// @brief Affects which cross section data is used during transport, among
   ///        other things
   enum class Type {
     neutron,
     photon,
+  };
+  /// @brief Mutually exclusive events which can occur
+  enum class Event {
+    birth,
+    scatter,
+    capture,
+    fission,
+    surface_cross,
+    leak,
+    virtual_collision,
   };
   /// @brief Helper function to convert from std::string to Type
   static Type ToType(const std::string& name) noexcept;
@@ -41,10 +42,6 @@ public:
       const Point& position, const Direction& direction, const Energy& energy,
       const Type type, RNG::result_type seed,
       const Cell* cell = nullptr) noexcept;
-  /// @brief Moves the Particle through each state until it dies.
-  TransportOutcome Transport(const World& w) noexcept;
-  /// @brief Kill the Particle, stopping the history
-  void Kill() noexcept;
   /// @brief Moves the particle along its current direction a given distance
   void Stream(const Real distance) noexcept;
   /// @brief Scatters the Particle with an outgoing direction and energy.
@@ -54,6 +51,8 @@ public:
   void Scatter(const Real& mu, const Energy& e) noexcept;
   /// @brief Return the current position of the Particle
   const Point& GetPosition() const noexcept;
+  /// @brief Return the current direction of the Particle
+  const Direction& GetDirection() const noexcept;
   /// @brief Sets the direction to a random isotropic direction
   /// @note This should be replaced by a method which accepts scattering cosine
   void SetDirectionIsotropic() noexcept;
@@ -69,13 +68,25 @@ public:
   void SetCell(const Cell& c) noexcept;
   /// @brief Banks secondaries produced during transport using an outgoing
   ///        Direction and outgoing Energy
-  void Bank(const Direction& direction, const Energy& energy) noexcept;
+  void
+  BankSecondaries(const Direction& direction, const Energy& energy) noexcept;
+  /// @brief Transfers secondaries produced by this Particle to the front of
+  ///        a given list.
+  /// @details This is implemented using std::list::splice so this Particle's
+  ///          own list of secondaries becomes empty after the operation.
+  void MoveSecondariesToFrontOf(std::list<Particle>& bank) noexcept;
+  /// @brief Sample a random number uniformly in @f$ [0, 1) @f$
+  /// @details This is provided as a convenience function because more
+  ///          complicated sampling schemes require multiple uniformly
+  ///          distributed random numbers
+  Real Sample() noexcept;
+  /// @brief Sample a Nuclide given that the Particle has collided inside its
+  ///        Cell
+  const Nuclide& SampleNuclide() noexcept;
+  /// @brief Returns true if the Particle should continue to be transported
+  bool IsAlive() const noexcept;
 
 private:
-  // Returns the distance the Particle will travel before colliding
-  Real SampleCollisionDistance() noexcept;
-  // Sample a Nuclide given that the Particle has collided inside its Cell
-  const Nuclide& SampleNuclide() noexcept;
   // Secondaries produced
   std::list<Particle> secondaries;
   // Position may be anywhere in @f$ \mathbb{R}^3 @f$
@@ -90,14 +101,20 @@ private:
 public:
   /// @brief Random number generator (C++ Core Guidelines C.131)
   /// @details This Particle contains its own random number generator. Any
-  ///          Particle initialized with the same member variables and provided
-  ///          with the same World should return the same result after calling
-  ///          Transport();
+  ///          Particle initialized with the same member variables and passed
+  ///          to the same TransportMethod::Transport call should return the
+  ///          same TransportMethod::Outcome.
   RNG rng;
   /// @brief Type of the Particle (C++ Core Guidelines C.131)
   const Type type{Type::neutron};
-
-private:
-  // Flag for determining if this Particle is still alive
+  /// @brief Flag describing the event that occured at the current point in
+  ///        phase space
+  Event event{Event::birth};
+  /// @brief Pointer to most recent surface crossed
+  std::shared_ptr<const CSGSurface> current_surface;
+  /// @brief Flag for determining if this Particle is still alive (C++ Core
+  ///        Guidelines C.131)
   bool alive{true};
+  /// @brief Temporary
+  size_t collisions = 0;
 };

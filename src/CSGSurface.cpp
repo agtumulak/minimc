@@ -32,6 +32,12 @@ CSGSurface::Create(const pugi::xml_node& root, const std::string& name) {
   case CSGSurface::SurfaceType::Sphere:
     surface = std::make_unique<const Sphere>(surface_node);
     break;
+  case CSGSurface::SurfaceType::PlaneX:
+    surface = std::make_unique<const PlaneX>(surface_node);
+    break;
+  case CSGSurface::SurfaceType::CylinderX:
+    surface = std::make_unique<const CylinderX>(surface_node);
+    break;
   }
   return surface;
 }
@@ -49,6 +55,12 @@ CSGSurface::SurfaceType
 CSGSurface::ToSurfaceType(const std::string& surface_name) noexcept {
   if (surface_name == "sphere") {
     return CSGSurface::SurfaceType::Sphere;
+  }
+  else if (surface_name == "planex"){
+    return CSGSurface::SurfaceType::PlaneX;
+  }
+  else if (surface_name == "cylinderx"){
+    return CSGSurface::SurfaceType::CylinderX;
   }
   assert(false); // this should have been caught by the validator
 }
@@ -98,4 +110,62 @@ Real Sphere::Distance(
 bool Sphere::Contains(const Point& p) const noexcept {
   const Point pc{p - center};
   return pc.Dot(pc) < radius * radius;
+}
+
+// PlaneX
+
+//// public
+
+PlaneX::PlaneX(const pugi::xml_node& planex_node) noexcept
+    : CSGSurface{planex_node}, c{planex_node.attribute("x").as_double()} {}
+
+Real PlaneX::Distance(
+    const Point& origin, const Direction& direction) const noexcept {
+  // x component of any vector pointing from origin to surface
+  const auto v_x = c - origin.Dot(Point{1, 0, 0});
+  // x component of current direction
+  const auto d_x = direction.Dot(Point{1, 0, 0});
+  // distance to travel from origin to surface along current direction
+  const auto d = v_x / d_x;
+  return d > 0 ? d : std::numeric_limits<Real>::infinity();
+}
+
+bool PlaneX::Contains(const Point& p) const noexcept {
+  return p.Dot(Point{1, 0, 0}) < c;
+}
+
+// CylinderX
+
+//// public
+
+CylinderX::CylinderX(const pugi::xml_node& cylinderx_node) noexcept
+    : CSGSurface{cylinderx_node},
+      radius{cylinderx_node.attribute("r").as_double()} {}
+
+Real CylinderX::Distance(
+    const Point& origin, const Direction& direction) const noexcept {
+  // axis of the cylinder
+  const auto w = Direction{1, 0, 0};
+  // square norm of origin p
+  const auto pp = origin.Dot(origin);
+  // component of origin p along w
+  const auto pw = origin.Dot(w);
+  // component of direction d along w
+  const auto dw = direction.Dot(w);
+  // component of origin p along direction d
+  const auto pd = origin.Dot(direction);
+  return SolveQuadratic(
+      1 - dw * dw, 2 * (pd - pw * dw), pp - pw * pw - radius * radius);
+}
+
+bool CylinderX::Contains(const Point& p) const noexcept {
+  // axis of the cylinder
+  const auto w = Direction{1, 0, 0};
+  // square norm of p
+  const auto pp = p.Dot(p);
+  // component of position p along w
+  const auto pw = p.Dot(w);
+  // square length of distance from p to axis along projection is strictly less
+  // than square radius of cylinder
+  return std::sqrt(pp - pw * pw) < radius * radius;
 }

@@ -23,6 +23,10 @@ Point operator*(const Real& lhs, const Point& rhs) noexcept {
   return rhs * lhs;
 }
 
+Point operator/(const Point& lhs, const Real& rhs) noexcept {
+  return Point{lhs.x / rhs, lhs.y / rhs, lhs.z / rhs};
+}
+
 //// public
 
 Point::Point() noexcept {}
@@ -80,24 +84,14 @@ Direction Direction::CreateIsotropic(RNG& rng) noexcept {
   return Direction{x, y, z};
 }
 
-Direction::Direction(const pugi::xml_node& pointtype_node) noexcept
-    : Point{pointtype_node} {
-  Normalize();
-}
-
-Direction::Direction(const Real& x, const Real& y, const Real& z) noexcept
-    : Point{x, y, z} {
-  Normalize();
-}
-
-Direction::Direction(
+Direction Direction::CreateAboutDirection(
     const Direction& d, const Real& mu, const Real& phi) noexcept {
   // Determine if d is outside an "hourglass" of directions which we consider
   // "too close" to the x axis. Note edge case where on_axis_tolerance = 1 will
   // still reject d.x = - 1 but on_axis_tolerance should never be set to 1
   // anyways.
   const bool is_off_xaxis = d.x <= constants::on_axis_tolerance &&
-                           d.x > -constants::on_axis_tolerance;
+                            d.x > -constants::on_axis_tolerance;
   // Construct another Point `x` which is not parallel to `d`. This will be a
   // unit vector along x (or y).
   const auto xaxis = is_off_xaxis ? Point{1, 0, 0} : Point{0, 1, 0};
@@ -108,14 +102,24 @@ Direction::Direction(
   const Direction v{d.Cross(u)};
   // `u` and `v` span a plane of points which are orthogonal to `d`. Use the
   // three vectors to construct the new direction
-  const auto u_comp = std::cos(phi) * u;
-  const auto v_comp = std::sin(phi) * v;
+  const auto u_comp = std::sqrt(1 - mu * mu) * std::cos(phi) * u;
+  const auto v_comp = std::sqrt(1 - mu * mu) * std::sin(phi) * v;
   const auto d_comp = mu * d;
-  const Direction omega{u_comp + v_comp + d_comp};
-  x = omega.x;
-  y = omega.y;
-  z = omega.z;
-  // No need to Normalize()
+  return Direction{u_comp + v_comp + d_comp};
+}
+
+Direction::Direction(const pugi::xml_node& pointtype_node) noexcept
+    : Point{pointtype_node} {
+  Normalize();
+}
+
+Direction::Direction(const Real& x, const Real& y, const Real& z) noexcept
+    : Point{x, y, z} {
+  Normalize();
+}
+
+Direction::Direction(const Point& other) noexcept : Point{other} {
+  Normalize();
 }
 
 Direction::Direction(Point&& other) noexcept : Point{std::move(other)} {
