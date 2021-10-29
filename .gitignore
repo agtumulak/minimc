@@ -1,3 +1,6 @@
+# macOS
+*.DS_Store
+
 # clang
 .cache/
 .clang-format
