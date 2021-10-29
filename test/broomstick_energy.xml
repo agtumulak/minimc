@@ -1,0 +1,78 @@
+<minimc
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="minimc.xsd">
+<general>
+  <particles>neutron</particles>
+  <histories>100000000</histories>
+  <threads>8</threads>
+  <chunksize>100000</chunksize>
+  <tracking>surface</tracking>
+</general>
+<nuclides>
+  <continuous>
+    <nuclide name="hydrogen in water" awr="0.99916733">
+      <neutron>
+        <total file="/Users/atumulak/Developer/minimc/data/mcnp_endfb71/n-H1_0-total.hdf5" temperature="293.6"/>
+        <capture file="/Users/atumulak/Developer/minimc/data/mcnp_endfb71/n-H1_0-gamma.hdf5" temperature="293.6"/>
+        <scatter>
+          <xs file="/Users/atumulak/Developer/minimc/data/mcnp_endfb71/n-H1_0-elastic.hdf5" temperature="293.6"/>
+        </scatter>
+      </neutron>
+    </nuclide>
+  </continuous>
+</nuclides>
+<materials>
+  <material name="hydrogen in water" aden="0.066854">
+    <nuclide name="hydrogen in water" afrac="1"/>
+  </material>
+</materials>
+<surfaces>
+  <planex name="left-plane" x="-1e12"/>
+  <planex name="right-plane" x="1e12"/>
+  <cylinderx name="tube" r="1e-6"/>
+</surfaces>
+<cells>
+  <cell name="broomstick" material="hydrogen in water">
+    <surface name="left-plane" sense="+1"/>
+    <surface name="right-plane" sense="-1"/>
+    <surface name="tube" sense="-1"/>
+  </cell>
+  <void>
+    <surface name="left-plane" sense="-1"/>
+  </void>
+  <void>
+    <surface name="left-plane" sense="+1"/>
+    <surface name="right-plane" sense="-1"/>
+    <surface name="tube" sense="+1"/>
+  </void>
+  <void>
+    <surface name="right-plane" sense="+1"/>
+  </void>
+</cells>
+<problemtype>
+  <fixedsource>
+    <position>
+      <constant x="0" y="0" z="0"/>
+    </position>
+    <direction>
+      <constant x="1" y="0" z="0"/>
+    </direction>
+    <energy>
+      <constant energy="0.02530049e-6"/>
+    </energy>
+    <particletype>
+      <constant type="neutron"/>
+    </particletype>
+  </fixedsource>
+</problemtype>
+<temperature>
+  <constant c="293.6"/>
+</temperature>
+<estimators>
+  <current name="leakage" surface="tube">
+    <energy>
+      <logspace min="-25" max="-14" bins="201" base="2.71828183"/>
+    </energy>
+  </current>
+</estimators>
+</minimc>
