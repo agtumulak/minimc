@@ -31,6 +31,7 @@ Bins::Create(const pugi::xml_node& bins_node) noexcept {
   }
   else {
     assert(false); // this should have been caught by the validator
+    return {};
   }
 }
 

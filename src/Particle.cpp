@@ -25,6 +25,7 @@ Particle::Type Particle::ToType(const std::string& name) noexcept {
   }
   else {
     assert(false); // this should have been caught by the validator
+    return {};
   };
 }
 

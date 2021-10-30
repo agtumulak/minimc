@@ -28,6 +28,7 @@ Driver::Create(const std::filesystem::path& xml_filepath) {
   }
   else {
     assert(false); // this should have been caught by the validator
+    return {};
   }
 }
 

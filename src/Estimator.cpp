@@ -35,6 +35,7 @@ std::unique_ptr<Estimator> Estimator::Create(
   }
   else {
     assert(false); // this should have been caught by the validator
+    return {};
   }
 }
 
