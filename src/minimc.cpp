@@ -2,6 +2,7 @@
 #include "Estimator.hpp"
 
 #include <iostream>
+#include <memory>
 #include <stdexcept>
 
 int main(int argc, char* argv[]) {

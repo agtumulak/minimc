@@ -2,11 +2,13 @@
 
 #include "BasicTypes.hpp"
 #include "Interaction.hpp"
-#include "pugixml.hpp"
 
 #include <iosfwd>
 #include <string>
 
+namespace pugi {
+class xml_node;
+}
 class Particle;
 
 /// @brief Aggregates cross sections for all reactions and related nuclear data

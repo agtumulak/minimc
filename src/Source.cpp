@@ -1,10 +1,13 @@
 #include "Source.hpp"
 
 #include "BasicTypes.hpp"
+#include "pugixml.hpp"
 
 #include <cassert>
+#include <iosfwd>
 #include <string>
 #include <type_traits>
+#include <variant>
 
 // Template class specialization instantiations
 
@@ -80,6 +83,7 @@ Distribution<T>::Create(const pugi::xml_node& property_node) {
     static_assert(is_distribution, "Template parameter not supported");
   }
   assert(false);
+  return {};
 }
 
 template <typename T> Distribution<T>::~Distribution() noexcept {};

@@ -1,11 +1,13 @@
 #include "Material.hpp"
 
 #include "Nuclide.hpp"
+#include "pugixml.hpp"
 
 #include <algorithm>
 #include <cassert>
 #include <numeric>
 #include <stdexcept>
+#include <type_traits>
 
 // Cell
 

@@ -1,7 +1,10 @@
 #pragma once
 
 #include "BasicTypes.hpp"
-#include "pugixml.hpp"
+
+namespace pugi {
+class xml_node;
+}
 
 /// @brief Point in @f$ \mathbb{R}^{3} @f$
 class Point {

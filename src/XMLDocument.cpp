@@ -6,6 +6,7 @@
 #include "xercesc/util/PlatformUtils.hpp"
 #include "xercesc/util/XMLString.hpp"
 
+#include <iosfwd>
 #include <memory>
 #include <stdexcept>
 #include <string>

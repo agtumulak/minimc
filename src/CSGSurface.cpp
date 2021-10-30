@@ -1,5 +1,7 @@
 #include "CSGSurface.hpp"
 
+#include "pugixml.hpp"
+
 #include <cassert>
 #include <cmath>
 #include <limits>

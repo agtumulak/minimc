@@ -2,14 +2,17 @@
 
 #include "BasicTypes.hpp"
 #include "Point.hpp"
-#include "pugixml.hpp"
 
+#include <iosfwd>
 #include <map>
 #include <memory>
 #include <string>
 #include <tuple>
 #include <vector>
 
+namespace pugi {
+class xml_node;
+}
 class CSGSurface;
 class Material;
 class ScalarField;

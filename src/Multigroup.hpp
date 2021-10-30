@@ -3,12 +3,14 @@
 #include "BasicTypes.hpp"
 #include "Interaction.hpp"
 #include "Reaction.hpp"
-#include "pugixml.hpp"
 
 #include <map>
 #include <optional>
 #include <vector>
 
+namespace pugi {
+class xml_node;
+}
 class Particle;
 
 /// @brief Contains cross sections which are indexed by discrete energy groups

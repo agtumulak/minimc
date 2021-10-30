@@ -1,8 +1,10 @@
 #include "ScalarField.hpp"
 
 #include "Point.hpp"
+#include "pugixml.hpp"
 
 #include <cassert>
+#include <iosfwd>
 #include <string>
 
 // ScalarField

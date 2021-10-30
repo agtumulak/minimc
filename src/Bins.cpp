@@ -1,5 +1,7 @@
 #include "Bins.hpp"
 
+#include "pugixml.hpp"
+
 #include <cassert>
 #include <cmath>
 #include <sstream>

@@ -3,11 +3,13 @@
 #include "CSGSurface.hpp"
 #include "Material.hpp"
 #include "ScalarField.hpp"
+#include "pugixml.hpp"
 
 #include <algorithm>
 #include <cassert>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 
 // Cell
 

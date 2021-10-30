@@ -4,9 +4,11 @@
 #include "KEigenvalue.hpp"
 #include "TransportMethod.hpp"
 #include "XMLDocument.hpp"
+#include "pugixml.hpp"
 
 #include <cassert>
 #include <iosfwd>
+#include <string>
 
 // Driver
 

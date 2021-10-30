@@ -2,7 +2,10 @@
 
 #include "BasicTypes.hpp"
 #include "ContinuousMap.hpp"
-#include "pugixml.hpp"
+
+namespace pugi {
+class xml_node;
+}
 
 /// @brief Encapsulates all cross section data as well as associated metadata
 struct ContinuousEvaluation {

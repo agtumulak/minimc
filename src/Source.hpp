@@ -3,9 +3,13 @@
 #include "BasicTypes.hpp"
 #include "Particle.hpp"
 #include "Point.hpp"
-#include "pugixml.hpp"
 
 #include <memory>
+#include <variant>
+
+namespace pugi {
+class xml_node;
+}
 
 /// @brief Template for distributions which can be sampled with an RNG
 /// @tparam T Returned type of the distribution

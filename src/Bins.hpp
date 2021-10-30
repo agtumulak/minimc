@@ -1,11 +1,14 @@
 #pragma once
 
 #include "BasicTypes.hpp"
-#include "pugixml.hpp"
 
 #include <cstddef>
 #include <iosfwd>
 #include <memory>
+
+namespace pugi {
+class xml_node;
+}
 
 /// @brief Partitions @f$ \mathbb{R} @f$ according to user-specified boundaries
 /// @details A Bins defines boundaries @f$ a_{0}, \ldots, a_{N-1} @f$ which

@@ -3,11 +3,13 @@
 #include "BasicTypes.hpp"
 #include "ContinuousMap.hpp"
 #include "HDF5DataSet.hpp"
-#include "pugixml.hpp"
 
 #include <vector>
 #include <cstddef>
 
+namespace pugi {
+class xml_node;
+}
 class Particle;
 
 /// @brief Models temperature-dependent thermal scattering data S(a,b,T)

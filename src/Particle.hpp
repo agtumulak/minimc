@@ -3,6 +3,7 @@
 #include "BasicTypes.hpp"
 #include "Point.hpp"
 
+#include <cstddef>
 #include <iosfwd>
 #include <list>
 #include <memory>

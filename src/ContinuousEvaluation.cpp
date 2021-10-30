@@ -2,6 +2,7 @@
 
 #include "Constants.hpp"
 #include "HDF5DataSet.hpp"
+#include "pugixml.hpp"
 
 // ContinuousEvaluation
 

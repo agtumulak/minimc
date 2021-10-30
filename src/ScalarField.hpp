@@ -5,6 +5,10 @@
 
 #include <memory>
 
+namespace pugi {
+class xml_node;
+}
+
 /// @brief Abstract interface for all scalar fields
 class ScalarField {
 public:

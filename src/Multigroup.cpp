@@ -2,6 +2,7 @@
 
 #include "Particle.hpp"
 #include "Point.hpp"
+#include "pugixml.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -12,6 +13,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <variant>
 
 // Multigroup

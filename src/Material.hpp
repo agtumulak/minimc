@@ -3,6 +3,7 @@
 #include "BasicTypes.hpp"
 #include "pugixml.hpp"
 
+#include <iosfwd>
 #include <map>
 #include <memory>
 #include <string>

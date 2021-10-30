@@ -3,9 +3,11 @@
 #include "Bank.hpp"
 #include "Source.hpp"
 #include "TransportMethod.hpp"
+#include "pugixml.hpp"
 
 #include <future>
 #include <iostream>
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>

@@ -6,9 +6,11 @@
 #include "Nuclide.hpp"
 
 #include <cassert>
+#include <map>
 #include <random>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 
 // Particle
 

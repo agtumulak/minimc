@@ -2,11 +2,14 @@
 
 #include "Cell.hpp"
 #include "Point.hpp"
-#include "pugixml.hpp"
 
 #include <memory>
+#include <iosfwd>
 #include <vector>
 
+namespace pugi {
+class xml_node;
+}
 class CSGSurface;
 class Material;
 class Nuclide;
