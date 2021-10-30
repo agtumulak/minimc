@@ -222,21 +222,22 @@
   </xs:all>
 </xs:complexType>
 
+<xs:complexType name="BinTypeBase">
+  <xs:attribute name="min" type="xs:double" use="required"/>
+  <xs:attribute name="max" type="xs:double" use="required"/>
+  <xs:attribute name="bins" type="xs:positiveInteger" use="required"/>
+</xs:comlpexType>
+
 <xs:complexType name="BinType">
   <xs:choice>
-    <xs:element name="linspace">
-      <xs:complexType>
-        <xs:attribute name="min" type="xs:double" use="required"/>
-        <xs:attribute name="max" type="xs:double" use="required"/>
-        <xs:attribute name="bins" type="xs:positiveInteger" use="required"/>
-      </xs:complexType>
-    </xs:element>
+    <xs:element name="linspace" type="BinTypeBase"/>
     <xs:element name="logspace">
       <xs:complexType>
-        <xs:attribute name="base" type="xs:double" use="optional"/>
-        <xs:attribute name="min" type="xs:double" use="required"/>
-        <xs:attribute name="max" type="xs:double" use="required"/>
-        <xs:attribute name="bins" type="xs:positiveInteger" use="required"/>
+        <xs:complexContent>
+          <xs:extension base="BinTypeBase">
+            <xs:attribute name="base" type="xs:double" use="optional"/>
+          </xs:extension>
+        </xs:complexContent>
       </xs:complexType>
     </xs:element>
   </xs:choice>

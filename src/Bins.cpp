@@ -17,8 +17,19 @@ std::ostream& operator<<(std::ostream& os, const Bins& b) noexcept {
 
 //// public
 
-std::unique_ptr<const Bins>
-Bins::Create(const pugi::xml_node& bins_node) noexcept {
+std::unique_ptr<const Bins> Bins::Create(const pugi::xml_node& bins_node) {
+  // check that min < max
+  if (!(bins_node.attribute("min").as_double() <
+        bins_node.attribute("max").as_double())) {
+    throw std::runtime_error(
+        bins_node.path() + ": condition not satisfied: min < max");
+  }
+  // check that bins > 1
+  if (!(bins_node.attribute("bins").as_ullong() > 1)) {
+    throw std::runtime_error(
+        bins_node.path() + ": condition not satisfied: bins > 1");
+  }
+  // construct concrete type
   const std::string bins_type = bins_node.name();
   if (bins_type.empty()) {
     return std::make_unique<const NoBins>();
