@@ -49,7 +49,7 @@ ExternalProject_Add(
   DOWNLOAD_DIR ${XERCES_BINARY_DIR}
   BINARY_DIR ${XERCES_BINARY_DIR}
   INSTALL_DIR ${XERCES_INSTALL_DIR}
-  URL https://apache.claz.org//xerces/c/3/sources/xerces-c-3.2.3.tar.xz
+  URL https://dlcdn.apache.org//xerces/c/3/sources/xerces-c-3.2.3.tar.xz
   URL_HASH SHA256=12fc99a9fc1d1a79bd0e927b8b5637a576d6656f45b0d5e70ee3694d379cc149
   CMAKE_ARGS
     -DBUILD_SHARED_LIBS:BOOL=OFF
