@@ -46,6 +46,21 @@ class IsotropicDistribution : public Distribution<Direction>{
   Direction Sample(RNG& rng) const noexcept override;
 };
 
+/// @brief Returns an isotropic flux with respect to a given Direction
+/// @details An isotropic flux is distributed as @f$ p_{\mu}(\mu) = 2\mu @f$
+///          in @f$ [0, 1) @f$ where @f$ \mu @f$ is the cosine of the angle
+///          between the sampled Direction and the reference Direction.
+class IsotropicFlux : public Distribution<Direction> {
+public:
+  /// @brief Constructs the distribution with a reference Direction
+  IsotropicFlux(const pugi::xml_node& isotropic_flux_node) noexcept;
+  /// @brief Returns an isotropic flux
+  Direction Sample(RNG& rng) const noexcept override;
+
+private:
+  const Direction reference;
+};
+
 /// @brief Models a random source of Particle objects
 class Source {
 public:

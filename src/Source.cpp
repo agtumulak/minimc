@@ -1,10 +1,13 @@
 #include "Source.hpp"
 
 #include "BasicTypes.hpp"
+#include "Constants.hpp"
 #include "pugixml.hpp"
 
 #include <cassert>
+#include <cmath>
 #include <iosfwd>
+#include <random>
 #include <string>
 #include <type_traits>
 #include <variant>
@@ -41,6 +44,9 @@ Distribution<T>::Create(const pugi::xml_node& property_node) {
     }
     else if (distribution_name == "isotropic") {
       return std::make_unique<IsotropicDistribution>();
+    }
+    else if (distribution_name == "isotropic-flux"){
+      return std::make_unique<IsotropicFlux>(distribution_node);
     }
     else {
       assert(false);
@@ -107,6 +113,21 @@ T ConstantDistribution<T>::Sample(RNG&) const noexcept {
 
 Direction IsotropicDistribution::Sample(RNG& rng) const noexcept {
   return Direction::CreateIsotropic(rng);
+}
+
+
+// IsotropicFlux
+
+//// public
+
+IsotropicFlux::IsotropicFlux(const pugi::xml_node& isotropic_flux_node) noexcept
+    : reference{isotropic_flux_node} {}
+
+Direction IsotropicFlux::Sample(RNG& rng) const noexcept {
+  // sample a value of mu in [0, 1) with probability p(mu) = 2 * mu
+  const Real mu = std::sqrt(std::uniform_real_distribution{}(rng));
+  const Real phi = std::uniform_real_distribution{0., 2 * constants::pi}(rng);
+  return Direction::CreateAboutDirection(reference, mu, phi);
 }
 
 // Source

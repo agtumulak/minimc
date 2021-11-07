@@ -190,6 +190,7 @@
   <xs:choice>
     <xs:element name="constant" type="PointType"/>
     <xs:element name="isotropic"/>
+    <xs:element name="isotropic-flux" type="PointType"/>
   </xs:choice>
 </xs:complexType>
 
