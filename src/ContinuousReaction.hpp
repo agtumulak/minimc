@@ -4,11 +4,13 @@
 #include "ContinuousEvaluation.hpp"
 #include "ContinuousMap.hpp"
 #include "ThermalScattering.hpp"
-#include "pugixml.hpp"
 
 #include <memory>
 #include <optional>
 
+namespace pugi {
+class xml_node;
+}
 class Particle;
 
 /// @brief Abstract interface for reactions which update the state of a

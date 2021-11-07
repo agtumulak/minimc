@@ -3,13 +3,14 @@
 #include "Bins.hpp"
 #include "Particle.hpp"
 #include "World.hpp"
+#include "pugixml.hpp"
 
 #include <algorithm>
 #include <cassert>
 #include <functional>
 #include <ostream>
-#include <numeric>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 #include <variant>
 
@@ -34,6 +35,7 @@ std::unique_ptr<Estimator> Estimator::Create(
   }
   else {
     assert(false); // this should have been caught by the validator
+    return {};
   }
 }
 

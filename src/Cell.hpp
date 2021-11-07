@@ -2,21 +2,23 @@
 
 #include "BasicTypes.hpp"
 #include "Point.hpp"
-#include "pugixml.hpp"
 
+#include <iosfwd>
 #include <map>
 #include <memory>
 #include <string>
 #include <tuple>
 #include <vector>
 
+namespace pugi {
+class xml_node;
+}
 class CSGSurface;
 class Material;
 class ScalarField;
 
 /// @brief A subset of @f$ \mathbb{R}^{3} @f$ defined by constructive solid
 ///        geometry (CSG) surfaces
-/// @todo Add support for other temperature ScalarField types
 class Cell {
 private:
   // A polymorphic vector of CSGSurface objects. Multiple Cell objects can

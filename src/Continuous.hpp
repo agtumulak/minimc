@@ -4,11 +4,13 @@
 #include "ContinuousEvaluation.hpp"
 #include "ContinuousReaction.hpp"
 #include "Interaction.hpp"
-#include "pugixml.hpp"
 
 #include <memory>
 #include <vector>
 
+namespace pugi {
+class xml_node;
+}
 class Particle;
 
 /// @brief Contains cross sections which are indexed by continuous energy values

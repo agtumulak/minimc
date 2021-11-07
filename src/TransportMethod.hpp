@@ -1,10 +1,12 @@
 #pragma once
 
 #include "Bank.hpp"
-#include "pugixml.hpp"
 
 #include <memory>
 
+namespace pugi {
+class xml_node;
+}
 class Particle;
 class EstimatorSet;
 class World;

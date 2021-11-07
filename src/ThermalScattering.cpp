@@ -2,15 +2,18 @@
 
 #include "Cell.hpp"
 #include "Constants.hpp"
-#include "Continuous.hpp"
 #include "Particle.hpp"
 #include "ScalarField.hpp"
+#include "pugixml.hpp"
 
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <cstdint>
 #include <iterator>
+#include <memory>
 #include <random>
+#include <type_traits>
 #include <variant>
 
 // ThermalScattering

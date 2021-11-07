@@ -2,10 +2,13 @@
 
 #include "BasicTypes.hpp"
 #include "Particle.hpp"
-#include "pugixml.hpp"
 
 #include <map>
 #include <memory>
+
+namespace pugi {
+class xml_node;
+}
 
 /// @brief Models the interaction between a Particle and a Nuclide
 /// @details The polymorphism here shall be where multigroup and continuous

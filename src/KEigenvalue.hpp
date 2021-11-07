@@ -4,7 +4,6 @@
 #include "Driver.hpp"
 #include "Estimator.hpp"
 #include "Particle.hpp"
-#include "pugixml.hpp"
 
 #include <cstddef>
 #include <list>
@@ -12,6 +11,9 @@
 #include <optional>
 #include <tuple>
 
+namespace pugi {
+class xml_node;
+}
 class Bank;
 
 /// @brief Creates and executes a k-eigenvalue calculation

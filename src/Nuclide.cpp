@@ -1,6 +1,7 @@
 #include "Nuclide.hpp"
 
 #include "Particle.hpp"
+#include "pugixml.hpp"
 
 #include <map>
 

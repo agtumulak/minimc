@@ -1,5 +1,7 @@
 #include "CSGSurface.hpp"
 
+#include "pugixml.hpp"
+
 #include <cassert>
 #include <cmath>
 #include <limits>
@@ -63,6 +65,7 @@ CSGSurface::ToSurfaceType(const std::string& surface_name) noexcept {
     return CSGSurface::SurfaceType::CylinderX;
   }
   assert(false); // this should have been caught by the validator
+  return {};
 }
 
 Real CSGSurface::SolveQuadratic(Real a, Real b, Real c) noexcept {

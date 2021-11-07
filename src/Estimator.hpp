@@ -2,7 +2,6 @@
 
 #include "BasicTypes.hpp"
 #include "Point.hpp"
-#include "pugixml.hpp"
 
 #include <array>
 #include <cstddef>
@@ -11,8 +10,12 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <string>
 #include <vector>
 
+namespace pugi {
+class xml_node;
+}
 class Bins;
 class World;
 class CSGSurface;

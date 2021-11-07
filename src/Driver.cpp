@@ -4,9 +4,11 @@
 #include "KEigenvalue.hpp"
 #include "TransportMethod.hpp"
 #include "XMLDocument.hpp"
+#include "pugixml.hpp"
 
 #include <cassert>
 #include <iosfwd>
+#include <string>
 
 // Driver
 
@@ -26,6 +28,7 @@ Driver::Create(const std::filesystem::path& xml_filepath) {
   }
   else {
     assert(false); // this should have been caught by the validator
+    return {};
   }
 }
 

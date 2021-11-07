@@ -1,15 +1,17 @@
 #include "World.hpp"
 
-#include "Constants.hpp"
 #include "CSGSurface.hpp"
+#include "Constants.hpp"
 #include "Material.hpp"
 #include "Nuclide.hpp"
 #include "ScalarField.hpp"
+#include "pugixml.hpp"
 
 #include <algorithm>
 #include <numeric>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 
 // World
 

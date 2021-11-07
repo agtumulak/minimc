@@ -2,12 +2,13 @@
 
 #include "Particle.hpp"
 #include "TransportMethod.hpp"
+#include "pugixml.hpp"
 
 #include <cstddef>
 #include <future>
 #include <iostream>
 #include <list>
-#include <numeric>
+#include <memory>
 #include <string>
 #include <vector>
 

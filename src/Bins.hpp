@@ -1,11 +1,14 @@
 #pragma once
 
 #include "BasicTypes.hpp"
-#include "pugixml.hpp"
 
 #include <cstddef>
 #include <iosfwd>
 #include <memory>
+
+namespace pugi {
+class xml_node;
+}
 
 /// @brief Partitions @f$ \mathbb{R} @f$ according to user-specified boundaries
 /// @details A Bins defines boundaries @f$ a_{0}, \ldots, a_{N-1} @f$ which
@@ -18,10 +21,9 @@ class Bins {
   ///        idiom
   friend std::ostream& operator<<(std::ostream& os, const Bins& b) noexcept;
 public:
-  /// @brief Factory method to create a new Bins from a bins node of an XML
-  ///        document
-  static std::unique_ptr<const Bins>
-  Create(const pugi::xml_node& bins_node) noexcept;
+  /// @brief Factory method to create a new Bins from a BinTypeBase node of an
+  ///        XML document
+  static std::unique_ptr<const Bins> Create(const pugi::xml_node& bins_node);
   /// @brief Virtual destructor (C++ Core Guidelines C.127)
   virtual ~Bins() noexcept;
   /// @brief Abstract interface for getting then number of bins
@@ -51,8 +53,6 @@ private:
 };
 
 /// @brief A Bin with equally-spaced bin boundaries
-/// @todo Handle case where `min` > `max`
-/// @todo Handle case where n_bins == 1
 class LinspaceBins : public Bins {
 public:
   /// @brief Constructs a LinspaceBins from a `linspace` node of an XML

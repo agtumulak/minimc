@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2021-11-06
+- Begin using proper meaning of MAJOR, MINIOR, and PATCH numbers in semantic
+  versioning
+- Add isotropic flux source direction
+- Fixed bug in Bins error parsing
+
 ## [0.0.4] - 2021-10-21
 - Implemented free gas scattering
 - Implemented global temperature specification
@@ -42,3 +48,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.0.2]: https://github.com/agtumulak/minimc/releases/tag/v0.0.2
 [0.0.3]: https://github.com/agtumulak/minimc/releases/tag/v0.0.3
 [0.0.4]: https://github.com/agtumulak/minimc/releases/tag/v0.0.4
+[0.1.0]: https://github.com/agtumulak/minimc/releases/tag/v0.1.0

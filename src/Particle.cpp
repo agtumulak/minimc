@@ -6,9 +6,11 @@
 #include "Nuclide.hpp"
 
 #include <cassert>
+#include <map>
 #include <random>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 
 // Particle
 
@@ -23,6 +25,7 @@ Particle::Type Particle::ToType(const std::string& name) noexcept {
   }
   else {
     assert(false); // this should have been caught by the validator
+    return {};
   };
 }
 

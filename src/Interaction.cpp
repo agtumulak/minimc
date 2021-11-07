@@ -2,6 +2,7 @@
 
 #include "Continuous.hpp"
 #include "Multigroup.hpp"
+#include "pugixml.hpp"
 
 #include <cassert>
 #include <sstream>

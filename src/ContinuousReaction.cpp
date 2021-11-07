@@ -7,12 +7,14 @@
 #include "Point.hpp"
 #include "Reaction.hpp"
 #include "ScalarField.hpp"
+#include "pugixml.hpp"
 
 #include <cmath>
 #include <cstddef>
 #include <random>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <variant>
 
 // ContinuousReaction

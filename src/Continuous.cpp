@@ -5,12 +5,14 @@
 #include "ContinuousReaction.hpp"
 #include "Particle.hpp"
 #include "ScalarField.hpp"
+#include "pugixml.hpp"
 
 #include <algorithm>
 #include <iosfwd>
 #include <numeric>
 #include <random>
 #include <string>
+#include <type_traits>
 #include <variant>
 
 // Continuous

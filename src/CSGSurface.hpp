@@ -2,10 +2,14 @@
 
 #include "BasicTypes.hpp"
 #include "Point.hpp"
-#include "pugixml.hpp"
 
+#include <iosfwd>
 #include <memory>
 #include <string>
+
+namespace pugi {
+class xml_node;
+}
 
 /// @brief A surface to be used in constructive solid geometry
 class CSGSurface {

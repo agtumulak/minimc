@@ -3,10 +3,13 @@
 #include "Driver.hpp"
 #include "Estimator.hpp"
 #include "Source.hpp"
-#include "pugixml.hpp"
 
 #include <atomic>
 #include <cstddef>
+
+namespace pugi {
+class xml_node;
+}
 
 /// @brief Creates and executes a fixed-source calculation
 class FixedSource : public Driver {

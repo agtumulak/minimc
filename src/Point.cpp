@@ -1,9 +1,11 @@
 #include "Point.hpp"
 
 #include "Constants.hpp"
+#include "pugixml.hpp"
 
 #include <cmath>
 #include <random>
+#include <type_traits>
 
 // Point
 

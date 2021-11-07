@@ -3,12 +3,14 @@
 #include "BasicTypes.hpp"
 #include "Estimator.hpp"
 #include "World.hpp"
-#include "pugixml.hpp"
 
 #include <cstddef>
 #include <filesystem>
 #include <memory>
 
+namespace pugi {
+class xml_node;
+}
 class TransportMethod;
 
 /// @brief A Driver owns all the data needed to perform radiation transport

@@ -7,12 +7,14 @@
 #include "Nuclide.hpp"
 #include "Particle.hpp"
 #include "World.hpp"
+#include "pugixml.hpp"
 
 #include <cassert>
 #include <iosfwd>
 #include <random>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 
 // TransportMethod
 
