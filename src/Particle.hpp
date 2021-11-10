@@ -116,6 +116,4 @@ public:
   /// @brief Flag for determining if this Particle is still alive (C++ Core
   ///        Guidelines C.131)
   bool alive{true};
-  /// @brief Temporary
-  size_t collisions = 0;
 };
