@@ -113,7 +113,4 @@ public:
   Event event{Event::birth};
   /// @brief Pointer to most recent surface crossed
   std::shared_ptr<const CSGSurface> current_surface;
-  /// @brief Flag for determining if this Particle is still alive (C++ Core
-  ///        Guidelines C.131)
-  bool alive{true};
 };
