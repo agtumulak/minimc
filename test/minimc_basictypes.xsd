@@ -15,18 +15,18 @@
   </xs:restriction>
 </xs:simpleType>
 
-<xs:simpleType name="ParticleType">
+<xs:simpleType name="Particle">
   <xs:restriction base="xs:string">
     <xs:enumeration value="neutron"/>
     <xs:enumeration value="photon"/>
   </xs:restriction>
 </xs:simpleType>
 
-<xs:simpleType name="ParticleTypeList">
-  <xs:list itemType="ParticleType"/>
+<xs:simpleType name="ParticleList">
+  <xs:list itemType="Particle"/>
 </xs:simpleType>
 
-<xs:simpleType name="ParticleTypeEntries">
+<xs:simpleType name="ParticleEntries">
   <xs:list itemType="NonNegativeDouble"/>
 </xs:simpleType>
 
@@ -203,11 +203,11 @@
   </xs:choice>
 </xs:complexType>
 
-<xs:complexType name="ParticleTypeDistributionType">
+<xs:complexType name="ParticleDistributionType">
   <xs:choice>
     <xs:element name="constant">
       <xs:complexType>
-        <xs:attribute name="type" type="ParticleType"/>
+        <xs:attribute name="type" type="Particle"/>
       </xs:complexType>
     </xs:element>
   </xs:choice>
@@ -218,7 +218,7 @@
     <xs:element name="position" type="PointDistributionType"/>
     <xs:element name="direction" type="DirectionDistribtionType"/>
     <xs:element name="energy" type="EnergyDistributionType"/>
-    <xs:element name="particletype" type="ParticleTypeDistributionType"/>
+    <xs:element name="particle" type="ParticleDistributionType"/>
   </xs:all>
 </xs:complexType>
 
