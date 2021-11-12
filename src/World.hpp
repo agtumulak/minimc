@@ -19,6 +19,11 @@ class ScalarField;
 /// @details Manages the construction of all Surface, Nuclide, Material, and
 ///          Cell objects. Access to shared members is given by World when
 ///          necessary.
+/// @todo Consider using the
+///       <a href="https://en.wikipedia.org/wiki/Immediately_invoked_function_expression">
+///       Immediately Invoked Function Expression
+///       </a>
+///       (IIFE) idiom for construction of const members
 class World {
 public:
   /// @brief Constructs a World from an XML document
