@@ -30,7 +30,7 @@ Distribution<T>::Create(const pugi::xml_node& property_node) {
   const auto& distribution_node = property_node.first_child();
   const std::string distribution_name = distribution_node.name();
   // compile-time type checks wow this is truly the future
-  if constexpr (std::is_same<T, Point>::value) {
+  if constexpr (std::is_same_v<T, Point>) {
     if (distribution_name == "constant") {
       return std::make_unique<ConstantDistribution<T>>(T{distribution_node});
     }
@@ -38,7 +38,7 @@ Distribution<T>::Create(const pugi::xml_node& property_node) {
       assert(false);
     }
   }
-  else if constexpr (std::is_same<T, Direction>::value) {
+  else if constexpr (std::is_same_v<T, Direction>) {
     if (distribution_name == "constant") {
       return std::make_unique<ConstantDistribution<T>>(T{distribution_node});
     }
@@ -52,7 +52,7 @@ Distribution<T>::Create(const pugi::xml_node& property_node) {
       assert(false);
     }
   }
-  else if constexpr (std::is_same<T, Energy>::value) {
+  else if constexpr (std::is_same_v<T, Energy>) {
     if (distribution_name == "constant") {
       const std::string energy_type = property_node.root()
                                           .child("minimc")
@@ -74,7 +74,7 @@ Distribution<T>::Create(const pugi::xml_node& property_node) {
       }
     }
   }
-  else if constexpr (std::is_same<T, Particle::Type>::value) {
+  else if constexpr (std::is_same_v<T, Particle>) {
     if (distribution_name == "constant") {
       const auto particle_type =
           Particle::ToType(distribution_node.attribute("type").as_string());
@@ -82,10 +82,9 @@ Distribution<T>::Create(const pugi::xml_node& property_node) {
     }
   }
   else {
-    constexpr bool is_distribution = std::is_same<T, Point>::value ||
-                                     std::is_same<T, Direction>::value ||
-                                     std::is_same<T, Energy>::value ||
-                                     std::is_same<T, Particle::Type>::value;
+    constexpr bool is_distribution =
+        std::is_same_v<T, Point> || std::is_same_v<T, Direction> ||
+        std::is_same_v<T, Energy> || std::is_same_v<T, Particle>;
     static_assert(is_distribution, "Template parameter not supported");
   }
   assert(false);
