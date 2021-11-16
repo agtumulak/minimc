@@ -77,16 +77,25 @@ bool Point::operator==(const Point& rhs) const noexcept {
 
 //// public
 
-Direction Direction::CreateIsotropic(RNG& rng) noexcept {
-  Real x = std::uniform_real_distribution{-1., +1.}(rng);
-  const Real sin_theta = std::sqrt(1 - x * x);
-  const Real phi = std::uniform_real_distribution{0., 2 * constants::pi}(rng);
-  Real y = sin_theta * std::cos(phi);
-  Real z = sin_theta * std::sin(phi);
-  return Direction{x, y, z};
+Direction::Direction(const pugi::xml_node& pointtype_node) noexcept
+    : Point{pointtype_node} {
+  Normalize();
 }
 
-Direction Direction::CreateAboutDirection(
+Direction::Direction(const Real& x, const Real& y, const Real& z) noexcept
+    : Point{x, y, z} {
+  Normalize();
+}
+
+Direction::Direction(RNG& rng) noexcept {
+  x = std::uniform_real_distribution{-1., +1.}(rng);
+  const Real sin_theta = std::sqrt(1 - x * x);
+  const Real phi = std::uniform_real_distribution{0., 2 * constants::pi}(rng);
+  y = sin_theta * std::cos(phi);
+  z = sin_theta * std::sin(phi);
+}
+
+Direction::Direction(
     const Direction& d, const Real& mu, const Real& phi) noexcept {
   // Determine if d is outside an "hourglass" of directions which we consider
   // "too close" to the x axis. Note edge case where on_axis_tolerance = 1 will
@@ -107,17 +116,8 @@ Direction Direction::CreateAboutDirection(
   const auto u_comp = std::sqrt(1 - mu * mu) * std::cos(phi) * u;
   const auto v_comp = std::sqrt(1 - mu * mu) * std::sin(phi) * v;
   const auto d_comp = mu * d;
-  return Direction{u_comp + v_comp + d_comp};
-}
-
-Direction::Direction(const pugi::xml_node& pointtype_node) noexcept
-    : Point{pointtype_node} {
-  Normalize();
-}
-
-Direction::Direction(const Real& x, const Real& y, const Real& z) noexcept
-    : Point{x, y, z} {
-  Normalize();
+  // Add the components and assign to *this
+  *this = u_comp + v_comp + d_comp;
 }
 
 Direction::Direction(const Point& other) noexcept : Point{other} {
