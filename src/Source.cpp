@@ -111,9 +111,8 @@ T ConstantDistribution<T>::Sample(RNG&) const noexcept {
 //// public
 
 Direction IsotropicDistribution::Sample(RNG& rng) const noexcept {
-  return Direction::CreateIsotropic(rng);
+  return Direction{rng};
 }
-
 
 // IsotropicFlux
 
@@ -126,7 +125,7 @@ Direction IsotropicFlux::Sample(RNG& rng) const noexcept {
   // sample a value of mu in [0, 1) with probability p(mu) = 2 * mu
   const Real mu = std::sqrt(std::uniform_real_distribution{}(rng));
   const Real phi = std::uniform_real_distribution{0., 2 * constants::pi}(rng);
-  return Direction::CreateAboutDirection(reference, mu, phi);
+  return Direction{reference, mu, phi};
 }
 
 // Source

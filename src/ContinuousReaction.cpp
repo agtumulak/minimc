@@ -165,8 +165,7 @@ void ContinuousScatter::Interact(Particle& p) const noexcept {
     const auto phi = 2 * constants::pi * p.Sample();
     // given v_n, s_T, mu, and phi, construct v_T, the velocity of the target
     // in the lab frame.
-    const auto v_T =
-        s_T * Direction::CreateAboutDirection(p.GetDirection(), mu, phi);
+    const auto v_T = s_T * Direction{p.GetDirection(), mu, phi};
     // Now v_T is known. Compute v_cm, the velocity of the center of mass,
     // followed by V_n, the velocity of the neutron in the CM frame.
     const auto v_cm = (v_n + awr * v_T) / (1 + awr);
@@ -176,8 +175,7 @@ void ContinuousScatter::Interact(Particle& p) const noexcept {
     const auto phi_cm = 2 * constants::pi * p.Sample();
     // rotate incident neutron velocity to outgoing (primed) neutron velocity
     // in CM
-    const auto V_n_prime_direction =
-        Direction::CreateAboutDirection(V_n, mu_cm, phi_cm);
+    const auto V_n_prime_direction = Direction{V_n, mu_cm, phi_cm};
     // magnitude of incident velocity V_n is equal to magnitude of outgoing
     // velocity V_n_prime in CM
     const auto V_n_prime = std::sqrt(V_n.Dot(V_n)) * V_n_prime_direction;
@@ -259,7 +257,7 @@ void ContinuousFission::Interact(Particle& p) const noexcept {
       std::uniform_real_distribution{}(p.rng));
   for (size_t i = 0; i < fission_yield; i++) {
     // evaluation order of arguments is undefined so do evaluation here
-    const auto direction{Direction::CreateIsotropic(p.rng)};
+    const Direction direction{p.rng};
     // todo: add energy sampling
     const auto energy{p.GetEnergy()};
     p.BankSecondaries(direction, energy);

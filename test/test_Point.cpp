@@ -54,6 +54,6 @@ TEST_CASE("Direction componentwise constuctor") {
 TEST_CASE("Direction mu phi constructor") {
   Direction unit_y{0, 1, 0};
   // this must lie in the x-z plane,
-  Direction cos0_phi0{Direction::CreateAboutDirection(unit_y, 0, 0)};
+  Direction cos0_phi0{unit_y, 0, 0};
   REQUIRE(cos0_phi0 == Direction{0, 0, -1});
 }

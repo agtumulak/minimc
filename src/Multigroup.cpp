@@ -279,8 +279,7 @@ void Multigroup::Fission(Particle& p) const noexcept {
     for (Group g = 1; g <= max_group; g++) {
       accumulated += group_probs.at(g);
       if (accumulated > threshold) {
-        auto direction{Direction::CreateIsotropic(p.rng)};
-        p.BankSecondaries(direction, g);
+        p.BankSecondaries(Direction{p.rng}, g);
         break;
       }
     }
