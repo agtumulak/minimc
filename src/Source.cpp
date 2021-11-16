@@ -84,7 +84,7 @@ Distribution<T>::Create(const pugi::xml_node& property_node) {
   else {
     constexpr bool is_distribution =
         std::is_same_v<T, Point> || std::is_same_v<T, Direction> ||
-        std::is_same_v<T, Energy> || std::is_same_v<T, Particle>;
+        std::is_same_v<T, Energy> || std::is_same_v<T, Particle::Type>;
     static_assert(is_distribution, "Template parameter not supported");
   }
   assert(false);
