@@ -57,8 +57,13 @@ protected:
 ///          Point normalized by calling Normalize() when appropriate.
 class Direction : public Point {
 public:
+  /// @brief Constructs a Direction from a `PointType` node
+  /// @details `PointType` is a `complexType` defined in the minimc XML schema.
+  Direction(const pugi::xml_node& pointtype_node) noexcept;
+  /// @brief Constructs a Direction with the given components
+  Direction(const Real& x, const Real& y, const Real& z) noexcept;
   /// @brief Constructs an isotropically sampled Direction
-  static Direction CreateIsotropic(RNG& rng) noexcept;
+  Direction(RNG& rng) noexcept;
   /// @brief Constructs a new Direction that has a given cosine @f$ \mu @f$
   ///        with respect to an exsiting Direction.
   /// @details Given a Direction @f$ \boldsymbol{\Omega}^{\prime} @f$, the new
@@ -70,13 +75,7 @@ public:
   /// @param phi The azimuthal angle about @f$ \boldsymbol{\Omega}^{\prime}
   ///            @f$. This is largely arbitrary since scattering is usually
   ///            azimuthally symmetric.
-  static Direction CreateAboutDirection(
-      const Direction& d, const Real& mu, const Real& phi) noexcept;
-  /// @brief Constructs a Direction from a `PointType` node
-  /// @details `PointType` is a `complexType` defined in the minimc XML schema.
-  Direction(const pugi::xml_node& pointtype_node) noexcept;
-  /// @brief Constructs a Direction with the given components
-  Direction(const Real& x, const Real& y, const Real& z) noexcept;
+  Direction(const Direction& d, const Real& mu, const Real& phi) noexcept;
   /// @brief Constructs the Direction with the contents of a Point.
   Direction(const Point& other) noexcept;
   /// @brief Move constructor. Constructs the Direction with the contents of a
