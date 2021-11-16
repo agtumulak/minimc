@@ -7,6 +7,7 @@
 #include "Point.hpp"
 #include "Reaction.hpp"
 #include "ScalarField.hpp"
+#include "State.hpp"
 #include "pugixml.hpp"
 
 #include <cmath>
@@ -38,18 +39,18 @@ ContinuousReaction::ContinuousReaction(const pugi::xml_node& reaction_node)
 
 ContinuousReaction::~ContinuousReaction() noexcept {}
 
-bool ContinuousReaction::ModifiesTotal(const Particle&) const noexcept {
+bool ContinuousReaction::ModifiesTotal(const State&) const noexcept {
   return false;
 }
 
 MicroscopicCrossSection
-ContinuousReaction::GetMajorant(const Particle& p) const noexcept {
-  return GetCrossSection(p);
+ContinuousReaction::GetMajorant(const State& s) const noexcept {
+  return GetCrossSection(s);
 }
 
 MicroscopicCrossSection
-ContinuousReaction::GetCrossSection(const Particle& p) const noexcept {
-  return evaluation.xs.at(std::get<ContinuousEnergy>(p.GetEnergy()));
+ContinuousReaction::GetCrossSection(const State& s) const noexcept {
+  return evaluation.xs.at(std::get<ContinuousEnergy>(s.energy));
 }
 
 // ContinuousCapture
@@ -57,8 +58,8 @@ ContinuousReaction::GetCrossSection(const Particle& p) const noexcept {
 ContinuousCapture::ContinuousCapture(const pugi::xml_node& capture_node)
     : ContinuousReaction{capture_node} {}
 
-void ContinuousCapture::Interact(Particle& p) const noexcept {
-  p.event = Particle::Event::capture;
+void ContinuousCapture::Interact(State& s) const noexcept {
+  s.event = State::Event::capture;
 }
 
 // ContinuousScatter
@@ -70,56 +71,56 @@ ContinuousScatter::ContinuousScatter(const pugi::xml_node& scatter_node)
       tsl{ReadPandasSAB(scatter_node.child("tsl"))},
       awr{scatter_node.parent().parent().attribute("awr").as_double()} {}
 
-bool ContinuousScatter::ModifiesTotal(const Particle& p) const noexcept {
-  return tsl.has_value() && tsl->IsValid(p);
+bool ContinuousScatter::ModifiesTotal(const State& s) const noexcept {
+  return tsl.has_value() && tsl->IsValid(s);
 }
 
 MicroscopicCrossSection
-ContinuousScatter::GetMajorant(const Particle& p) const noexcept {
-  if (tsl.has_value() && tsl->IsValid(p)) {
-    return tsl->GetMajorant(p);
+ContinuousScatter::GetMajorant(const State& s) const noexcept {
+  if (tsl.has_value() && tsl->IsValid(s)) {
+    return tsl->GetMajorant(s);
   }
-  else if (const auto T_max = p.GetCell().temperature->upper_bound;
+  else if (const auto T_max = s.cell->temperature->upper_bound;
            evaluation.IsValid(T_max)) {
-    return evaluation.xs.at(std::get<ContinuousEnergy>(p.GetEnergy()));
+    return evaluation.xs.at(std::get<ContinuousEnergy>(s.energy));
   }
-  else if (IsFreeGasScatteringValid(p, T_max)) {
+  else if (IsFreeGasScatteringValid(s, T_max)) {
     // unadjust evaluated temperature then readjust cross section to requested
     // temperature
-    return evaluation.xs.at(std::get<ContinuousEnergy>(p.GetEnergy())) /
-           GetFreeGasScatterAdjustment(p, evaluation.temperature) *
-           GetFreeGasScatterAdjustment(p, T_max);
+    return evaluation.xs.at(std::get<ContinuousEnergy>(s.energy)) /
+           GetFreeGasScatterAdjustment(s, evaluation.temperature) *
+           GetFreeGasScatterAdjustment(s, T_max);
   }
   else {
-    return evaluation.xs.at(std::get<ContinuousEnergy>(p.GetEnergy()));
+    return evaluation.xs.at(std::get<ContinuousEnergy>(s.energy));
   }
 }
 
 MicroscopicCrossSection
-ContinuousScatter::GetCrossSection(const Particle& p) const noexcept {
-  if (tsl.has_value() && tsl->IsValid(p)) {
-    return tsl->GetTotal(p);
+ContinuousScatter::GetCrossSection(const State& s) const noexcept {
+  if (tsl.has_value() && tsl->IsValid(s)) {
+    return tsl->GetTotal(s);
   }
-  else if (const auto T = p.GetCell().temperature->at(p.GetPosition());
+  else if (const auto T = s.cell->temperature->at(s.position);
            evaluation.IsValid(T)) {
-    return evaluation.xs.at(std::get<ContinuousEnergy>(p.GetEnergy()));
+    return evaluation.xs.at(std::get<ContinuousEnergy>(s.energy));
   }
-  else if (IsFreeGasScatteringValid(p, T)) {
+  else if (IsFreeGasScatteringValid(s, T)) {
     // unadjust evaluated temperature then readjust cross section to requested
     // temperature
-    return evaluation.xs.at(std::get<ContinuousEnergy>(p.GetEnergy())) /
-           GetFreeGasScatterAdjustment(p, evaluation.temperature) *
-           GetFreeGasScatterAdjustment(p, T);
+    return evaluation.xs.at(std::get<ContinuousEnergy>(s.energy)) /
+           GetFreeGasScatterAdjustment(s, evaluation.temperature) *
+           GetFreeGasScatterAdjustment(s, T);
   }
   else {
-    return evaluation.xs.at(std::get<ContinuousEnergy>(p.GetEnergy()));
+    return evaluation.xs.at(std::get<ContinuousEnergy>(s.energy));
   }
 }
 
-void ContinuousScatter::Interact(Particle& p) const noexcept {
-  p.event = Particle::Event::scatter;
-  if (tsl.has_value() && tsl->IsValid(p)) {
-    tsl->Scatter(p);
+void ContinuousScatter::Interact(State& s) const noexcept {
+  s.event = State::Event::scatter;
+  if (tsl.has_value() && tsl->IsValid(s)) {
+    tsl->Scatter(s);
   }
   else {
     // Adapted from
@@ -129,14 +130,14 @@ void ContinuousScatter::Interact(Particle& p) const noexcept {
     // neutron mass in MeV * (s / cm)^2
     constexpr auto m_n = constants::neutron_mass;
     // incident neutron energy in MeV
-    const auto E = std::get<ContinuousEnergy>(p.GetEnergy());
+    const auto E = std::get<ContinuousEnergy>(s.energy);
     // neutron speed and velocity in lab frame in cm / s
     const auto s_n = std::sqrt(2. * E / m_n);
-    const auto v_n = s_n * p.GetDirection();
+    const auto v_n = s_n * s.direction;
     // beta has units of s / cm
     const auto beta = std::sqrt(
-        (awr * m_n) / (2. * constants::boltzmann *
-                       p.GetCell().temperature->at(p.GetPosition())));
+        (awr * m_n) /
+        (2. * constants::boltzmann * s.cell->temperature->at(s.position)));
     // neutron speed (known) and unitless target speed (to be sampled),
     // respectively
     const auto y = beta * s_n;
@@ -146,38 +147,36 @@ void ContinuousScatter::Interact(Particle& p) const noexcept {
     Real mu;
     do {
       // order random numbers are sampled matters: stackoverflow.com/a/40773451
-      const auto xi_1 = p.Sample(), xi_2 = p.Sample();
-      if (p.Sample() <
+      const auto xi_1 = s.Sample(), xi_2 = s.Sample();
+      if (s.Sample() <
           2 / (std::sqrt(constants::pi) * y + 2)) { // openmc Eq. 75
         x = std::sqrt(-std::log(xi_1 * xi_2));      // lanl C49
       }
       else {
         // order random numbers are sampled matters: stackoverflow.com/a/40773451
-        const auto xi_3 = p.Sample();
+        const auto xi_3 = s.Sample();
         const auto z = std::cos(constants::pi * xi_3 / 2);
         x = std::sqrt(-std::log(xi_1) - std::log(xi_2) * z * z); // lanl C61
       }
-      mu = 2 * p.Sample() - 1; // TODO: Check if this can be factored out
-    } while (p.Sample() >= std::sqrt(x * x + y * y - 2 * x * y * mu) / (x + y));
+      mu = 2 * s.Sample() - 1; // TODO: Check if this can be factored out
+    } while (s.Sample() >= std::sqrt(x * x + y * y - 2 * x * y * mu) / (x + y));
     // the sampled speed of the target in the lab frame
     const auto s_T = x / beta;
     // sample phi, the azimuthal angle about v_n
-    const auto phi = 2 * constants::pi * p.Sample();
+    const auto phi = 2 * constants::pi * s.Sample();
     // given v_n, s_T, mu, and phi, construct v_T, the velocity of the target
     // in the lab frame.
-    const auto v_T =
-        s_T * Direction::CreateAboutDirection(p.GetDirection(), mu, phi);
+    const auto v_T = s_T * Direction(s.direction, mu, phi);
     // Now v_T is known. Compute v_cm, the velocity of the center of mass,
     // followed by V_n, the velocity of the neutron in the CM frame.
     const auto v_cm = (v_n + awr * v_T) / (1 + awr);
     const auto V_n = v_n - v_cm;
     // scattering cosine and azimuthal angle of the neutron in the CM frame
-    const auto mu_cm = 2 * p.Sample() - 1;
-    const auto phi_cm = 2 * constants::pi * p.Sample();
+    const auto mu_cm = 2 * s.Sample() - 1;
+    const auto phi_cm = 2 * constants::pi * s.Sample();
     // rotate incident neutron velocity to outgoing (primed) neutron velocity
     // in CM
-    const auto V_n_prime_direction =
-        Direction::CreateAboutDirection(V_n, mu_cm, phi_cm);
+    const auto V_n_prime_direction = Direction(V_n, mu_cm, phi_cm);
     // magnitude of incident velocity V_n is equal to magnitude of outgoing
     // velocity V_n_prime in CM
     const auto V_n_prime = std::sqrt(V_n.Dot(V_n)) * V_n_prime_direction;
@@ -185,7 +184,9 @@ void ContinuousScatter::Interact(Particle& p) const noexcept {
     const auto v_n_prime = V_n_prime + v_cm;
     // outgoing energy in lab frame
     const auto E_prime = 0.5 * m_n * v_n_prime.Dot(v_n_prime);
-    p.Scatter(p.GetDirection().Dot(Direction{v_n_prime}), E_prime);
+    // modify State
+    s.direction = Direction{v_n_prime};
+    s.energy = E_prime;
   }
   return;
 }
@@ -197,8 +198,7 @@ ContinuousScatter::ReadPandasSAB(const pugi::xml_node& tsl_node) {
   if (!tsl_node) {
     return std::nullopt;
   }
-  if (Particle::ToType(tsl_node.parent().parent().name()) !=
-      Particle::Type::neutron) {
+  if (ToParticle(tsl_node.parent().parent().name()) != Particle::neutron) {
     throw std::runtime_error(
         tsl_node.path() +
         ": Only neutrons may have a thermal scattering library node");
@@ -207,15 +207,15 @@ ContinuousScatter::ReadPandasSAB(const pugi::xml_node& tsl_node) {
 }
 
 bool ContinuousScatter::IsFreeGasScatteringValid(
-    const Particle& p, const Temperature& T) const noexcept {
-  if (p.type != Particle::Type::neutron) {
+    const State& s, const Temperature& T) const noexcept {
+  if (s.particle != Particle::neutron) {
     return false;
   }
   else if (awr <= 1.0) {
     return true; // hydrogen must always be treated with free gas scattering
   }
   else if (
-      std::get<ContinuousEnergy>(p.GetEnergy()) <
+      std::get<ContinuousEnergy>(s.energy) <
       500 * constants::boltzmann * T / awr) {
     return true;
   }
@@ -225,12 +225,12 @@ bool ContinuousScatter::IsFreeGasScatteringValid(
 }
 
 Real ContinuousScatter::GetFreeGasScatterAdjustment(
-    const Particle& p, Temperature T) const noexcept {
+    const State& s, Temperature T) const noexcept {
   if (T == 0) {
     return 1;
   }
   else {
-    const auto E = std::get<ContinuousEnergy>(p.GetEnergy());
+    const auto E = std::get<ContinuousEnergy>(s.energy);
     const auto x = std::sqrt(E / (constants::boltzmann * T));
     const auto arg = awr * x * x;
     return (1 + 1 / (2 * arg)) * std::erf(std::sqrt(arg)) +
@@ -251,17 +251,6 @@ ContinuousFission::ContinuousFission(const pugi::xml_node& fission_node)
                                        .ToContinuousMap())
               : std::nullopt} {}
 
-void ContinuousFission::Interact(Particle& p) const noexcept {
-  p.event = Particle::Event::fission;
-  // rely on the fact that double to int conversions essentially do a floor()
-  size_t fission_yield(
-      nubar.value().at(std::get<ContinuousEnergy>(p.GetEnergy())) +
-      std::uniform_real_distribution{}(p.rng));
-  for (size_t i = 0; i < fission_yield; i++) {
-    // evaluation order of arguments is undefined so do evaluation here
-    const auto direction{Direction::CreateIsotropic(p.rng)};
-    // todo: add energy sampling
-    const auto energy{p.GetEnergy()};
-    p.BankSecondaries(direction, energy);
-  }
+void ContinuousFission::Interact(State& s) const noexcept {
+  s.event = State::Event::fission;
 }

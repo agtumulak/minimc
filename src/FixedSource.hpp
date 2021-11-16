@@ -10,6 +10,7 @@
 namespace pugi {
 class xml_node;
 }
+class History;
 
 /// @brief Creates and executes a fixed-source calculation
 class FixedSource : public Driver {
@@ -22,6 +23,8 @@ public:
 private:
   // function executed by a worker on a single thread
   EstimatorSet StartWorker();
+  // pushes creates a new History for each secondary produced by a History
+  void CreateSecondaries(std::vector<History> bank, const History& h);
   // fixed source from which new Particle objects can be sampled from
   const Source source;
   // Number of histories completed or initiated by all threads. May exceed

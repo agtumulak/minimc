@@ -11,7 +11,7 @@
 namespace pugi {
 class xml_node;
 }
-class Particle;
+struct State;
 
 /// @brief Contains cross sections which are indexed by discrete energy groups
 /// @details Groups are integers in `[1,G]`. Group `1` corresponds to the
@@ -28,14 +28,14 @@ public:
   /// @exception std::runtime_error Number of entries is not consistent with
   ///            number of groups
   Multigroup(const pugi::xml_node& particle_node);
-  /// @brief Returns the total cross section for a given Particle, currently
-  ///        the same as GetTotal().
-  MicroscopicCrossSection
-  GetMajorant(const Particle& p) const noexcept override;
-  /// @brief Returns the total cross section for a given Particle
-  MicroscopicCrossSection GetTotal(const Particle& p) const noexcept override;
-  /// @brief Interact with a Particle, updating its state
-  void Interact(Particle& p) const noexcept override;
+  /// @brief Returns the largest cross section that may be found within the
+  ///        current Cell for a given particle State
+  /// @details Currently this is the same as GetTotal().
+  MicroscopicCrossSection GetMajorant(const State& s) const noexcept override;
+  /// @brief Returns the total cross section for a given particle State
+  MicroscopicCrossSection GetTotal(const State& s) const noexcept override;
+  /// @brief Interact with the particle, updating its State
+  void Interact(State& s) const noexcept override;
 
 private:
   // Groupwise cross sections indexed by one Group
@@ -108,12 +108,12 @@ private:
   static OneDimensional CreateTotalXS(
       const pugi::xml_node& particle_node,
       const ReactionsMap& reactions) noexcept;
-  // Captures the Particle, killing it
-  void Capture(Particle& p) const noexcept;
-  // Scatters the Particle and updates its Group and Direction
-  void Scatter(Particle& p) const noexcept;
+  // Captures the particle, killing it
+  void Capture(State& s) const noexcept;
+  // Scatters the particle and updates its Group and Direction
+  void Scatter(State& s) const noexcept;
   // Fissions the Nuclide and produces secondaries
-  void Fission(Particle& p) const noexcept;
+  void Fission(State& s) const noexcept;
   // Average number of secondary particles produced per fission
   const std::optional<OneDimensional> nubar;
   // Outgoing energy distribution of fission neutrons

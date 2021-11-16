@@ -6,10 +6,10 @@
 
 @section intro Introduction
 
-Welcome to MiniMC
+minimc is a lightweight Monte Carlo simulator. It is currently under active
+development. The following links may be useful for current developers:
 
-@section development Development
-
+- @ref theory
 - @ref developer_guide
 - @ref style_guide
 - @ref transport_methods

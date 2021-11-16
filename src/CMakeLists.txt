@@ -24,6 +24,8 @@ set(MINIMC_SOURCES
   FixedSource.cpp
   FixedSource.hpp
   HDF5DataSet.hpp
+  History.cpp
+  History.hpp
   Interaction.cpp
   Interaction.hpp
   KEigenvalue.cpp
@@ -44,6 +46,8 @@ set(MINIMC_SOURCES
   ScalarField.hpp
   Source.cpp
   Source.hpp
+  State.cpp
+  State.hpp
   ThermalScattering.cpp
   ThermalScattering.hpp
   TransportMethod.cpp

@@ -2,6 +2,7 @@ find_package(Doxygen)
 if(Doxygen_FOUND)
   set(DOXYGEN_SOURCES
     mainpage.dox
+    theory.dox
     developer_guide.dox
     style_guide.dox
     transport_methods.dox

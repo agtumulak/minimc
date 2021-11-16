@@ -1,20 +1,17 @@
 #include "Source.hpp"
 
-#include "BasicTypes.hpp"
 #include "pugixml.hpp"
 
 #include <cassert>
 #include <iosfwd>
 #include <string>
-#include <type_traits>
-#include <variant>
 
 // Template class specialization instantiations
 
 template class ConstantDistribution<Point>;
 template class ConstantDistribution<Direction>;
 template class ConstantDistribution<Energy>;
-template class ConstantDistribution<Particle::Type>;
+template class ConstantDistribution<Particle>;
 
 // Distribution
 
@@ -71,7 +68,7 @@ Distribution<T>::Create(const pugi::xml_node& property_node) {
   else if constexpr (std::is_same_v<T, Particle>) {
     if (distribution_name == "constant") {
       const auto particle_type =
-          Particle::ToType(distribution_node.attribute("type").as_string());
+          ToParticle(distribution_node.attribute("type").as_string());
       return std::make_unique<ConstantDistribution<T>>(particle_type);
     }
   }
@@ -95,8 +92,7 @@ template <typename T>
 ConstantDistribution<T>::ConstantDistribution(const T& constant)
     : constant{constant} {};
 
-template <typename T>
-T ConstantDistribution<T>::Sample(RNG&) const noexcept {
+template <typename T> T ConstantDistribution<T>::Sample(RNG&) const noexcept {
   return constant;
 };
 
@@ -105,7 +101,7 @@ T ConstantDistribution<T>::Sample(RNG&) const noexcept {
 //// public
 
 Direction IsotropicDistribution::Sample(RNG& rng) const noexcept {
-  return Direction::CreateIsotropic(rng);
+  return Direction{rng};
 }
 
 // Source
@@ -117,18 +113,20 @@ Source::Source(const pugi::xml_node& source_node)
       direction{
           Distribution<Direction>::Create(source_node.child("direction"))},
       energy{Distribution<Energy>::Create(source_node.child("energy"))},
-      particle_type{Distribution<Particle::Type>::Create(
-          source_node.child("particletype"))} {}
+      particle{Distribution<Particle>::Create(source_node.child("particle"))} {}
 
-Particle Source::Sample(RNG::result_type seed) const noexcept {
-  // evaluation order of arguments is undefined so do evaluation here
-  RNG rng{seed};
-  auto sampled_position = position->Sample(rng);
-  auto sampled_direction = direction->Sample(rng);
-  auto sampled_energy = energy->Sample(rng);
-  auto sampled_particle_type = particle_type->Sample(rng);
-  auto sampled_seed = rng();
-  return Particle{
-      sampled_position, sampled_direction, sampled_energy,
-      sampled_particle_type, sampled_seed};
+Point Source::SamplePosition(RNG& rng) const noexcept {
+  return position->Sample(rng);
+}
+
+Direction Source::SampleDirection(RNG& rng) const noexcept {
+  return direction->Sample(rng);
+}
+
+Energy Source::SampleEnergy(RNG& rng) const noexcept {
+  return energy->Sample(rng);
+}
+
+Particle Source::SampleParticle(RNG& rng) const noexcept {
+  return particle->Sample(rng);
 }

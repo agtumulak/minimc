@@ -24,49 +24,48 @@ Continuous::Continuous(const pugi::xml_node& particle_node)
                                                      "total")} {}
 
 MicroscopicCrossSection
-Continuous::GetMajorant(const Particle& p) const noexcept {
+Continuous::GetMajorant(const State& s) const noexcept {
   // majorant temperature is assumed to occur at maximum temperature in Cell
-  const auto majorant_temperature = p.GetCell().temperature->upper_bound;
-  if (!ReactionsModifyTotal(p) && total.IsValid(majorant_temperature)) {
-    return total.xs.at(std::get<ContinuousEnergy>(p.GetEnergy()));
+  const auto majorant_temperature = s.cell->temperature->upper_bound;
+  if (!ReactionsModifyTotal(s) && total.IsValid(majorant_temperature)) {
+    return total.xs.at(std::get<ContinuousEnergy>(s.energy));
   }
   else {
     return std::accumulate(
         reactions.cbegin(), reactions.cend(), MicroscopicCrossSection{0},
-        [&p](const auto& accumulated, const auto& reaction) {
-          return accumulated + reaction->GetMajorant(p);
+        [&s](const auto& accumulated, const auto& reaction) {
+          return accumulated + reaction->GetMajorant(s);
         });
   }
 }
 
-MicroscopicCrossSection Continuous::GetTotal(const Particle& p) const noexcept {
-  const auto requested_temperature =
-      p.GetCell().temperature->at(p.GetPosition());
-  if (!ReactionsModifyTotal(p) && total.IsValid(requested_temperature)) {
-    return total.xs.at(std::get<ContinuousEnergy>(p.GetEnergy()));
+MicroscopicCrossSection Continuous::GetTotal(const State& s) const noexcept {
+  const auto requested_temperature = s.cell->temperature->at(s.position);
+  if (!ReactionsModifyTotal(s) && total.IsValid(requested_temperature)) {
+    return total.xs.at(std::get<ContinuousEnergy>(s.energy));
   }
   else {
     return std::accumulate(
         reactions.cbegin(), reactions.cend(), MicroscopicCrossSection{0},
-        [&p](const auto& accumulated, const auto& reaction) {
-          return accumulated + reaction->GetCrossSection(p);
+        [&s](const auto& accumulated, const auto& reaction) {
+          return accumulated + reaction->GetCrossSection(s);
         });
   }
 }
 
-void Continuous::Interact(Particle& p) const noexcept {
+void Continuous::Interact(State& s) const noexcept {
   const MicroscopicCrossSection threshold =
-      std::uniform_real_distribution{}(p.rng) * GetTotal(p);
+      std::uniform_real_distribution{}(s.rng) * GetTotal(s);
   MicroscopicCrossSection accumulated{0};
   for (const auto& candidate : reactions) {
-    accumulated += candidate->GetCrossSection(p);
+    accumulated += candidate->GetCrossSection(s);
     if (accumulated > threshold) {
-      candidate->Interact(p);
+      candidate->Interact(s);
       return;
     }
   }
   // If no reaction found, resample tail-recursively
-  return Interact(p);
+  return Interact(s);
 }
 
 //// private
@@ -84,8 +83,8 @@ Continuous::CreateReactions(const pugi::xml_node& particle_node) {
   return reactions;
 }
 
-bool Continuous::ReactionsModifyTotal(const Particle& p) const noexcept {
+bool Continuous::ReactionsModifyTotal(const State& s) const noexcept {
   return std::any_of(
       reactions.cbegin(), reactions.cend(),
-      [&p](const auto& reaction) { return reaction->ModifiesTotal(p); });
+      [&s](const auto& reaction) { return reaction->ModifiesTotal(s); });
 }

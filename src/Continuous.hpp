@@ -11,7 +11,6 @@
 namespace pugi {
 class xml_node;
 }
-class Particle;
 
 /// @brief Contains cross sections which are indexed by continuous energy values
 class Continuous : public Interaction {
@@ -20,18 +19,21 @@ public:
   ///        an XML document
   Continuous(const pugi::xml_node& particle_node);
   /// @brief Returns the largest cross section that may be found within the
-  ///        current Cell
+  ///        current Cell for a given particle State
   /// @details Currently this is the cross section at the majorant temperature
   ///          in the Cell
   MicroscopicCrossSection
-  GetMajorant(const Particle& p) const noexcept override;
-  /// @brief Returns the total cross section for a given Particle
+  GetMajorant(const State& s) const noexcept override;
+  /// @brief Returns the total cross section for a given particle State
   /// @details This is not guaranteed to be consistent with the sum of all
   ///          mutually exclusive reactions. The total cross section is meant
   ///          to be a user-provided quantity to speed up calculations.
-  MicroscopicCrossSection GetTotal(const Particle& p) const noexcept override;
-  /// @brief Interact with a Particle, updating its state
-  void Interact(Particle& p) const noexcept override;
+  MicroscopicCrossSection GetTotal(const State& s) const noexcept override;
+  /// @brief Interact with the particle, updating its State
+  void Interact(State& s) const noexcept override;
+  /// @brief Append secondaries produced by a State onto a History bank
+  void AppendSecondaries(
+      std::vector<History> bank, const State& state) const noexcept override;
 
 private:
   // Helper function for reaction cross section construction
@@ -39,7 +41,7 @@ private:
   CreateReactions(const pugi::xml_node& particle_node);
   // Returns true if any reaction modifies the total cross section even if the
   // total cross section was evaluated at the target temperature
-  bool ReactionsModifyTotal(const Particle& p) const noexcept;
+  bool ReactionsModifyTotal(const State& s) const noexcept;
   // Cross section data for mutually exclusive reactions
   const std::vector<std::unique_ptr<const ContinuousReaction>> reactions;
   // Total cross section provided in nuclear data files

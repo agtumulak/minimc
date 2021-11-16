@@ -1,6 +1,7 @@
 #include "Multigroup.hpp"
 
 #include "Particle.hpp"
+#include "State.hpp"
 #include "Point.hpp"
 #include "pugixml.hpp"
 
@@ -38,30 +39,30 @@ Multigroup::Multigroup(const pugi::xml_node& particle_node)
       max_group{GroupStructureSize(particle_node.root())} {}
 
 MicroscopicCrossSection
-Multigroup::GetMajorant(const Particle& p) const noexcept {
+Multigroup::GetMajorant(const State& p) const noexcept {
   return GetTotal(p);
 }
 
-MicroscopicCrossSection Multigroup::GetTotal(const Particle& p) const noexcept {
-  return total.at(std::get<Group>(p.GetEnergy()));
+MicroscopicCrossSection Multigroup::GetTotal(const State& s) const noexcept {
+  return total.at(std::get<Group>(s.energy));
 }
 
-void Multigroup::Interact(Particle& p) const noexcept {
+void Multigroup::Interact(State& s) const noexcept {
   const MicroscopicCrossSection threshold{
-      std::uniform_real_distribution{}(p.rng) * GetTotal(p)};
+      std::uniform_real_distribution{}(s.rng) * GetTotal(s)};
   MicroscopicCrossSection accumulated{0};
   for (const auto& [reaction, xs] : reactions) {
-    accumulated += xs.at(std::get<Group>(p.GetEnergy()));
+    accumulated += xs.at(std::get<Group>(s.energy));
     if (accumulated > threshold) {
       switch (reaction) {
       case Reaction::capture:
-        Capture(p);
+        Capture(s);
         break;
       case Reaction::scatter:
-        Scatter(p);
+        Scatter(s);
         break;
       case Reaction::fission:
-        Fission(p);
+        Fission(s);
         break;
       }
       return;
@@ -242,21 +243,20 @@ Multigroup::OneDimensional Multigroup::CreateTotalXS(
       });
 }
 
-void Multigroup::Capture(Particle& p) const noexcept {
-  p.event = Particle::Event::capture;
+void Multigroup::Capture(State& s) const noexcept {
+  s.event = State::Event::capture;
 }
 
-void Multigroup::Scatter(Particle& p) const noexcept {
-  p.event = Particle::Event::scatter;
-  const Real threshold = std::uniform_real_distribution{}(p.rng);
+void Multigroup::Scatter(State& s) const noexcept {
+  s.event = State::Event::scatter;
+  const Real threshold = std::uniform_real_distribution{}(s.rng);
   Real accumulated{0};
-  const auto& group_probs{
-      scatter_probs.value().at(std::get<Group>(p.GetEnergy()))};
+  const auto& group_probs{scatter_probs.value().at(std::get<Group>(s.energy))};
   for (Group g = 1; g <= max_group; g++) {
     accumulated += group_probs.at(g);
     if (accumulated > threshold) {
-      p.SetEnergy(g);
-      p.SetDirectionIsotropic();
+      s.energy = g;
+      s.direction = Direction(s.rng);
       return;
     }
   }
@@ -264,25 +264,6 @@ void Multigroup::Scatter(Particle& p) const noexcept {
   assert(false);
 }
 
-void Multigroup::Fission(Particle& p) const noexcept {
-  p.event = Particle::Event::fission;
-  auto incident_group{std::get<Group>(p.GetEnergy())};
-  // rely on the fact that double to int conversions essentially do a floor()
-  size_t fission_yield(
-      nubar.value().at(incident_group) +
-      std::uniform_real_distribution{}(p.rng));
-  const auto& group_probs{chi.value().at(incident_group)};
-  for (size_t i = 0; i < fission_yield; i++) {
-    const Real threshold = std::uniform_real_distribution{}(p.rng);
-    Real accumulated{0};
-
-    for (Group g = 1; g <= max_group; g++) {
-      accumulated += group_probs.at(g);
-      if (accumulated > threshold) {
-        auto direction{Direction::CreateIsotropic(p.rng)};
-        p.BankSecondaries(direction, g);
-        break;
-      }
-    }
-  }
+void Multigroup::Fission(State& s) const noexcept {
+  s.event = State::Event::fission;
 }

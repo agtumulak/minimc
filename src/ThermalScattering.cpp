@@ -3,6 +3,7 @@
 #include "Cell.hpp"
 #include "Constants.hpp"
 #include "Particle.hpp"
+#include "State.hpp"
 #include "ScalarField.hpp"
 #include "pugixml.hpp"
 
@@ -145,7 +146,7 @@ ThermalScattering::Beta ThermalScattering::SampleBeta(
 }
 
 ThermalScattering::Alpha ThermalScattering::SampleAlpha(
-    Particle& p, const Beta& b, ContinuousEnergy E,
+    State& s, const Beta& b, ContinuousEnergy E,
     Temperature T) const noexcept {
 
   // assume S(a,b) = S(a,-b)
@@ -170,8 +171,7 @@ ThermalScattering::Alpha ThermalScattering::SampleAlpha(
     snap_to_lower ? 0 :
     (abs_b - alpha_betas.at(b_hi_i - 1)
      / (alpha_betas.at(b_hi_i) - alpha_betas.at(b_hi_i - 1)));
-  const size_t b_s_i =
-      r <= std::uniform_real_distribution{}(p.rng) ? b_hi_i - 1 : b_hi_i;
+  const size_t b_s_i = r <= s.Sample() ? b_hi_i - 1 : b_hi_i;
   Beta b_s = sgn_b * alpha_betas.at(b_s_i);
 
   // compute minimum and maximum possible value of alpha
@@ -214,8 +214,7 @@ ThermalScattering::Alpha ThermalScattering::SampleAlpha(
 
   // sample a CDF value which is scaled to return a result in [b_s_a_min,
   // b_s_a_max]
-  const Real F =
-      F_min + std::uniform_real_distribution{}(p.rng) * (F_max - F_min);
+  const Real F = F_min + s.Sample() * (F_max - F_min);
   // find index of CDF value strictly greater than sampled CDF value
   const size_t F_hi_i = std::distance(
       alpha_cdfs.cbegin(),

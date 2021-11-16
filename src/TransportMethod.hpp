@@ -1,18 +1,15 @@
 #pragma once
 
-#include "Bank.hpp"
-
 #include <memory>
 
 namespace pugi {
 class xml_node;
 }
-class Particle;
-class EstimatorSet;
+class History;
 class World;
 
-/// @brief Performs the transport of a Particle after it is born up until its
-///        death
+/// @brief Interface for a method which generates a full realization of a
+///        History from an initial State
 class TransportMethod {
 public:
   /// @brief Factory method to create new TransportMethod from an XML document
@@ -29,21 +26,19 @@ public:
   Create(const pugi::xml_node& root, const World& world);
   /// @brief Virtual destructor (C++ Core Guidelines C.127)
   virtual ~TransportMethod() noexcept;
-  /// @brief Moves a Particle through its states until it dies.
-  /// @param p Particle to transport
-  /// @param e EstimatorSet to score upon, typically owned by a single thread
-  /// @param w World the Particle transports within
-  virtual Bank
-  Transport(Particle& p, EstimatorSet& e, const World& w) const noexcept = 0;
+  /// @brief Samples each subsequent State in the History
+  /// @param h History which is to be completed
+  /// @param w Transition probabilities between each State are parameterized by
+  ///          the geometric and material properties of a World
+  virtual void Transport(History& h, const World& w) const noexcept = 0;
 };
 
 /// @brief Loops over each CSGSurface in the current Cell to find the next
 ///        surface crossing
 class SurfaceTracking : public TransportMethod {
 public:
-  /// @brief Implements delta tracking
-  Bank Transport(
-      Particle& p, EstimatorSet& e, const World& w) const noexcept override;
+  /// @brief Implements surface tracking
+  virtual void Transport(History& h, const World& w) const noexcept override;
 };
 
 /// @brief Tracks a particle using delta tracking within a Cell. Surface
@@ -51,6 +46,5 @@ public:
 class CellDeltaTracking : public TransportMethod {
 public:
   /// @brief Implements cell delta tracking
-  Bank Transport(
-      Particle& p, EstimatorSet& e, const World& w) const noexcept override;
+  virtual void Transport(History& h, const World& w) const noexcept override;
 };

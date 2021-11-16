@@ -1,11 +1,9 @@
 #include "TransportMethod.hpp"
 
 #include "Cell.hpp"
-#include "Constants.hpp"
-#include "Estimator.hpp"
+#include "History.hpp"
 #include "Material.hpp"
-#include "Nuclide.hpp"
-#include "Particle.hpp"
+#include "State.hpp"
 #include "World.hpp"
 #include "pugixml.hpp"
 
@@ -49,69 +47,50 @@ TransportMethod::~TransportMethod() noexcept {}
 
 // SurfaceTracking
 
-Bank SurfaceTracking::Transport(
-    Particle& p, EstimatorSet& e, const World& w) const noexcept {
-  Bank history_bank;
-  p.SetCell(w.FindCellContaining(p.GetPosition()));
-  while (p.IsAlive()) {
-    const auto distance_to_collision = std::exponential_distribution{
-        p.GetCell().material->number_density *
-        p.GetCell().material->GetMicroscopicTotal(p)}(p.rng);
-    const auto [nearest_surface, distance_to_surface_crossing] =
-        p.GetCell().NearestSurface(p.GetPosition(), p.GetDirection());
-    if (distance_to_collision < distance_to_surface_crossing) {
-      p.Stream(distance_to_collision);
-      const auto& nuclide = p.SampleNuclide();
-      nuclide.Interact(p);
+void SurfaceTracking::Transport(History& h, const World& w) const noexcept {
+  while (h.GetState().IsAlive()) {
+    const auto& s = h.GetState(); // for functions which accept const State
+    const auto collision_distance = std::exponential_distribution{
+        s.cell->material->number_density *
+        s.cell->material->GetMicroscopicTotal(s)}(h.GetRNG());
+    const auto [nearest_surface, surface_crossing_distance] =
+        s.cell->NearestSurface(s.position, s.direction);
+    if (surface_crossing_distance < collision_distance) {
+      h.CrossSurface(
+          nearest_surface, surface_crossing_distance,
+          w.FindCellContaining(s.position));
     }
     else {
-      p.Stream(distance_to_surface_crossing + constants::nudge);
-      p.SetCell(w.FindCellContaining(p.GetPosition()));
-      p.current_surface = nearest_surface;
-      p.event = p.GetCell().material ? Particle::Event::surface_cross
-                                     : Particle::Event::leak;
+      h.CollideWithinCell(collision_distance);
     }
-    e.Score(p);
   }
-  return history_bank;
 }
 
 // CellDeltaTracking
 
-// TODO: Remove embarrasing amount of code duplication between this and
-// SurfaceTracking
-Bank CellDeltaTracking::Transport(
-    Particle& p, EstimatorSet& e, const World& w) const noexcept {
-  Bank history_bank;
-  p.SetCell(w.FindCellContaining(p.GetPosition()));
-  while (p.IsAlive()) {
-    const auto distance_to_collision = std::exponential_distribution{
-        p.GetCell().material->number_density *
-        p.GetCell().material->GetMicroscopicMajorant(p)}(p.rng);
-    const auto [nearest_surface, distance_to_surface_crossing] =
-        p.GetCell().NearestSurface(p.GetPosition(), p.GetDirection());
-    if (distance_to_surface_crossing < distance_to_collision) {
+void CellDeltaTracking::Transport(History& h, const World& w) const noexcept {
+  while (h.GetState().IsAlive()) {
+    const auto& s = h.GetState();
+    const auto collision_distance = std::exponential_distribution{
+        s.cell->material->number_density *
+        s.cell->material->GetMicroscopicMajorant(s)}(h.GetRNG());
+    const auto [nearest_surface, surface_crossing_distance] =
+        s.cell->NearestSurface(s.position, s.direction);
+    if (surface_crossing_distance < collision_distance) {
       // a surface crossing occurs
-      p.Stream(distance_to_surface_crossing + constants::nudge);
-      p.SetCell(w.FindCellContaining(p.GetPosition()));
-      p.current_surface = nearest_surface;
-      p.event = p.GetCell().material ? Particle::Event::surface_cross
-                                     : Particle::Event::leak;
+      h.CrossSurface(
+          nearest_surface, surface_crossing_distance,
+          w.FindCellContaining(s.position));
     }
     else if (std::bernoulli_distribution{
-                 p.GetCell().material->GetMicroscopicTotal(p) /
-                 p.GetCell().material->GetMicroscopicMajorant(p)}(p.rng)) {
+                 s.cell->material->GetMicroscopicTotal(s) /
+                 s.cell->material->GetMicroscopicMajorant(s)}(h.GetRNG())) {
       // a real collision occurs
-      p.Stream(distance_to_collision);
-      const auto& nuclide = p.SampleNuclide();
-      nuclide.Interact(p);
+      h.CollideWithinCell(collision_distance);
     }
     else {
-      // a virtual collision occurs, do nothing
-      p.Stream(distance_to_collision);
-      p.event = Particle::Event::virtual_collision;
+      // a virtual collision occurs
+      h.StreamWithinCell(collision_distance);
     }
-    e.Score(p);
   }
-  return history_bank;
 }

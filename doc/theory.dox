@@ -1,0 +1,96 @@
+/**
+
+@page theory Theory
+
+@tableofcontents
+
+@section history_introduction Introduction
+
+A Monte Carlo radiation transport code models the random walk of a particle as
+a discrete random process in which samples are drawn from a <em> history space
+</em> @f$ \Omega = \left(X_{0}, X_{1}, \ldots \right) @f$. A <em> history </em>
+consists of a sequence of states @f$ (X_{0}, X_{1}, \ldots) @f$ which describe
+points in phase space the particle occupied.
+
+Since Monte Carlo radiation transport is <em>Markovian</em>, the probability of
+transitioning to any state @f$ X_{i} @f$ depends only on the current state @f$
+X_{i-1} @f$. Formally, this is
+
+@f[
+p_{X_{i} \mid X_{i-1}, \ldots X_{0}} (x_{i} \mid x_{i-1}, \ldots, x_{0})
+= p_{X_{i} \mid X_{i-1}} (x_{i} \mid x_{i-1}) \, \text{.}
+@f]
+
+In other words, if a particle occupies some given portion of phase space @f$
+x_{i-1} @f$, then the probability of transitioning to @f$ x_{i} @f$ can be
+known, regardless of what its past @f$ x_{i-2}, x_{i-3}, \ldots @f$ was.
+
+@section history_phase_space Phase Space
+
+All particle transport occurs inside a multidimensional <em> phase space </em>
+which is characterized by a position @f$ \boldsymbol{x} @f$,
+direction-of-flight@f$ \hat{\boldsymbol{\Omega}} @f$, energy @f$ E @f$, time
+@f$ t @f$, reaction label @f$ r @f$, and particle type @f$ p @f$. Together,
+these form a random vector @f$ X @f$ for which one realization looks like
+
+@f[
+  x_{i} =
+  \begin{bmatrix}
+    \boldsymbol{x}_{i} \\
+    \hat{\boldsymbol{\Omega}}_{i} \\
+    E_{i} \\
+    t_{i} \\
+    r_{i} \\
+    p_{i}
+  \end{bmatrix}
+@f]
+
+A realization of @f$ X_{i} @f$ (here denoted in lowercase italics as @f$ x_{i})
+@f$ and a realizaton of position (here denoted in lowercase boldface as @f$
+\boldsymbol{x}_{i} @f$) must not be confused with each other.
+
+One further ambiguity must be resolved: for a given State @f$ x_{i} @f$, the
+associated direction @f$ \hat{\boldsymbol{\Omega}}_{i} @f$ and energy @f$ E_{i}
+@f$ can be associated with either the <em> incoming </em> or <em> outgoing
+</em> state.  We choose to associate it with outgoing state immediately after
+colliding at @f$ \boldsymbol{x}_{i} @f$.
+
+@section estimators_particle Particle
+
+For this reason, the Particle class is heavily
+encapsulated and internally performs most of the operations required to update
+its state. Should other classes use a Particle object as a function parameter,
+they should only do so using a `const` qualifier. For instance,
+Material::GetMicroscopicTotal accepts a `const` Particle reference as a
+parameter to look up relevant cross sections. Two notable exceptions, the
+Interaction class and the TransportMethod class, use non-`const` Particle
+arguments but still update a Particle state using its public methods.
+
+@section estimators_scoring_functions Scoring Functions
+
+An <em> Estimator </em> @f$ S: \Omega \rightarrow \mathbb{R} @f$ maps
+from the <em> history space </em> @f$ \Omega @f$ to the <em> score space </em>
+@f$ \mathbb{R} @f$. In general an estimator is a function of all states that a
+Particle undergoes during transport @f$ S(\Omega) = S(X_{1}, \ldots, X_{N})
+@f$. However, a special class of estimators can be expressed
+@f[
+  S(\Omega) = \sum_{i} f(X_{i})
+@f]
+where the <em> scoring function </em> @f$ f: X \rightarrow \mathbb{R} @f$ is
+only a function of the @f$ i @f$-th state. One example of a scoring function
+is
+@f[
+  f(X_{i}) = \delta_{R_{i}, \text{scatter}}
+@f]
+which scores @f$ 1 @f$ if the particle underwent a scatter in step @f$ i @f$,
+zero otherwise. Using this scoring function results in an estimator for the
+total scatter rate. Another scoring function is
+@f[
+  f(X_{i}) =
+  \frac {\delta_{R_{i}, \text{capture}} + \delta_{R_{i}, \text{scatter}}}
+        {\Sigma_{t}(X_{i})}
+@f]
+which scores @f$ \Sigma^{-1}_{t}(X_{i}) @f$ whenever a Particle collides. Using
+this scoring funtion results in an estimator for the scalar flux.
+
+*/

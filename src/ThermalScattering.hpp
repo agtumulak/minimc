@@ -10,7 +10,7 @@
 namespace pugi {
 class xml_node;
 }
-class Particle;
+struct State;
 
 /// @brief Models temperature-dependent thermal scattering data S(a,b,T)
 /// @details Based on
@@ -48,19 +48,19 @@ public:
   ///          The actual values are therefore the coefficients required to
   ///          reconstruct @f$ \beta(T) @f$ or @f$ \alpha(T) @f$.
   ThermalScattering(const pugi::xml_node& tsl_node) noexcept;
-  /// @brief Returns true if Particle is Type::neutron and is strictly below
-  ///        the cutoff energy
-  bool IsValid(const Particle& p) const noexcept;
+  /// @brief Returns true if State.particle is Particle::neutron and is
+  ///        strictly below the cutoff energy
+  bool IsValid(const State& s) const noexcept;
   /// @brief Returns the majorant cross section
   /// @details For thermal inelastic scattering, this is larger than @f$
   ///          \Sigma_{\text{elastic}}(E) + \Sigma_{\text{inelastic}}(E) @f$
   ///          because @f$ \beta = 0 @f$ corresponds to elastic scattering.
   /// @todo Throw exception when temperature is out of range
-  MicroscopicCrossSection GetMajorant(const Particle& p) const noexcept;
+  MicroscopicCrossSection GetMajorant(const State& s) const noexcept;
   /// @brief Returns the total cross section
-  MicroscopicCrossSection GetTotal(const Particle& p) const noexcept;
+  MicroscopicCrossSection GetTotal(const State& s) const noexcept;
   /// @brief The raison d'etre of this class
-  void Scatter(Particle& p) const noexcept;
+  void Scatter(State& s) const noexcept;
 
 private:
   // Evaluates beta using a functional expansion in temperature
@@ -70,13 +70,13 @@ private:
   Real EvaluateAlpha(
       const size_t beta_index, const size_t cdf_index,
       Temperature T) const noexcept;
-  // Sample an outgoing energy. Requires Particle energy is strictly below
+  // Sample an outgoing energy. Requires State.energy is strictly below
   // ThermalScattering::cutoff_energy. Uses histogram interpolation in PDF.
   Beta
-  SampleBeta(Particle& p, ContinuousEnergy E, Temperature T) const noexcept;
+  SampleBeta(State& s, ContinuousEnergy E, Temperature T) const noexcept;
   // Sample an outgoing cosine given an outgoing energy.
   Alpha SampleAlpha(
-      Particle& p, const Beta& b, ContinuousEnergy E,
+      State& s, const Beta& b, ContinuousEnergy E,
       Temperature T) const noexcept;
   // Raw cumulative distribution function data for beta and alpha (3
   // independent axes each)

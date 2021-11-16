@@ -1,5 +1,6 @@
 #include "FixedSource.hpp"
 
+#include "Nuclide.hpp"
 #include "Particle.hpp"
 #include "TransportMethod.hpp"
 #include "pugixml.hpp"
@@ -54,16 +55,31 @@ EstimatorSet FixedSource::StartWorker() {
       std::cout << '\r' << static_cast<double>(elapsed) / batchsize * 100
                 << "% complete...";
     }
-    std::list<Particle> bank;
-    // Use the remaining number of histories run for the seed
-    bank.emplace_back(source.Sample(seed + elapsed));
-    while (!bank.empty()) {
-      transport_method->Transport(bank.back(), worker_estimator_set, world);
-      // new Particle objects are added to front
-      bank.back().MoveSecondariesToFrontOf(bank);
-      // most recently processed Particle is removed from back
-      bank.pop_back();
-    }
+    // Model a random walk as sampling a tree
+    // Start with a vector of vector of Histories. The 
+    std::vector<History> history_bank;
+    // ...and initialize it by sampling from the fixed source, using a seed
+    // that should be unique to this history
+    history_bank.emplace_back(world, source, seed + elapsed);
+    do {
+      auto history = history_bank.back();
+      history_bank.pop_back();
+      // complete the history
+      transport_method->Transport(history, world);
+      // score any Estimators
+      worker_estimator_set.Score(history);
+      // Push secondaries onto the bank
+      CreateSecondaries(history_bank, history);
+    } while (!history_bank.empty());
   }
   return worker_estimator_set;
+}
+
+void FixedSource::CreateSecondaries(
+    std::vector<History> bank, const History& h) {
+  for (const auto& state: h){
+    if (state.event == State::Event::fission) {
+      state.nuclide->
+    }
+  }
 }

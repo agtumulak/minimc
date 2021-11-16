@@ -17,11 +17,11 @@ namespace pugi {
 class xml_node;
 }
 class Bins;
+class History;
 class World;
 class CSGSurface;
-class Particle;
 
-/// @brief Scores tallies based on the history of a Particle
+/// @brief Scores tallies based on the result of a History
 /// @todo Add square of scores. This will require <em>the square of the sum of
 ///       scores produced by one history</em>, <b>not</b> the sum of the square
 ///       of scores produced by one history.
@@ -40,7 +40,7 @@ public:
   /// @brief Virtual constructor, used for deep copying an EstimatorSet
   virtual std::unique_ptr<Estimator> Clone() const noexcept = 0;
   /// @brief Interface for scoring
-  virtual void Score(const Particle& p) noexcept = 0;
+  virtual void Score(const History& h) noexcept = 0;
   /// @brief Returns reference to scores vector
   const std::vector<Real>& GetScores() const noexcept;
   /// @brief Normalizes score by total weight
@@ -51,8 +51,8 @@ public:
 protected:
   /// @brief Constructs an Estimator from an estimator node
   Estimator(const pugi::xml_node& estimator_node) noexcept;
-  /// @brief Return reference to the Bins element where a Particle would score
-  Real& GetScore(const Particle& p) noexcept;
+  /// @brief Return reference to the Bins element where a History would score
+  Real& GetScore(const History& h) noexcept;
 
 private:
   // Helper visitor to convert Energy to Real
@@ -101,7 +101,7 @@ public:
   /// @brief Returns a pointer to a new instance of CurrentEstimator
   std::unique_ptr<Estimator> Clone() const noexcept override;
   /// @brief Implements Estimator method
-  void Score(const Particle& p) noexcept override;
+  void Score(const History& h) noexcept override;
 
 private:
   // CSGSurface which this estimator is associated with, pointer makes
@@ -125,7 +125,7 @@ public:
   /// @brief Return a reference to Estimator by name
   const Estimator& GetEstimator(const std::string& name) const;
   /// @brief Scores each Estimator present in the problem
-  void Score(const Particle& p) noexcept;
+  void Score(const History& h) noexcept;
   /// @brief Normalizes score of each Estimator by total weight
   EstimatorSet& Normalize(Real total_weight) noexcept;
   /// @brief Add scores from each Estimator of other to this

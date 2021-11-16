@@ -2,6 +2,7 @@
 
 #include "Bins.hpp"
 #include "Particle.hpp"
+#include "State.hpp"
 #include "World.hpp"
 #include "pugixml.hpp"
 
@@ -68,7 +69,7 @@ Estimator::Estimator(const pugi::xml_node& estimator_node) noexcept
       strides{ComputeStrides(*cosine, *energy)},
       scores(cosine->size() * strides.front(), 0) {}
 
-Real& Estimator::GetScore(const Particle& p) noexcept {
+Real& Estimator::GetScore(const History& h) noexcept {
   // get cosine bin
   const auto c_i =
       direction ? cosine->GetIndex(direction.value().Dot(p.GetDirection())) : 0;
@@ -105,11 +106,11 @@ std::unique_ptr<Estimator> CurrentEstimator::Clone() const noexcept {
   return std::make_unique<CurrentEstimator>(*this);
 }
 
-void CurrentEstimator::Score(const Particle& p) noexcept {
-  if (p.current_surface == surface &&
-      (p.event == Particle::Event::surface_cross ||
-       p.event == Particle::Event::leak)) {
-    GetScore(p) += 1;
+void CurrentEstimator::Score(const State& s) noexcept {
+  if (s.surface == surface &&
+      (s.event == State::Event::surface_cross ||
+       s.event == State::Event::leak)) {
+    GetScore(s) += 1;
   }
 }
 

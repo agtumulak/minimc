@@ -1,6 +1,7 @@
 #pragma once
 
 #include "BasicTypes.hpp"
+#include "History.hpp"
 #include "Particle.hpp"
 #include "Point.hpp"
 
@@ -41,12 +42,19 @@ private:
 };
 
 /// @brief Returns a point isotropically sampled on the unit sphere
-class IsotropicDistribution : public Distribution<Direction>{
+class IsotropicDistribution : public Distribution<Direction> {
   /// @brief Returns an isotropically sampled Direction
   Direction Sample(RNG& rng) const noexcept override;
 };
 
-/// @brief Models a random source of Particle objects
+/// @brief Models a random source of particles.
+/// @details Each Distribution that makes up this Source is pairwise
+///          independent. Future Source objects which account for correlations
+///          will probably require sampling methods which accept previously
+///          sampled variables as a function parameter:
+///          @f[
+///            p_{X \mid Y} (x \mid y ) \iff \mathtt{f(x, y = optional)}
+///          @f]
 class Source {
 public:
   /// @brief Constructs a Source from a `fixedsource` or `initialsource` node
@@ -54,12 +62,18 @@ public:
   /// @details `SourceDistributionType` is a `complexType` defined in the
   ///          minimc XML schema
   Source(const pugi::xml_node& source_node);
-  /// @brief Samples a source Particle
-  Particle Sample(RNG::result_type seed) const noexcept;
+  /// @brief Samples a position
+  Point SamplePosition(RNG& rng) const noexcept;
+  /// @brief Samples a direction
+  Direction SampleDirection(RNG& rng) const noexcept;
+  /// @brief Samples an energy
+  Energy SampleEnergy(RNG& rng) const noexcept;
+  /// @brief Samples a particle
+  Particle SampleParticle(RNG& rng) const noexcept;
 
 private:
-  std::unique_ptr<const Distribution<Point>> position;
-  std::unique_ptr<const Distribution<Direction>> direction;
-  std::unique_ptr<const Distribution<Energy>> energy;
-  std::unique_ptr<const Distribution<Particle::Type>> particle_type;
+  const std::unique_ptr<const Distribution<Point>> position;
+  const std::unique_ptr<const Distribution<Direction>> direction;
+  const std::unique_ptr<const Distribution<Energy>> energy;
+  const std::unique_ptr<const Distribution<Particle>> particle;
 };

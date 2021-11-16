@@ -49,7 +49,8 @@ public:
   /// @param p position in the Cell
   /// @param d direction to search along
   /// @exception std::runtime_error No CSGSurface found
-  /// @return Returns a tuple to nearest CSGSurface and distance to it
+  /// @return Returns a tuple to nearest CSGSurface and distance to it (C++
+  ///         Core Guidelines F.21)
   std::tuple<std::shared_ptr<const CSGSurface>, Real>
   NearestSurface(const Point& p, const Direction& d) const;
   /// @brief Returns true if both Cell objects are the same object
