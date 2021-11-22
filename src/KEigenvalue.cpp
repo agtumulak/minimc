@@ -44,7 +44,7 @@ EstimatorSet KEigenvalue::Solve() {
         thread_results;
     // start all the threads
     for (size_t i = 0; i < threads; i++) {
-      thread_results.push_back(std::async(&KEigenvalue::StartWorker, this));
+      // thread_results.push_back(std::async(&KEigenvalue::StartWorker, this));
     }
     // collect results from each thread
     Bank fission_bank;
@@ -62,14 +62,15 @@ EstimatorSet KEigenvalue::Solve() {
 
 //// private
 
-std::tuple<Bank, EstimatorSet> KEigenvalue::StartWorker() {
-  EstimatorSet worker_estimators = init_estimator_set;
+std::tuple<Bank, EstimatorSet::Proxy> KEigenvalue::StartWorker() {
+  EstimatorSet worker_estimator_set = init_estimator_set;
+  auto scoring_proxy = worker_estimator_set.GetProxy();
   Bank worker_bank;
   while (auto p = NextParticle()) {
     worker_bank +=
-        transport_method->Transport(p.value(), worker_estimators, world);
+        transport_method->Transport(p.value(), scoring_proxy, world);
   }
-  return {worker_bank, worker_estimators};
+  return {worker_bank, scoring_proxy};
 }
 
 std::optional<Particle> KEigenvalue::NextParticle() noexcept {

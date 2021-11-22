@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Bank.hpp"
+#include "Estimator.hpp"
 
 #include <memory>
 
@@ -8,7 +9,6 @@ namespace pugi {
 class xml_node;
 }
 class Particle;
-class EstimatorSet;
 class World;
 
 /// @brief Performs the transport of a Particle after it is born up until its
@@ -30,11 +30,17 @@ public:
   /// @brief Virtual destructor (C++ Core Guidelines C.127)
   virtual ~TransportMethod() noexcept;
   /// @brief Moves a Particle through its states until it dies.
+  /// @details Running this does not necessarily complete a full history. Only
+  ///          one path from root (initial Particle state) to leaf (dead
+  ///          Particle state) is sampled. Since branching may occur along the
+  ///          random walk, the return value provides the necessary information
+  ///          to complete the full history.
   /// @param p Particle to transport
-  /// @param e EstimatorSet to score upon, typically owned by a single thread
+  /// @param e Lightweight proxy to cache scores, owned by a single thread
   /// @param w World the Particle transports within
-  virtual Bank
-  Transport(Particle& p, EstimatorSet& e, const World& w) const noexcept = 0;
+  /// @returns Any secondaries produced in the course of transporting p
+  virtual Bank Transport(
+      Particle& p, EstimatorSet::Proxy& e, const World& w) const noexcept = 0;
 };
 
 /// @brief Loops over each CSGSurface in the current Cell to find the next
@@ -42,8 +48,8 @@ public:
 class SurfaceTracking : public TransportMethod {
 public:
   /// @brief Implements delta tracking
-  Bank Transport(
-      Particle& p, EstimatorSet& e, const World& w) const noexcept override;
+  Bank Transport(Particle& p, EstimatorSet::Proxy& e, const World& w)
+      const noexcept override;
 };
 
 /// @brief Tracks a particle using delta tracking within a Cell. Surface
@@ -51,6 +57,6 @@ public:
 class CellDeltaTracking : public TransportMethod {
 public:
   /// @brief Implements cell delta tracking
-  Bank Transport(
-      Particle& p, EstimatorSet& e, const World& w) const noexcept override;
+  Bank Transport(Particle& p, EstimatorSet::Proxy& e, const World& w)
+      const noexcept override;
 };

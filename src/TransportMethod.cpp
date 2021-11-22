@@ -50,7 +50,7 @@ TransportMethod::~TransportMethod() noexcept {}
 // SurfaceTracking
 
 Bank SurfaceTracking::Transport(
-    Particle& p, EstimatorSet& e, const World& w) const noexcept {
+    Particle& p, EstimatorSet::Proxy& e, const World& w) const noexcept {
   Bank history_bank;
   p.SetCell(w.FindCellContaining(p.GetPosition()));
   while (p.IsAlive()) {
@@ -81,7 +81,7 @@ Bank SurfaceTracking::Transport(
 // TODO: Remove embarrasing amount of code duplication between this and
 // SurfaceTracking
 Bank CellDeltaTracking::Transport(
-    Particle& p, EstimatorSet& e, const World& w) const noexcept {
+    Particle& p, EstimatorSet::Proxy& e, const World& w) const noexcept {
   Bank history_bank;
   p.SetCell(w.FindCellContaining(p.GetPosition()));
   while (p.IsAlive()) {

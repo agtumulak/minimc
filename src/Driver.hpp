@@ -31,6 +31,8 @@ public:
 protected:
   /// @brief Global, read-only description of geometric and material properties
   const World world;
+  /// @brief Total histories for fixed-source; cycle weight for k-eigenvalue
+  const RNG::result_type batchsize;
   /// @brief Initial value of an EstimatorSet used to initialize workers
   const EstimatorSet init_estimator_set;
   /// @brief Used to update Particle state
@@ -39,6 +41,4 @@ protected:
   const size_t threads;
   /// @brief Histories are assigned a seed in [seed, seed + batchsize)
   const RNG::result_type seed;
-  /// @brief Total histories for fixed-source; cycle weight for k-eigenvalue
-  const RNG::result_type batchsize;
 };

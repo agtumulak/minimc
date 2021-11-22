@@ -10,7 +10,6 @@
 #include <map>
 #include <memory>
 #include <optional>
-#include <string>
 #include <vector>
 
 namespace pugi {
@@ -22,15 +21,32 @@ class CSGSurface;
 class Particle;
 
 /// @brief Scores tallies based on the history of a Particle
-/// @todo Add square of scores. This will require <em>the square of the sum of
-///       scores produced by one history</em>, <b>not</b> the sum of the square
-///       of scores produced by one history.
 class Estimator {
-  /// @brief Writes contents of Estimator to ostream
-  friend std::ostream&
-  operator<<(std::ostream& os, const Estimator& e) noexcept;
-
 public:
+  /// @brief A lightweight object for accumulating Estimator scores for a
+  ///        single history
+  /// @details During a call to TransportMethod::Transport(), scores are
+  ///          produced by a single Particle object's random walk. However, we
+  ///          cannot immediately score an Estimator once that Particle has
+  ///          died. The Particle might have produced secondaries and those
+  ///          secondaries must complete their random walks too.
+  class Proxy {
+  public:
+    /// @brief Construct a Proxy for the given Estimator
+    Proxy(Estimator& init) noexcept;
+    /// @brief Add score to pending scores
+    void Score(const Particle& p) noexcept;
+    /// @brief Adds the pending scores to the actual Estimator
+    /// @details Squares of each score are also evaluated for estimating
+    ///          uncertainties.
+    void CommitHistory() const noexcept;
+
+  private:
+    // map from indices in flattened vector to pending scores
+    std::map<size_t, Real> pending_scores;
+    // reference to original Estimator
+    Estimator& original;
+  };
   /// @brief Factory method to create new Estimator from an estimator node of
   ///        an XML document
   static std::unique_ptr<Estimator>
@@ -39,20 +55,16 @@ public:
   virtual ~Estimator() noexcept;
   /// @brief Virtual constructor, used for deep copying an EstimatorSet
   virtual std::unique_ptr<Estimator> Clone() const noexcept = 0;
-  /// @brief Interface for scoring
-  virtual void Score(const Particle& p) noexcept = 0;
-  /// @brief Returns reference to scores vector
-  const std::vector<Real>& GetScores() const noexcept;
-  /// @brief Normalizes score by total weight
-  Estimator& Normalize(Real total_weight) noexcept;
+  /// @brief Returns an output string stream suitable for printing
+  std::ostringstream GetPrintable(const Real total_weight) const noexcept;
   /// @brief Add scores of other to this
   Estimator& operator+=(const Estimator& other) noexcept;
+  /// @brief Unique, user-defined identifier (C++ Core Guidelines C.131)
+  const std::string name;
 
 protected:
   /// @brief Constructs an Estimator from an estimator node
   Estimator(const pugi::xml_node& estimator_node) noexcept;
-  /// @brief Return reference to the Bins element where a Particle would score
-  Real& GetScore(const Particle& p) noexcept;
 
 private:
   // Helper visitor to convert Energy to Real
@@ -63,6 +75,10 @@ private:
   // helper function to construct reference direction if binning over cosines
   static std::optional<Direction>
   CreateDirection(const pugi::xml_node& cosine_node) noexcept;
+  // returns a flattened index
+  size_t GetIndex(const Particle& p) const noexcept;
+  // interface for scoring
+  virtual Real GetScore(const Particle& p) noexcept = 0;
   // precomputes the stride for each dimension, base case
   template <typename T, typename U>
   static std::array<size_t, 2>
@@ -90,6 +106,8 @@ private:
   const std::array<size_t, 2> strides;
   /// @brief Flattened array of scores
   std::vector<Real> scores;
+  /// @brief Flattened array of square of scores
+  std::vector<Real> square_scores;
 };
 
 /// @brief Scores when a Particle crosses a given CSGSurface
@@ -101,7 +119,7 @@ public:
   /// @brief Returns a pointer to a new instance of CurrentEstimator
   std::unique_ptr<Estimator> Clone() const noexcept override;
   /// @brief Implements Estimator method
-  void Score(const Particle& p) noexcept override;
+  Real GetScore(const Particle& p) noexcept override;
 
 private:
   // CSGSurface which this estimator is associated with, pointer makes
@@ -116,30 +134,42 @@ class EstimatorSet {
   operator<<(std::ostream& os, const EstimatorSet& e) noexcept;
 
 public:
+  /// @brief A lightweight class for accumulating scores produced by a single
+  ///        history.
+  /// @details Constructing an EstimatorSet at the beginning of each history
+  ///          may be expensive since many data st
+  class Proxy {
+  public:
+    /// @brief Construct a Proxy for the given EstimatorSet
+    Proxy(const EstimatorSet& init) noexcept;
+    /// @brief Score to each Estimator::Proxy
+    void Score(const Particle& p) noexcept;
+    /// @brief Calls Estimator::Proxy::CommitHistory() on each Estimator::Proxy
+    void CommitHistory() const noexcept;
+
+  private:
+    // contains all estimator proxies
+    std::vector<Estimator::Proxy> estimator_proxies;
+  };
   /// @brief Copy constructor; deep copies each Estimator in other
   EstimatorSet(const EstimatorSet& other) noexcept;
   /// @brief Constructs an EstimatorSet from an XML document
   /// @param estimators_node `estimators` node of an XML document
   /// @param world Used to reference CSGSurface or Cell objects for estimators
-  EstimatorSet(const pugi::xml_node& estimators_node, const World& world);
-  /// @brief Return a reference to Estimator by name
-  const Estimator& GetEstimator(const std::string& name) const;
-  /// @brief Scores each Estimator present in the problem
-  void Score(const Particle& p) noexcept;
-  /// @brief Normalizes score of each Estimator by total weight
-  EstimatorSet& Normalize(Real total_weight) noexcept;
+  /// @param total_weight Used for normalizing Estimator scores
+  EstimatorSet(
+      const pugi::xml_node& estimators_node, const World& world,
+      const Real total_weight);
+  /// @brief Return an EstimatorSet::Proxy
+  Proxy GetProxy() const noexcept;
   /// @brief Add scores from each Estimator of other to this
-  EstimatorSet& operator+=(const EstimatorSet& other) noexcept;
+  /// @exception An Estimator in this EstimatorSet was not found in the other
+  ///            EstimatorSet
+  EstimatorSet& operator+=(const EstimatorSet& other);
 
 private:
-  // helper function to deep copy all Estimator objects in other
-  static std::map<std::string, std::unique_ptr<Estimator>>
-  ConstructAllEstimators(const EstimatorSet& other) noexcept;
-  // helper function to construct all Estimator objects from an `estimators`
-  // node
-  static std::map<std::string, std::unique_ptr<Estimator>>
-  ConstructAllEstimators(
-      const pugi::xml_node& esitmators_node, const World& world);
   // each EstimatorSet contains its own set of pointers to Estimator
-  const std::map<std::string, std::unique_ptr<Estimator>> estimators;
+  const std::vector<std::unique_ptr<Estimator>> estimators;
+  // total weight for normalizing score
+  const Real total_weight;
 };

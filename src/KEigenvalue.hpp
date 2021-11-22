@@ -17,6 +17,7 @@ class xml_node;
 class Bank;
 
 /// @brief Creates and executes a k-eigenvalue calculation
+/// @todo Get eigenvalue calculations working again
 class KEigenvalue : public Driver {
 public:
   /// @brief Creates objects necessary for a k-eigenvalue calculation
@@ -35,7 +36,7 @@ public:
 private:
   using Cycle = size_t;
   // Function executed by a worker on a single thread
-  std::tuple<Bank, EstimatorSet> StartWorker();
+  std::tuple<Bank, EstimatorSet::Proxy> StartWorker();
   // Returns the next Particle from source_bank in a thread-safe manner
   std::optional<Particle> NextParticle() noexcept;
   // Allows mutually exclusive access to source_bank

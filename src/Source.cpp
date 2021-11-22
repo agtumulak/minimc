@@ -74,7 +74,7 @@ Distribution<T>::Create(const pugi::xml_node& property_node) {
       }
     }
   }
-  else if constexpr (std::is_same_v<T, Particle>) {
+  else if constexpr (std::is_same_v<T, Particle::Type>) {
     if (distribution_name == "constant") {
       const auto particle_type =
           Particle::ToType(distribution_node.attribute("type").as_string());

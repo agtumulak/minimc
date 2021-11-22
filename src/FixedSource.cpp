@@ -32,18 +32,20 @@ EstimatorSet FixedSource::Solve() {
     solver_estimator_set += worker_estimator_set.get();
   }
   std::cout << '\r' << "Done!          " << std::endl;
-  return solver_estimator_set.Normalize(batchsize);
+  return solver_estimator_set;
 }
 
 //// private
 
 EstimatorSet FixedSource::StartWorker() {
-  // we _could_ return a newly constructed EstimatorSet from each call to
-  // Transport() to keep it purely functional, but I suspect it will be super
-  // slow, so we construct it once at the beginning of a thread and pass it
-  // as a reference parameter to Transport()
+  // each thread gets its own EstimatorSet
   EstimatorSet worker_estimator_set = init_estimator_set;
+  // keep sampling histories until batchsize histories have been sampled
   while (true) {
+    // we _could_ return a newly constructed EstimatorSet from each call to
+    // Transport() to keep things more functional, but I suspect it will be
+    // super slow, so we use a lightweight EstimatorSet::Proxy
+    auto scoring_proxy = worker_estimator_set.GetProxy();
     // atomically update thread-local count of histories started
     auto elapsed = histories_elapsed++;
     if (elapsed >= batchsize) {
@@ -55,15 +57,18 @@ EstimatorSet FixedSource::StartWorker() {
                 << "% complete...";
     }
     std::list<Particle> bank;
-    // Use the remaining number of histories run for the seed
+    // use the remaining number of histories run for the seed
     bank.emplace_back(source.Sample(seed + elapsed));
+    // beginning with the initial Particle, complete the history
     while (!bank.empty()) {
-      transport_method->Transport(bank.back(), worker_estimator_set, world);
+      transport_method->Transport(bank.back(), scoring_proxy, world);
       // new Particle objects are added to front
       bank.back().MoveSecondariesToFrontOf(bank);
       // most recently processed Particle is removed from back
       bank.pop_back();
     }
+    // add the scores stored by the proxy to worker_estimator_set
+    scoring_proxy.CommitHistory();
   }
   return worker_estimator_set;
 }
