@@ -41,7 +41,7 @@
   </xs:restriction>
 </xs:simpleType>
 
-<!-- copmlex types -->
+<!-- complex types -->
 
 <xs:complexType name="PointType">
   <xs:attribute name="x" type="xs:double" use="required"/>
