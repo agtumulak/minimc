@@ -211,17 +211,6 @@ void EstimatorSet::Proxy::CommitHistory() const noexcept {
 
 //// public
 
-EstimatorSet::EstimatorSet(const EstimatorSet& other) noexcept
-    : // IIFE
-      estimators{[&other]() {
-        std::vector<std::unique_ptr<Estimator>> result;
-        for (const auto& estimator : other.estimators) {
-          result.push_back(estimator->Clone());
-        }
-        return result;
-      }()},
-      total_weight{other.total_weight} {}
-
 EstimatorSet::EstimatorSet(
     const pugi::xml_node& estimators_node, const World& world,
     const Real total_weight)
@@ -246,6 +235,17 @@ EstimatorSet::EstimatorSet(
         return result;
       }()},
       total_weight{total_weight} {}
+
+EstimatorSet::EstimatorSet(const EstimatorSet& other) noexcept
+    : // IIFE
+      estimators{[&other]() {
+        std::vector<std::unique_ptr<Estimator>> result;
+        for (const auto& estimator : other.estimators) {
+          result.push_back(estimator->Clone());
+        }
+        return result;
+      }()},
+      total_weight{other.total_weight} {}
 
 EstimatorSet::Proxy EstimatorSet::GetProxy() const noexcept {
   return Proxy(*this);

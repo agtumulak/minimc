@@ -151,8 +151,6 @@ public:
     // contains all estimator proxies
     std::vector<Estimator::Proxy> estimator_proxies;
   };
-  /// @brief Copy constructor; deep copies each Estimator in other
-  EstimatorSet(const EstimatorSet& other) noexcept;
   /// @brief Constructs an EstimatorSet from an XML document
   /// @param estimators_node `estimators` node of an XML document
   /// @param world Used to reference CSGSurface or Cell objects for estimators
@@ -160,6 +158,8 @@ public:
   EstimatorSet(
       const pugi::xml_node& estimators_node, const World& world,
       const Real total_weight);
+  /// @brief Copy constructor; deep copies each Estimator in other
+  EstimatorSet(const EstimatorSet& other) noexcept;
   /// @brief Return an EstimatorSet::Proxy
   Proxy GetProxy() const noexcept;
   /// @brief Add scores from each Estimator of other to this
