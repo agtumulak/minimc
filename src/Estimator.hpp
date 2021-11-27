@@ -104,9 +104,9 @@ private:
   const std::shared_ptr<const Bins> energy;
   // contains the size of each element to facilitate constant-time lookup
   const std::array<size_t, 2> strides;
-  /// @brief Flattened array of scores
+  // flattened array of scores
   std::vector<Real> scores;
-  /// @brief Flattened array of square of scores
+  // flattened array of square of scores
   std::vector<Real> square_scores;
 };
 
