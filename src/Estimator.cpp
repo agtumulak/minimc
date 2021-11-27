@@ -1,6 +1,7 @@
 #include "Estimator.hpp"
 
 #include "Bins.hpp"
+#include "Multiplier.hpp"
 #include "Particle.hpp"
 #include "World.hpp"
 #include "pugixml.hpp"
@@ -9,6 +10,7 @@
 #include <cassert>
 #include <cmath>
 #include <functional>
+#include <iterator>
 #include <ostream>
 #include <stdexcept>
 #include <string>
@@ -24,22 +26,37 @@
 Estimator::Proxy::Proxy(Estimator& init) noexcept : original{init} {}
 
 void Estimator::Proxy::Score(const Particle& p) noexcept {
-  // determine score this Particle would produce
+  // determine score the Particle would produce
   const auto& score = original.GetScore(p);
-  // skip scoring if score would have been zero
+  // skip scoring entirely if score is zero
   if (score == 0) {
     return;
   }
-  // determine which bin this Particle would score to
-  const auto& index = original.GetIndex(p);
-  // check if the Particle's bin has already been scored to
-  if (const auto it = pending_scores.find(index); it != pending_scores.cend()) {
-    // add score to existing index
-    it->second += score;
+  // loop over each sensitivity
+  for (const auto& sensitivity: original.sensitivities){
+
   }
-  else {
-    // insert index and initialize score
-    pending_scores.insert(std::make_pair(index, score));
+  for (size_t sensitivity_offset = 0;
+       sensitivity_offset < original.sensitivities.size();
+       sensitivity_offset++) {
+    const auto& sensitivity = *original.sensitivities[sensitivity_offset];
+    const auto& score_multiplier = sensitivity.GetMultiplier(p);
+    // skip scoring if multiplier would have been zero
+    if (score_multiplier == 0) {
+      continue;
+    }
+    // determine which index this score should be added to
+    const auto& index = original.GetBaseIndex(p) + sensitivity_offset;
+    // check if index is already in pending_scores
+    if (const auto it = pending_scores.find(index);
+        it != pending_scores.cend()) {
+      // add multiplied score to existing index
+      it->second += score_multiplier * score;
+    }
+    else {
+      // insert index and initialize score
+      pending_scores.insert(std::make_pair(index, score_multiplier * score));
+    }
   }
 }
 
@@ -117,7 +134,19 @@ Estimator::Estimator(const pugi::xml_node& estimator_node) noexcept
     : direction{CreateDirection(estimator_node.child("cosine"))},
       cosine{Bins::Create(estimator_node.child("cosine").first_child())},
       energy{Bins::Create(estimator_node.child("energy").first_child())},
-      strides{ComputeStrides(*cosine, *energy)},
+      // IIFE
+      sensitivities{[&estimator_node]() {
+        std::vector<std::shared_ptr<const Sensitivity>> result;
+        // there is always a NoSensitivity
+        result.push_back(std::make_shared<NoSensitivity>());
+        // add additional sensitivities, if any
+        for (const auto& sensitivity_node :
+             estimator_node.child("sensitivities")) {
+          result.push_back(Sensitivity::Create(sensitivity_node));
+        }
+        return result;
+      }()},
+      strides{ComputeStrides(*cosine, *energy, sensitivities)},
       scores(cosine->size() * strides.front(), 0),
       square_scores(cosine->size() * strides.front(), 0) {}
 
@@ -134,14 +163,15 @@ Estimator::CreateDirection(const pugi::xml_node& cosine_node) noexcept {
              : std::nullopt;
 }
 
-size_t Estimator::GetIndex(const Particle& p) const noexcept {
+Estimator::FlattenedIndex
+Estimator::GetBaseIndex(const Particle& p) const noexcept {
   // get cosine bin
   const auto c_i =
       direction ? cosine->GetIndex(direction.value().Dot(p.GetDirection())) : 0;
   // get energy bin
   const auto e_i = energy->GetIndex(std::visit(VisitEnergy(), p.GetEnergy()));
   // get flattened index
-  return strides[0] * c_i + e_i;
+  return strides[0] * c_i + strides[1] * e_i;
 }
 
 // CurrentEstimator
@@ -152,13 +182,19 @@ CurrentEstimator::CurrentEstimator(
     const pugi::xml_node& current_estimator_node, const World& world)
     : Estimator{current_estimator_node},
       surface{world.FindSurfaceByName(
-          current_estimator_node.attribute("surface").as_string())} {}
+          current_estimator_node.attribute("surface").as_string())},
+      sensitivities {}{}
 
 std::unique_ptr<Estimator> CurrentEstimator::Clone() const noexcept {
   return std::make_unique<CurrentEstimator>(*this);
 }
 
-Real CurrentEstimator::GetScore(const Particle& p) noexcept {
+Real CurrentEstimator::GetDirectEffect(
+    const Particle& p, const Sensitivity& s) const noexcept {}
+
+//// private
+
+Real CurrentEstimator::GetScore(const Particle& p) const noexcept {
   if (p.current_surface == surface &&
       (p.event == Particle::Event::surface_cross ||
        p.event == Particle::Event::leak)) {

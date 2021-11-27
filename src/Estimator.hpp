@@ -2,6 +2,7 @@
 
 #include "BasicTypes.hpp"
 #include "Point.hpp"
+#include "Sensitivity.hpp"
 
 #include <array>
 #include <cstddef>
@@ -23,6 +24,8 @@ class Particle;
 /// @brief Scores tallies based on the history of a Particle
 class Estimator {
 public:
+  // index in flattened bin vector
+  using FlattenedIndex = size_t;
   /// @brief A lightweight object for accumulating Estimator scores for a
   ///        single history
   /// @details During a call to TransportMethod::Transport(), scores are
@@ -42,8 +45,8 @@ public:
     void CommitHistory() const noexcept;
 
   private:
-    // map from indices in flattened vector to pending scores
-    std::map<size_t, Real> pending_scores;
+    // map from index in flattened bin vector to pending score
+    std::map<FlattenedIndex, Real> pending_scores;
     // reference to original Estimator
     Estimator& original;
   };
@@ -55,6 +58,9 @@ public:
   virtual ~Estimator() noexcept;
   /// @brief Virtual constructor, used for deep copying an EstimatorSet
   virtual std::unique_ptr<Estimator> Clone() const noexcept = 0;
+  // interface for getting the direct effect due to a perturbation
+  virtual Real
+  GetDirectEffect(const Particle& p, const Sensitivity& s) const noexcept = 0;
   /// @brief Returns an output string stream suitable for printing
   std::ostringstream GetPrintable(const Real total_weight) const noexcept;
   /// @brief Add scores of other to this
@@ -75,10 +81,16 @@ private:
   // helper function to construct reference direction if binning over cosines
   static std::optional<Direction>
   CreateDirection(const pugi::xml_node& cosine_node) noexcept;
-  // returns a flattened index
-  size_t GetIndex(const Particle& p) const noexcept;
+  // Returns index into flattened vector. The returned index correspond to zero
+  // offset from a base index. Zero offset the the unmodified score. Higher
+  // offsets correspond to sensitivity scores. The offsets are determined by
+  // the order of Sensitivity elements in Estimator::sensitivities.
+  FlattenedIndex GetBaseIndex(const Particle& p) const noexcept;
   // interface for scoring
-  virtual Real GetScore(const Particle& p) noexcept = 0;
+  virtual Real GetScore(const Particle& p) const noexcept = 0;
+  // interface for getting multipliers
+  virtual std::vector<Real>
+  GetMultipliers(const Particle& p) const noexcept = 0;
   // precomputes the stride for each dimension, base case
   template <typename T, typename U>
   static std::array<size_t, 2>
@@ -95,6 +107,7 @@ private:
         inner_strides.cbegin(), inner_strides.cend(),
         std::next(strides.begin()));
     strides.front() = middle_bin.size() * inner_strides.front();
+    return strides;
   }
   // reference direction against which direction cosines are computed
   const std::optional<Direction> direction;
@@ -102,11 +115,14 @@ private:
   const std::shared_ptr<const Bins> cosine;
   // energy bins
   const std::shared_ptr<const Bins> energy;
+  // sensitivities; the first element is always a NoSensitivity
+  const std::vector<std::shared_ptr<const Sensitivity>> sensitivities;
   // contains the size of each element to facilitate constant-time lookup
-  const std::array<size_t, 2> strides;
-  /// @brief Flattened array of scores
+  const std::array<size_t, 3> strides;
+  // flattened array of scores corresponding to different bins and multipliers
   std::vector<Real> scores;
-  /// @brief Flattened array of square of scores
+  // flattened array of square of scores corresponding to different bins and
+  // multipliers
   std::vector<Real> square_scores;
 };
 
@@ -118,10 +134,16 @@ public:
       const pugi::xml_node& current_estimator_node, const World& world);
   /// @brief Returns a pointer to a new instance of CurrentEstimator
   std::unique_ptr<Estimator> Clone() const noexcept override;
-  /// @brief Implements Estimator method
-  Real GetScore(const Particle& p) noexcept override;
+  // interface for getting the direct effect due to a perturbation
+  Real GetDirectEffect(
+      const Particle& p, const Sensitivity& s) const noexcept override;
 
 private:
+  // Implements Estimator method
+  Real GetScore(const Particle& p) const noexcept override;
+  // Implements Estimator method
+  virtual std::vector<Real>
+  GetMultipliers(const Particle& p) const noexcept = 0;
   // CSGSurface which this estimator is associated with, pointer makes
   // comparison fast
   const std::shared_ptr<const CSGSurface> surface;

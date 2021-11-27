@@ -68,4 +68,38 @@ total scatter rate. Another scoring function is
 which scores @f$ \Sigma^{-1}_{t}(X_{i}) @f$ whenever a Particle collides. Using
 this scoring funtion results in an estimator for the scalar flux.
 
+@section estimators_data_structures Data Structures
+
+Internally, a history accumulates all scores @f$ S_{i} @f$ on a single vector.
+Another vector stores the <em>square</em> of each history's score @f$ S_{i}^{2}
+@f$. The former is used for estimating the expected value of the mean @f$ M =
+\frac{1}{N}\sum_{n=1}^{N} S_{n} @f$ from @f$ N @f$ sampled histories. The
+variance of the mean turns out to be expressible as a function of @f$ S_{i} @f$
+and @f$ S_{i}^{2} @f$:
+@f[
+  V[M] = \frac{1}{N} \left( E[S_{i}]^{2} - E[S_{i}^{2}] \right)
+@f]
+
+Although the scoring vectors are one dimensional, each element can be accessed
+using a @f$ D @f$-dimensional index by way of some index flattening function
+@f$ f: \mathbb{Z}_{\geq 0}^{D} \rightarrow \mathbb{Z}_{\geq 0} @f$ defined by
+a stride for each dimension. Dimensions which can be scored upon include
+
+1. Cosine of the scoring Particle with respect to some reference direction
+2. Energy of the Particle
+3. Multipliers
+4. Sensitivities
+
+Currently, each Particle can only score in one cosine or energy bin. In
+general, a Particle should be able to score to multple cosine or energy bins.
+Such is the case when performing functional expansion tallies.
+
+A Particle can score to multiple Sensitivity bins. A NoSensitvity bin is always
+scored. It corresponds to the actual score without performing any sensitivity
+analysis.
+
+The direct effect is a function of
+1. The type of estimator
+2. The quantitiy being perturbed
+
 */

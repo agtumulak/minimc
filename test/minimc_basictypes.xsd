@@ -261,6 +261,23 @@
               </xs:complexContent>
             </xs:complexType>
           </xs:element>
+          <xs:element name="sensitivities" minOccurs="0">
+            <xs:complexType>
+              <xs:choice minOccurs="1" maxOccurs="unbounded">
+                <xs:element name="sensitivity">
+                  <xs:complexType>
+                    <xs:attribute name="perturb" use="required">
+                      <xs:simpleType>
+                        <xs:restriction base="xs:string">
+                          <xs:enumeration value="total"/>
+                        </xs:restriction>
+                      </xs:simpleType>
+                    </xs:attribute>
+                  </xs:complexType>
+                </xs:element>
+              </xs:choice>
+            </xs:complexType>
+          </xs:element>
         </xs:all>
         <xs:attribute name="name" type="xs:normalizedString" use="required"/>
         <xs:attribute name="surface" type="xs:normalizedString" use="required"/>

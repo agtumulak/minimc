@@ -6,11 +6,13 @@
 #include <cstddef>
 #include <iosfwd>
 #include <list>
+#include <map>
 #include <memory>
 
 class Cell;
 class CSGSurface;
 class Nuclide;
+class Sensitivity;
 
 /// @brief The primary entity performing random walks in a World.
 /// @details Particles are characterized by their position, direction, energy,
@@ -90,6 +92,8 @@ public:
 private:
   // Secondaries produced
   std::list<Particle> secondaries;
+  // Accumulated indirect effects from differential operator sampling
+  std::map<Sensitivity*, Real> indirect_effects;
   // Position may be anywhere in @f$ \mathbb{R}^3 @f$
   Point position{0, 0, 0};
   // Direction must be constrained to @f$ \lVert v \rVert = 1 @f$

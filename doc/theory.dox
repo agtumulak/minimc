@@ -1,0 +1,17 @@
+/**
+
+@page theory Theory
+
+@tableofcontents
+
+@section theory_introduction Introduction
+
+A <em> History </em> is mathematically represented as a <em> 
+
+A <em> History </em> @f$ is a <em> rooted tree </em>. A rooted tree is a <em>
+graph </em>. A graph is an ordered pair @f$ (S, E) @f$ of <em> states </em> @f$
+S = {s_{1}, \ldots, s_{N}} @f$ and <em> vertices </em> 
+
+The probability of any state occurring depends e
+
+*/
