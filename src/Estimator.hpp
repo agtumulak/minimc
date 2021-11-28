@@ -23,30 +23,7 @@ class Particle;
 /// @brief Scores tallies based on the history of a Particle
 class Estimator {
 public:
-  /// @brief A lightweight object for accumulating Estimator scores for a
-  ///        single history
-  /// @details During a call to TransportMethod::Transport(), scores are
-  ///          produced by a single Particle object's random walk. However, we
-  ///          cannot immediately score an Estimator once that Particle has
-  ///          died. The Particle might have produced secondaries and those
-  ///          secondaries must complete their random walks too.
-  class Proxy {
-  public:
-    /// @brief Construct a Proxy for the given Estimator
-    Proxy(Estimator& init) noexcept;
-    /// @brief Add score to pending scores
-    void Score(const Particle& p) noexcept;
-    /// @brief Adds the pending scores to the actual Estimator
-    /// @details Squares of each score are also evaluated for estimating
-    ///          uncertainties.
-    void CommitHistory() const noexcept;
-
-  private:
-    // map from indices in flattened vector to pending scores
-    std::map<size_t, Real> pending_scores;
-    // reference to original Estimator
-    Estimator& original;
-  };
+  class Proxy;
   /// @brief Factory method to create new Estimator from an estimator node of
   ///        an XML document
   static std::unique_ptr<Estimator>
@@ -110,6 +87,31 @@ private:
   std::vector<Real> square_scores;
 };
 
+/// @brief A lightweight object for accumulating Estimator scores for a
+///        single history
+/// @details During a call to TransportMethod::Transport(), scores are
+///          produced by a single Particle object's random walk. However, we
+///          cannot immediately score an Estimator once that Particle has
+///          died. The Particle might have produced secondaries and those
+///          secondaries must complete their random walks too.
+class Estimator::Proxy {
+public:
+  /// @brief Construct a Proxy for the given Estimator
+  Proxy(Estimator& init) noexcept;
+  /// @brief Add score to pending scores
+  void Score(const Particle& p) noexcept;
+  /// @brief Adds the pending scores to the actual Estimator
+  /// @details Squares of each score are also evaluated for estimating
+  ///          uncertainties.
+  void CommitHistory() const noexcept;
+
+private:
+  // map from indices in flattened vector to pending scores
+  std::map<size_t, Real> pending_scores;
+  // reference to original Estimator
+  Estimator& original;
+};
+
 /// @brief Scores when a Particle crosses a given CSGSurface
 class CurrentEstimator : public Estimator {
 public:
@@ -118,10 +120,10 @@ public:
       const pugi::xml_node& current_estimator_node, const World& world);
   /// @brief Returns a pointer to a new instance of CurrentEstimator
   std::unique_ptr<Estimator> Clone() const noexcept override;
-  /// @brief Implements Estimator method
-  Real GetScore(const Particle& p) noexcept override;
 
 private:
+  // Implements Estimator method
+  Real GetScore(const Particle& p) noexcept override;
   // CSGSurface which this estimator is associated with, pointer makes
   // comparison fast
   const std::shared_ptr<const CSGSurface> surface;
@@ -134,23 +136,7 @@ class EstimatorSet {
   operator<<(std::ostream& os, const EstimatorSet& e) noexcept;
 
 public:
-  /// @brief A lightweight class for accumulating scores produced by a single
-  ///        history.
-  /// @details Constructing an EstimatorSet at the beginning of each history
-  ///          may be expensive since many data st
-  class Proxy {
-  public:
-    /// @brief Construct a Proxy for the given EstimatorSet
-    Proxy(const EstimatorSet& init) noexcept;
-    /// @brief Score to each Estimator::Proxy
-    void Score(const Particle& p) noexcept;
-    /// @brief Calls Estimator::Proxy::CommitHistory() on each Estimator::Proxy
-    void CommitHistory() const noexcept;
-
-  private:
-    // contains all estimator proxies
-    std::vector<Estimator::Proxy> estimator_proxies;
-  };
+  class Proxy;
   /// @brief Constructs an EstimatorSet from an XML document
   /// @param estimators_node `estimators` node of an XML document
   /// @param world Used to reference CSGSurface or Cell objects for estimators
@@ -172,4 +158,22 @@ private:
   const std::vector<std::unique_ptr<Estimator>> estimators;
   // total weight for normalizing score
   const Real total_weight;
+};
+
+/// @brief A lightweight class for accumulating scores produced by a single
+///        history.
+/// @details Constructing an EstimatorSet at the beginning of each history
+///          may be expensive since many data st
+class EstimatorSet::Proxy {
+public:
+  /// @brief Construct a Proxy for the given EstimatorSet
+  Proxy(const EstimatorSet& init) noexcept;
+  /// @brief Score to each Estimator::Proxy
+  void Score(const Particle& p) noexcept;
+  /// @brief Calls Estimator::Proxy::CommitHistory() on each Estimator::Proxy
+  void CommitHistory() const noexcept;
+
+private:
+  // contains all estimator proxies
+  std::vector<Estimator::Proxy> estimator_proxies;
 };

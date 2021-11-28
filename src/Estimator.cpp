@@ -17,39 +17,6 @@
 #include <utility>
 #include <variant>
 
-// EstimatorProxy
-
-//// public
-
-Estimator::Proxy::Proxy(Estimator& init) noexcept : original{init} {}
-
-void Estimator::Proxy::Score(const Particle& p) noexcept {
-  // determine score this Particle would produce
-  const auto& score = original.GetScore(p);
-  // skip scoring if score would have been zero
-  if (score == 0) {
-    return;
-  }
-  // determine which bin this Particle would score to
-  const auto& index = original.GetIndex(p);
-  // check if the Particle's bin has already been scored to
-  if (const auto it = pending_scores.find(index); it != pending_scores.cend()) {
-    // add score to existing index
-    it->second += score;
-  }
-  else {
-    // insert index and initialize score
-    pending_scores.insert(std::make_pair(index, score));
-  }
-}
-
-void Estimator::Proxy::CommitHistory() const noexcept {
-  for (const auto& [index, score] : pending_scores) {
-    original.scores[index] += score;
-    original.square_scores[index] += score * score;
-  }
-}
-
 // Estimator
 
 //// public
@@ -144,6 +111,39 @@ size_t Estimator::GetIndex(const Particle& p) const noexcept {
   return strides[0] * c_i + e_i;
 }
 
+// Estimator::Proxy
+
+//// public
+
+Estimator::Proxy::Proxy(Estimator& init) noexcept : original{init} {}
+
+void Estimator::Proxy::Score(const Particle& p) noexcept {
+  // determine score this Particle would produce
+  const auto& score = original.GetScore(p);
+  // skip scoring if score would have been zero
+  if (score == 0) {
+    return;
+  }
+  // determine which bin this Particle would score to
+  const auto& index = original.GetIndex(p);
+  // check if the Particle's bin has already been scored to
+  if (const auto it = pending_scores.find(index); it != pending_scores.cend()) {
+    // add score to existing index
+    it->second += score;
+  }
+  else {
+    // insert index and initialize score
+    pending_scores.insert(std::make_pair(index, score));
+  }
+}
+
+void Estimator::Proxy::CommitHistory() const noexcept {
+  for (const auto& [index, score] : pending_scores) {
+    original.scores[index] += score;
+    original.square_scores[index] += score * score;
+  }
+}
+
 // CurrentEstimator
 
 //// public
@@ -180,34 +180,6 @@ std::ostream& operator<<(std::ostream& os, const EstimatorSet& e) noexcept {
   }
   return os;
 }
-
-// EstimatorSet::Proxy
-
-//// public
-
-EstimatorSet::Proxy::Proxy(const EstimatorSet& init) noexcept
-    : // IIFE
-      estimator_proxies{[&init]() {
-        std::vector<Estimator::Proxy> result;
-        for (const auto& estimator_ptr : init.estimators) {
-          result.emplace_back(*estimator_ptr);
-        }
-        return result;
-      }()} {}
-
-void EstimatorSet::Proxy::Score(const Particle& p) noexcept {
-  std::for_each(
-      estimator_proxies.begin(), estimator_proxies.end(),
-      [&p](auto& estimator_proxy) { estimator_proxy.Score(p); });
-}
-
-void EstimatorSet::Proxy::CommitHistory() const noexcept {
-  std::for_each(
-      estimator_proxies.begin(), estimator_proxies.end(),
-      [](auto& proxy) { proxy.CommitHistory(); });
-}
-
-// EstimatorSet
 
 //// public
 
@@ -268,3 +240,30 @@ EstimatorSet& EstimatorSet::operator+=(const EstimatorSet& other) {
       });
   return *this;
 }
+
+// EstimatorSet::Proxy
+
+//// public
+
+EstimatorSet::Proxy::Proxy(const EstimatorSet& init) noexcept
+    : // IIFE
+      estimator_proxies{[&init]() {
+        std::vector<Estimator::Proxy> result;
+        for (const auto& estimator_ptr : init.estimators) {
+          result.emplace_back(*estimator_ptr);
+        }
+        return result;
+      }()} {}
+
+void EstimatorSet::Proxy::Score(const Particle& p) noexcept {
+  std::for_each(
+      estimator_proxies.begin(), estimator_proxies.end(),
+      [&p](auto& estimator_proxy) { estimator_proxy.Score(p); });
+}
+
+void EstimatorSet::Proxy::CommitHistory() const noexcept {
+  std::for_each(
+      estimator_proxies.begin(), estimator_proxies.end(),
+      [](auto& proxy) { proxy.CommitHistory(); });
+}
+
