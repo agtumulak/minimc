@@ -5,6 +5,8 @@
 #include <filesystem>
 
 /// @brief Validates document with Xerces-C++. Loads document with pugixml.
+/// @todo Replace xs:normalizedString by xs:token or more restrictive type in
+///       schema
 class XMLDocument {
 public:
   /// @brief Loads a valid pugixml XML document.
