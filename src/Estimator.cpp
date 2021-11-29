@@ -81,7 +81,8 @@ Estimator& Estimator::operator+=(const Estimator& other) noexcept {
 //// protected
 
 Estimator::Estimator(const pugi::xml_node& estimator_node) noexcept
-    : direction{CreateDirection(estimator_node.child("cosine"))},
+    : name{estimator_node.attribute("name").as_string()},
+      direction{CreateDirection(estimator_node.child("cosine"))},
       cosine{Bins::Create(estimator_node.child("cosine").first_child())},
       energy{Bins::Create(estimator_node.child("energy").first_child())},
       strides{ComputeStrides(*cosine, *energy)},
