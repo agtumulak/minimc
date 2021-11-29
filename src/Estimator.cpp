@@ -191,19 +191,8 @@ EstimatorSet::EstimatorSet(
       estimators{[&estimators_node, &world]() {
         std::vector<std::unique_ptr<Estimator>> result;
         for (const auto& estimator_node : estimators_node) {
-          // check if an Estimator with this name was already constructed
-          if (const std::string name =
-                  estimator_node.attribute("name").as_string();
-              std::find_if(
-                  result.cbegin(), result.cend(),
-                  [&name](const auto& estimator_ptr) {
-                    return name == estimator_ptr->name;
-                  }) != result.cend()) {
-            throw std::runtime_error("Duplicate estimator name: " + name);
-          }
-          else {
-            result.push_back(Estimator::Create(estimator_node, world));
-          }
+          result.push_back(
+              Estimator::Create(estimator_node, world, perturbations));
         }
         return result;
       }()},

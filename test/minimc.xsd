@@ -136,7 +136,17 @@
           </xs:choice>
         </xs:complexType>
       </xs:element>
-      <xs:element name="estimators" type="EstimatorDefinition" minOccurs="0"/>
+      <xs:element name="estimators" minOccurs="0">
+        <xs:complexType>
+          <xs:complexContent>
+            <xs:extension base="EstimatorDefinition" minOccurs="0"/>
+          </xs:complexContent>
+        </xs:complexType>
+        <xs:unique name="unique-estimator-name">
+          <xs:selector xpath="./*"/>
+          <xs:field xpath="@name"/>
+        </xs:unique>
+      </xs:element>
     </xs:all>
   </xs:complexType>
 </xs:element>
