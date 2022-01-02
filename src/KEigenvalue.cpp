@@ -62,13 +62,12 @@ EstimatorSet KEigenvalue::Solve() {
 
 //// private
 
-std::tuple<Bank, EstimatorSet::Proxy> KEigenvalue::StartWorker() {
+std::tuple<Bank, EstimatorSetProxy> KEigenvalue::StartWorker() {
   EstimatorSet worker_estimator_set = init_estimator_set;
   auto scoring_proxy = worker_estimator_set.GetProxy();
   Bank worker_bank;
   while (auto p = NextParticle()) {
-    worker_bank +=
-        transport_method->Transport(p.value(), scoring_proxy, world);
+    worker_bank += p->Transport(scoring_proxy, world);
   }
   return {worker_bank, scoring_proxy};
 }

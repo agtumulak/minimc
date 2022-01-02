@@ -2,6 +2,7 @@
 
 #include "BasicTypes.hpp"
 #include "Estimator.hpp"
+#include "Perturbation.hpp"
 #include "World.hpp"
 
 #include <cstddef>
@@ -31,12 +32,13 @@ public:
 protected:
   /// @brief Global, read-only description of geometric and material properties
   const World world;
+  /// @brief All perturbations whose effect on one or more Estimator objects is
+  ///        being estimated
+  const PerturbationSet perturbations;
   /// @brief Total histories for fixed-source; cycle weight for k-eigenvalue
   const RNG::result_type batchsize;
   /// @brief Initial value of an EstimatorSet used to initialize workers
   const EstimatorSet init_estimator_set;
-  /// @brief Used to update Particle state
-  const std::unique_ptr<const TransportMethod> transport_method;
   /// @brief Number of threads dedicated to particle transport
   const size_t threads;
   /// @brief Histories are assigned a seed in [seed, seed + batchsize)

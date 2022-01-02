@@ -40,7 +40,11 @@ public:
   /// @param w World the Particle transports within
   /// @returns Any secondaries produced in the course of transporting p
   virtual Bank Transport(
-      Particle& p, EstimatorSet::Proxy& e, const World& w) const noexcept = 0;
+      Particle& p, EstimatorSetProxy& e, const World& w) const noexcept = 0;
+  /// @brief Returns the probability density of colliding per unit distance per
+  ///        unit number density
+  virtual MicroscopicCrossSection
+  GetCollisionProbabilityDensity(const Particle& p) const noexcept = 0;
 };
 
 /// @brief Loops over each CSGSurface in the current Cell to find the next
@@ -48,8 +52,11 @@ public:
 class SurfaceTracking : public TransportMethod {
 public:
   /// @brief Implements delta tracking
-  Bank Transport(Particle& p, EstimatorSet::Proxy& e, const World& w)
+  Bank Transport(Particle& p, EstimatorSetProxy& e, const World& w)
       const noexcept override;
+  /// @brief Returns the probability density of a true collision
+  MicroscopicCrossSection
+  GetCollisionProbabilityDensity(const Particle& p) const noexcept override;
 };
 
 /// @brief Tracks a particle using delta tracking within a Cell. Surface
@@ -57,6 +64,9 @@ public:
 class CellDeltaTracking : public TransportMethod {
 public:
   /// @brief Implements cell delta tracking
-  Bank Transport(Particle& p, EstimatorSet::Proxy& e, const World& w)
+  Bank Transport(Particle& p, EstimatorSetProxy& e, const World& w)
       const noexcept override;
+  /// @brief Returns the probability density of a true or virtual collision
+  MicroscopicCrossSection
+  GetCollisionProbabilityDensity(const Particle& p) const noexcept override;
 };

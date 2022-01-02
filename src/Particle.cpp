@@ -4,6 +4,8 @@
 #include "Constants.hpp"
 #include "Material.hpp"
 #include "Nuclide.hpp"
+#include "Perturbation.hpp"
+#include "TransportMethod.hpp"
 
 #include <cassert>
 #include <map>
@@ -29,20 +31,45 @@ Particle::Type Particle::ToType(const std::string& name) noexcept {
   };
 }
 
+std::unique_ptr<const TransportMethod> Particle::transport_method;
+
 Particle::Particle(
     const Point& position, const Direction& direction, const Energy& energy,
     const Type type, RNG::result_type seed, const Cell* cell) noexcept
     : position{position}, direction{direction}, energy{energy}, cell{cell},
       rng{seed}, type{type} {}
 
+Bank Particle::Transport(EstimatorSetProxy& e, const World& w) noexcept {
+  return transport_method->Transport(*this, e, w);
+}
+
 void Particle::Stream(const Real distance) noexcept {
+  // update indirect effect due to each perturbation
+  for (auto& [perturbation, indirect_effect] : indirect_effects) {
+    indirect_effect += perturbation->Stream(*this, distance);
+  }
+  // update position
   position += direction * distance;
 }
 
 void Particle::Scatter(const Real& mu, const Energy& e) noexcept {
+  // update indirect effect due to each perturbation
+  for (auto& [perturbation, indirect_effect] : indirect_effects) {
+    indirect_effect += perturbation->Scatter(*this, mu, e);
+  }
+  // update direction and energy
   const Real phi = 2 * constants::pi * std::uniform_real_distribution{}(rng);
   direction = Direction{direction, mu, phi};
   energy = e;
+}
+
+Real Particle::GetIndirectEffect(
+    const Perturbation* perturbation) const noexcept {
+  return indirect_effects.at(perturbation);
+}
+
+void Particle::SetPerturbations(const PerturbationSet& perturbations) noexcept {
+  indirect_effects = perturbations.GetIndirectEffects();
 }
 
 const Point& Particle::GetPosition() const noexcept { return position; };
@@ -72,8 +99,8 @@ void Particle::BankSecondaries(
       position, direction, energy, Type::neutron, rng(), cell);
 }
 
-void Particle::MoveSecondariesToFrontOf(std::list<Particle>& bank) noexcept {
-  bank.splice(bank.begin(), secondaries);
+void Particle::MoveSecondariesTo(Bank& bank) noexcept {
+  bank += std::move(secondaries);
 }
 
 Real Particle::Sample() noexcept {

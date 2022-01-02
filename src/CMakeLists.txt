@@ -36,12 +36,18 @@ set(MINIMC_SOURCES
   Nuclide.hpp
   Particle.cpp
   Particle.hpp
+  Perturbation.cpp
+  Perturbation.hpp
   Point.cpp
   Point.hpp
   Reaction.cpp
   Reaction.hpp
+  Sensitivity.cpp
+  Sensitivity.hpp
   ScalarField.cpp
   ScalarField.hpp
+  Scorable.cpp
+  Scorable.hpp
   Source.cpp
   Source.hpp
   ThermalScattering.cpp

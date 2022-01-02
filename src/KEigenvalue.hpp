@@ -36,7 +36,7 @@ public:
 private:
   using Cycle = size_t;
   // Function executed by a worker on a single thread
-  std::tuple<Bank, EstimatorSet::Proxy> StartWorker();
+  std::tuple<Bank, EstimatorSetProxy> StartWorker();
   // Returns the next Particle from source_bank in a thread-safe manner
   std::optional<Particle> NextParticle() noexcept;
   // Allows mutually exclusive access to source_bank

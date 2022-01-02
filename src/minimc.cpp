@@ -11,6 +11,7 @@ int main(int argc, char* argv[]) {
     throw std::runtime_error("MiniMC accepts exactly one argument");
   }
   auto driver = Driver::Create(argv[1]);
-  std::cout << driver->Solve() << std::endl;
+  const auto& result = driver->Solve();
+  std::cout << result.to_string();
   return 0;
 }

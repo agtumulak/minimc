@@ -1,16 +1,21 @@
 #pragma once
 
+#include "Bank.hpp"
 #include "BasicTypes.hpp"
 #include "Point.hpp"
 
-#include <cstddef>
 #include <iosfwd>
-#include <list>
+#include <map>
 #include <memory>
 
 class Cell;
 class CSGSurface;
+class EstimatorSetProxy;
 class Nuclide;
+class Perturbation;
+class PerturbationSet;
+class TransportMethod;
+class World;
 
 /// @brief The primary entity performing random walks in a World.
 /// @details Particles are characterized by their position, direction, energy,
@@ -38,11 +43,16 @@ public:
   };
   /// @brief Helper function to convert from std::string to Type
   static Type ToType(const std::string& name) noexcept;
+  /// @brief The TransportMethod used by all Particle objects
+  static std::unique_ptr<const TransportMethod> transport_method;
   /// @brief Member constructor. Explicitly assigns phase-space members.
   Particle(
       const Point& position, const Direction& direction, const Energy& energy,
       const Type type, RNG::result_type seed,
       const Cell* cell = nullptr) noexcept;
+  /// @brief Use Particle::transport_method to update Particle state until it
+  ///        dies
+  Bank Transport(EstimatorSetProxy& e, const World& w) noexcept;
   /// @brief Moves the particle along its current direction a given distance
   void Stream(const Real distance) noexcept;
   /// @brief Scatters the Particle with an outgoing direction and energy.
@@ -50,6 +60,10 @@ public:
   /// @param mu The scattering cosine @f$ \mu @f$
   /// @param e The outgoing energy
   void Scatter(const Real& mu, const Energy& e) noexcept;
+  /// @brief Returns a reference to the indirect effects of this Particle
+  Real GetIndirectEffect(const Perturbation* perturbation) const noexcept;
+  /// @brief Sets the indirect effects of the Particle
+  void SetPerturbations(const PerturbationSet& perturbations) noexcept;
   /// @brief Return the current position of the Particle
   const Point& GetPosition() const noexcept;
   /// @brief Return the current direction of the Particle
@@ -72,10 +86,10 @@ public:
   void
   BankSecondaries(const Direction& direction, const Energy& energy) noexcept;
   /// @brief Transfers secondaries produced by this Particle to the front of
-  ///        a given list.
+  ///        a given Bank
   /// @details This is implemented using std::list::splice so this Particle's
   ///          own list of secondaries becomes empty after the operation.
-  void MoveSecondariesToFrontOf(std::list<Particle>& bank) noexcept;
+  void MoveSecondariesTo(Bank& bank) noexcept;
   /// @brief Sample a random number uniformly in @f$ [0, 1) @f$
   /// @details This is provided as a convenience function because more
   ///          complicated sampling schemes require multiple uniformly
@@ -88,8 +102,10 @@ public:
   bool IsAlive() const noexcept;
 
 private:
+  // Indirect effects due to a Perturbation
+  std::map<const Perturbation*, Real> indirect_effects;
   // Secondaries produced
-  std::list<Particle> secondaries;
+  Bank secondaries;
   // Position may be anywhere in @f$ \mathbb{R}^3 @f$
   Point position{0, 0, 0};
   // Direction must be constrained to @f$ \lVert v \rVert = 1 @f$

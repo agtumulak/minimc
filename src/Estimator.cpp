@@ -2,30 +2,28 @@
 
 #include "Bins.hpp"
 #include "Particle.hpp"
+#include "Sensitivity.hpp"
 #include "World.hpp"
 #include "pugixml.hpp"
 
-#include <algorithm>
 #include <cassert>
-#include <cmath>
-#include <functional>
+#include <numeric>
 #include <ostream>
 #include <stdexcept>
 #include <string>
-#include <sstream>
-#include <type_traits>
-#include <utility>
-#include <variant>
+
 
 // Estimator
 
 //// public
 
 std::unique_ptr<Estimator> Estimator::Create(
-    const pugi::xml_node& estimator_node, const World& world) noexcept {
+    const pugi::xml_node& estimator_node, const World& world,
+    const PerturbationSet& perturbations) {
   const std::string estimator_type = estimator_node.name();
   if (estimator_type == "current") {
-    return std::make_unique<CurrentEstimator>(estimator_node, world);
+    return std::make_unique<CurrentEstimator>(
+        estimator_node, world, perturbations);
   }
   else {
     assert(false); // this should have been caught by the validator
@@ -33,115 +31,92 @@ std::unique_ptr<Estimator> Estimator::Create(
   }
 }
 
+Estimator::Estimator(const Estimator& other) noexcept
+    : Scorable(other),
+      // IIFE
+      sensitivities{[&other]() noexcept {
+        std::vector<std::unique_ptr<Sensitivity>> result;
+        for (const auto& sensitivity : other.sensitivities) {
+          result.push_back(sensitivity->Clone());
+        }
+        return result;
+      }()} {}
+
 Estimator::~Estimator() noexcept {}
 
-std::ostringstream
-Estimator::GetPrintable(const Real total_weight) const noexcept {
-  std::ostringstream ostream;
-  ostream << "cosine\n------\n" << *cosine << "\n" << std::endl;
-  ostream << "energy\n------\n" << *energy << "\n" << std::endl;
-  ostream << "scores\n------\n";
-  // normalize each score by total_weight
-  std::vector<Real> estimates(scores.size(), 0);
-  std::transform(
-      scores.cbegin(), scores.cend(), estimates.begin(),
-      std::bind(std::divides<Real>(), std::placeholders::_1, total_weight));
-  for (const auto& estimate : estimates) {
-    ostream << estimate << ", ";
+std::string Estimator::to_string(const Real total_weight) const noexcept {
+  std::string result;
+  result += name + "\n" + std::string(name.size(), '=') + "\n\n";
+  result += bins->to_string();
+  result += GetScoreAsString(total_weight);
+  for (const auto& sensitivity : sensitivities) {
+    result += sensitivity->to_string(total_weight);
   }
-  // compute standard deviation of the mean
-  std::vector<Real> stddevs(scores.size(), 0);
-  std::transform(
-      scores.cbegin(), scores.cend(), square_scores.cbegin(), stddevs.begin(),
-      [total_weight](const Real& score, const Real& square_score) {
-        return std::sqrt(square_score - score * score / total_weight) /
-               total_weight;
-      });
-  ostream << "\n" << std::endl;
-  ostream << "standard deviations\n-------------------\n";
-  for (const auto& stddev : stddevs) {
-    ostream << stddev << ", ";
-  }
-  ostream << "\n" << std::endl;
-  return ostream;
+  return result;
 }
 
 Estimator& Estimator::operator+=(const Estimator& other) noexcept {
   // add scores
-  std::transform(
-      scores.cbegin(), scores.cend(), other.scores.cbegin(), scores.begin(),
-      std::plus<Real>());
-  // add square scores
-  std::transform(
-      square_scores.cbegin(), square_scores.cend(),
-      other.square_scores.cbegin(), square_scores.begin(), std::plus<Real>());
+  Scorable::operator+=(other);
+  // add sensitivity scores
+  for (auto& sensitivity : sensitivities) {
+    const auto& matched_sensitivity = *std::find_if(
+        other.sensitivities.cbegin(), other.sensitivities.cend(),
+        [&sensitivity](const auto& other_it) {
+          return sensitivity->name == other_it->name;
+        });
+    *sensitivity += *matched_sensitivity;
+  }
   return *this;
 }
 
 //// protected
 
-Estimator::Estimator(const pugi::xml_node& estimator_node) noexcept
-    : name{estimator_node.attribute("name").as_string()},
-      direction{CreateDirection(estimator_node.child("cosine"))},
-      cosine{Bins::Create(estimator_node.child("cosine").first_child())},
-      energy{Bins::Create(estimator_node.child("energy").first_child())},
-      strides{ComputeStrides(*cosine, *energy)},
-      scores(cosine->size() * strides.front(), 0),
-      square_scores(cosine->size() * strides.front(), 0) {}
+Estimator::Estimator(
+    const pugi::xml_node& estimator_node,
+    const PerturbationSet& perturbations) noexcept
+    : Scorable{
+      estimator_node.attribute("name").as_string(),
+      estimator_node.child("bins")},
+      // IIFE
+      sensitivities{[this, &estimator_node, &perturbations]() {
+        std::vector<std::unique_ptr<Sensitivity>> result;
+        for (const auto& perturbation_sensitivity_node :
+             estimator_node.child("sensitivities")) {
+          result.push_back(Sensitivity::Create(
+              perturbation_sensitivity_node, perturbations, *this));
+        }
+        return result;
+      }()} {}
 
-//// private
-
-std::optional<Direction>
-Estimator::CreateDirection(const pugi::xml_node& cosine_node) noexcept {
-  return cosine_node
-             ? std::optional<Direction>(
-                   std::in_place,
-                   cosine_node.attribute("u").as_double(),
-                   cosine_node.attribute("v").as_double(),
-                   cosine_node.attribute("w").as_double())
-             : std::nullopt;
-}
-
-size_t Estimator::GetIndex(const Particle& p) const noexcept {
-  // get cosine bin
-  const auto c_i =
-      direction ? cosine->GetIndex(direction.value().Dot(p.GetDirection())) : 0;
-  // get energy bin
-  const auto e_i = energy->GetIndex(std::visit(VisitEnergy(), p.GetEnergy()));
-  // get flattened index
-  return strides[0] * c_i + e_i;
-}
-
-// Estimator::Proxy
+// EstimatorProxy
 
 //// public
 
-Estimator::Proxy::Proxy(Estimator& init) noexcept : original{init} {}
+EstimatorProxy::EstimatorProxy(Estimator& original) noexcept
+    : ScorableProxy{original},
+      // IIFE
+      sensitivity_proxies{[&original]() noexcept {
+        std::vector<ScorableProxy> result;
+        for (const auto& sensitivity : original.sensitivities) {
+          result.emplace_back(*sensitivity);
+        }
+        return result;
+      }()} {}
 
-void Estimator::Proxy::Score(const Particle& p) noexcept {
-  // determine score this Particle would produce
-  const auto& score = original.GetScore(p);
-  // skip scoring if score would have been zero
-  if (score == 0) {
-    return;
-  }
-  // determine which bin this Particle would score to
-  const auto& index = original.GetIndex(p);
-  // check if the Particle's bin has already been scored to
-  if (const auto it = pending_scores.find(index); it != pending_scores.cend()) {
-    // add score to existing index
-    it->second += score;
-  }
-  else {
-    // insert index and initialize score
-    pending_scores.insert(std::make_pair(index, score));
+void EstimatorProxy::Score(const Particle& p) noexcept {
+  ScorableProxy::Score(p);
+  // score child ScorableProxy objects for Sensitivity objects
+  for (auto& sensitivity_proxy : sensitivity_proxies) {
+    sensitivity_proxy.Score(p);
   }
 }
 
-void Estimator::Proxy::CommitHistory() const noexcept {
-  for (const auto& [index, score] : pending_scores) {
-    original.scores[index] += score;
-    original.square_scores[index] += score * score;
+void EstimatorProxy::CommitHistory() const noexcept {
+  ScorableProxy::CommitHistory();
+  // commit child ScorableProxy objects for Sensitivity objects
+  for (auto& sensitivity_proxy : sensitivity_proxies) {
+    sensitivity_proxy.CommitHistory();
   }
 }
 
@@ -150,16 +125,20 @@ void Estimator::Proxy::CommitHistory() const noexcept {
 //// public
 
 CurrentEstimator::CurrentEstimator(
-    const pugi::xml_node& current_estimator_node, const World& world)
-    : Estimator{current_estimator_node},
+    const pugi::xml_node& current_estimator_node, const World& world,
+    const PerturbationSet& perturbations)
+    : Estimator{current_estimator_node, perturbations},
       surface{world.FindSurfaceByName(
           current_estimator_node.attribute("surface").as_string())} {}
+
+CurrentEstimator::CurrentEstimator(const CurrentEstimator& other) noexcept
+    : Estimator(other), surface{other.surface} {}
 
 std::unique_ptr<Estimator> CurrentEstimator::Clone() const noexcept {
   return std::make_unique<CurrentEstimator>(*this);
 }
 
-Real CurrentEstimator::GetScore(const Particle& p) noexcept {
+Real CurrentEstimator::GetScore(const Particle& p) const noexcept {
   if (p.current_surface == surface &&
       (p.event == Particle::Event::surface_cross ||
        p.event == Particle::Event::leak)) {
@@ -172,23 +151,14 @@ Real CurrentEstimator::GetScore(const Particle& p) noexcept {
 
 // EstimatorSet
 
-std::ostream& operator<<(std::ostream& os, const EstimatorSet& e) noexcept {
-  for (const auto& estimator : e.estimators) {
-    os << std::endl
-       << estimator->name << std::endl
-       << std::string(estimator->name.length(), '-') << std::endl
-       << estimator->GetPrintable(e.total_weight).str() << std::endl;
-  }
-  return os;
-}
-
 //// public
 
 EstimatorSet::EstimatorSet(
     const pugi::xml_node& estimators_node, const World& world,
+    const PerturbationSet& perturbations,
     const Real total_weight)
     : // IIFE
-      estimators{[&estimators_node, &world]() {
+      estimators{[&estimators_node, &world, &perturbations]() {
         std::vector<std::unique_ptr<Estimator>> result;
         for (const auto& estimator_node : estimators_node) {
           result.push_back(
@@ -209,8 +179,36 @@ EstimatorSet::EstimatorSet(const EstimatorSet& other) noexcept
       }()},
       total_weight{other.total_weight} {}
 
-EstimatorSet::Proxy EstimatorSet::GetProxy() const noexcept {
-  return Proxy(*this);
+EstimatorSetProxy EstimatorSet::GetProxy() const noexcept {
+  return EstimatorSetProxy(*this);
+}
+
+const Estimator&
+EstimatorSet::FindEstimatorByName(const std::string& name) const {
+  const auto estimator_it = std::find_if(
+      estimators.cbegin(), estimators.cend(),
+      [&name](const auto& estimator_it) { return estimator_it->name == name; });
+  if (estimator_it == estimators.cend()) {
+    throw std::runtime_error(
+        "Estimator \"" + name + "\" notfound. Must be one of: [" +
+        std::accumulate(
+            estimators.cbegin(), estimators.cend(), std::string{},
+            [](const auto& accumulated, const auto& estimator_ptr) noexcept {
+              return accumulated + "\"" + estimator_ptr->name + "\", ";
+            }) +
+        "]");
+  }
+  else {
+    return **estimator_it;
+  }
+}
+
+std::string EstimatorSet::to_string() const noexcept {
+  std::string result;
+  for (const auto& estimator : estimators) {
+    result += "\n" + estimator->to_string(total_weight) + "\n";
+  }
+  return result;
 }
 
 EstimatorSet& EstimatorSet::operator+=(const EstimatorSet& other) {
@@ -231,29 +229,28 @@ EstimatorSet& EstimatorSet::operator+=(const EstimatorSet& other) {
   return *this;
 }
 
-// EstimatorSet::Proxy
+// EstimatorSetProxy
 
 //// public
 
-EstimatorSet::Proxy::Proxy(const EstimatorSet& init) noexcept
+EstimatorSetProxy::EstimatorSetProxy(const EstimatorSet& init) noexcept
     : // IIFE
       estimator_proxies{[&init]() {
-        std::vector<Estimator::Proxy> result;
+        std::vector<EstimatorProxy> result;
         for (const auto& estimator_ptr : init.estimators) {
           result.emplace_back(*estimator_ptr);
         }
         return result;
       }()} {}
 
-void EstimatorSet::Proxy::Score(const Particle& p) noexcept {
+void EstimatorSetProxy::Score(const Particle& p) noexcept {
   std::for_each(
       estimator_proxies.begin(), estimator_proxies.end(),
       [&p](auto& estimator_proxy) { estimator_proxy.Score(p); });
 }
 
-void EstimatorSet::Proxy::CommitHistory() const noexcept {
+void EstimatorSetProxy::CommitHistory() noexcept {
   std::for_each(
       estimator_proxies.begin(), estimator_proxies.end(),
       [](auto& proxy) { proxy.CommitHistory(); });
 }
-

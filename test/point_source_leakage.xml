@@ -3,9 +3,9 @@
   xsi:noNamespaceSchemaLocation="minimc.xsd">
 <general>
   <particles>neutron</particles>
-  <histories>10000</histories>
+  <histories>1000</histories>
   <threads>2</threads>
-  <chunksize>1000</chunksize>
+  <chunksize>500</chunksize>
 </general>
 <nuclides>
   <multigroup groups="1">

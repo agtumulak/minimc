@@ -25,7 +25,7 @@ Continuous::Continuous(const pugi::xml_node& particle_node)
 
 MicroscopicCrossSection
 Continuous::GetMajorant(const Particle& p) const noexcept {
-  // majorant temperature is assumed to occur at maximum temperature in Cell
+  // majorant cross section is assumed to occur at maximum temperature in Cell
   const auto majorant_temperature = p.GetCell().temperature->upper_bound;
   if (!ReactionsModifyTotal(p) && total.IsValid(majorant_temperature)) {
     return total.xs.at(std::get<ContinuousEnergy>(p.GetEnergy()));

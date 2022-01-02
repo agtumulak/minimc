@@ -2,6 +2,7 @@
 
 #include "FixedSource.hpp"
 #include "KEigenvalue.hpp"
+#include "Particle.hpp"
 #include "TransportMethod.hpp"
 #include "XMLDocument.hpp"
 #include "pugixml.hpp"
@@ -33,15 +34,19 @@ Driver::Create(const std::filesystem::path& xml_filepath) {
 }
 
 Driver::Driver(const pugi::xml_node& root)
-    : world{root}, batchsize(std::stoi(
-                       root.child("general").child("histories").child_value())),
+    : world{root}, perturbations{root.child("perturbations"), world},
+      batchsize(
+          std::stoi(root.child("general").child("histories").child_value())),
       init_estimator_set{
-          root.child("estimators"), world, static_cast<Real>(batchsize)},
-      transport_method{TransportMethod::Create(root, world)},
+          root.child("estimators"), world, perturbations,
+          static_cast<Real>(batchsize)},
       threads{std::stoul(root.child("general").child("threads").child_value())},
       seed(std::stoi(
           root.child("general").child("seed")
               ? root.child("general").child("seed").child_value()
-              : "1")) {}
+              : "1")) {
+  // All Particle objects will use the selected TransportMethod
+  Particle::transport_method = TransportMethod::Create(root, world);
+}
 
 Driver::~Driver() noexcept {}

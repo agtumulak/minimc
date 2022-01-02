@@ -38,8 +38,14 @@ public:
   bool HasConstantTemperature() const noexcept;
   /// @brief Returns the CSGSurface with the given name
   /// @exception std::runtime_error CSGSurface with given name not found
+  /// @todo Template this and FindNuclideByName
   std::shared_ptr<const CSGSurface>
   FindSurfaceByName(const std::string& name) const;
+  /// @brief Returns the Nuclide with the given name
+  /// @exception std::runtime_error Nuclide with the given name not found
+  /// @todo Template this and FindSurfaceByName
+  std::shared_ptr<const Nuclide>
+  FindNuclideByName(const std::string& name) const;
 
 private:
   // Helper function to create all CSGSurface objects that appear in Cell

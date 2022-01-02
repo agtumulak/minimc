@@ -50,13 +50,13 @@ TransportMethod::~TransportMethod() noexcept {}
 // SurfaceTracking
 
 Bank SurfaceTracking::Transport(
-    Particle& p, EstimatorSet::Proxy& e, const World& w) const noexcept {
+    Particle& p, EstimatorSetProxy& e, const World& w) const noexcept {
   Bank history_bank;
   p.SetCell(w.FindCellContaining(p.GetPosition()));
   while (p.IsAlive()) {
     const auto distance_to_collision = std::exponential_distribution{
         p.GetCell().material->number_density *
-        p.GetCell().material->GetMicroscopicTotal(p)}(p.rng);
+        GetCollisionProbabilityDensity(p)}(p.rng);
     const auto [nearest_surface, distance_to_surface_crossing] =
         p.GetCell().NearestSurface(p.GetPosition(), p.GetDirection());
     if (distance_to_collision < distance_to_surface_crossing) {
@@ -76,18 +76,23 @@ Bank SurfaceTracking::Transport(
   return history_bank;
 }
 
+MicroscopicCrossSection SurfaceTracking::GetCollisionProbabilityDensity(
+    const Particle& p) const noexcept {
+  return p.GetCell().material->GetMicroscopicTotal(p);
+}
+
 // CellDeltaTracking
 
 // TODO: Remove embarrasing amount of code duplication between this and
 // SurfaceTracking
 Bank CellDeltaTracking::Transport(
-    Particle& p, EstimatorSet::Proxy& e, const World& w) const noexcept {
+    Particle& p, EstimatorSetProxy& e, const World& w) const noexcept {
   Bank history_bank;
   p.SetCell(w.FindCellContaining(p.GetPosition()));
   while (p.IsAlive()) {
     const auto distance_to_collision = std::exponential_distribution{
         p.GetCell().material->number_density *
-        p.GetCell().material->GetMicroscopicMajorant(p)}(p.rng);
+        GetCollisionProbabilityDensity(p)}(p.rng);
     const auto [nearest_surface, distance_to_surface_crossing] =
         p.GetCell().NearestSurface(p.GetPosition(), p.GetDirection());
     if (distance_to_surface_crossing < distance_to_collision) {
@@ -114,4 +119,9 @@ Bank CellDeltaTracking::Transport(
     e.Score(p);
   }
   return history_bank;
+}
+
+MicroscopicCrossSection CellDeltaTracking::GetCollisionProbabilityDensity(
+    const Particle& p) const noexcept {
+  return p.GetCell().material->GetMicroscopicMajorant(p);
 }

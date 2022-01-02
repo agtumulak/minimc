@@ -56,14 +56,17 @@ EstimatorSet FixedSource::StartWorker() {
       std::cout << '\r' << static_cast<double>(elapsed) / batchsize * 100
                 << "% complete...";
     }
-    std::list<Particle> bank;
+    Bank bank;
     // use the remaining number of histories run for the seed
     bank.emplace_back(source.Sample(seed + elapsed));
     // beginning with the initial Particle, complete the history
     while (!bank.empty()) {
-      transport_method->Transport(bank.back(), scoring_proxy, world);
+      // add indirect effects to current Particle
+      bank.back().SetPerturbations(perturbations);
+      // transport the Particle
+      bank.back().Transport(scoring_proxy, world);
       // new Particle objects are added to front
-      bank.back().MoveSecondariesToFrontOf(bank);
+      bank.back().MoveSecondariesTo(bank);
       // most recently processed Particle is removed from back
       bank.pop_back();
     }

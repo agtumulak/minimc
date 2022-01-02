@@ -60,6 +60,26 @@ World::FindSurfaceByName(const std::string& name) const {
   }
 }
 
+std::shared_ptr<const Nuclide>
+World::FindNuclideByName(const std::string& name) const {
+  const auto nuclide_it = std::find_if(
+      nuclides.cbegin(), nuclides.cend(),
+      [&name](const auto nuclide_ptr) { return nuclide_ptr->name == name; });
+  if (nuclide_it == nuclides.cend()) {
+    throw std::runtime_error(
+        "Nuclide \"" + name + "\" not found. Must be one of: [" +
+        std::accumulate(
+            nuclides.cbegin(), nuclides.cend(), std::string{},
+            [](const auto& accumulated, const auto nuclide_ptr) noexcept {
+              return accumulated + "\"" + nuclide_ptr->name + "\", ";
+            }) +
+        "]");
+  }
+  else {
+    return *nuclide_it;
+  }
+}
+
 //// private
 
 std::vector<std::shared_ptr<const CSGSurface>>

@@ -1,5 +1,6 @@
 #include "Bins.hpp"
 
+#include "Particle.hpp"
 #include "pugixml.hpp"
 
 #include <cassert>
@@ -7,13 +8,10 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <utility>
+#include <variant>
 
 // Bins
-
-std::ostream& operator<<(std::ostream& os, const Bins& b) noexcept {
-  b.Print(os);
-  return os;
-}
 
 //// public
 
@@ -56,11 +54,7 @@ size_t NoBins::size() const noexcept { return 1; }
 
 size_t NoBins::GetIndex(const Real&) const noexcept { return 0; }
 
-//// private
-
-void NoBins::Print(std::ostream& os) const noexcept {
-  os << "none";
-}
+std::string NoBins::to_string() const noexcept { return "none"; }
 
 // LinspaceBins
 
@@ -92,12 +86,12 @@ size_t LinspaceBins::GetIndex(const Real& v) const {
   }
 }
 
-//// private
-
-void LinspaceBins::Print(std::ostream& os) const noexcept {
+std::string LinspaceBins::to_string() const noexcept {
+  std::string result;
   for (size_t i = 0; i < n_bins; i++) {
-    os << std::to_string(lower_bound + i * bin_width) << ", ";
+    result += std::to_string(lower_bound + i * bin_width) + ", ";
   }
+  return result;
 }
 
 // LogspaceBins
@@ -134,10 +128,52 @@ size_t LogspaceBins::GetIndex(const Real& v) const {
   }
 }
 
-//// private
-
-void LogspaceBins::Print(std::ostream& os) const noexcept {
+std::string LogspaceBins::to_string() const noexcept {
+  std::stringstream sstream;
   for (size_t i = 0; i < n_bins; i++) {
-    os << std::scientific << std::pow(base, lower_exp + i * bin_width) << ", ";
+    sstream << std::scientific << std::pow(base, lower_exp + i * bin_width)
+            << ", ";
   }
+  return sstream.str();
+}
+
+// ParticleBins
+
+//// public
+
+ParticleBins::ParticleBins(const pugi::xml_node& bins_node) noexcept
+    : // IIFE
+      direction{[&bins_node]() noexcept {
+        const auto& cosine_node = bins_node.child("cosine");
+        return cosine_node
+                   ? std::optional<Direction>(
+                         std::in_place,
+                         cosine_node.attribute("u").as_double(),
+                         cosine_node.attribute("v").as_double(),
+                         cosine_node.attribute("w").as_double())
+                   : std::nullopt;
+      }()},
+      cosine{Bins::Create(bins_node.child("cosine").first_child())},
+      energy{Bins::Create(bins_node.child("energy").first_child())},
+      strides{ComputeStrides(*cosine, *energy)} {}
+
+size_t ParticleBins::size() const noexcept {
+  return cosine->size() * strides.front();
+}
+
+size_t ParticleBins::GetIndex(const Particle& p) const noexcept {
+  // get cosine bin
+  const auto c_i =
+      direction ? cosine->GetIndex(direction.value().Dot(p.GetDirection())) : 0;
+  // get energy bin
+  const auto e_i = energy->GetIndex(std::visit(VisitEnergy(), p.GetEnergy()));
+  // get flattened index
+  return strides[0] * c_i + e_i;
+}
+
+std::string ParticleBins::to_string() const noexcept {
+  std::string result;
+  result += "cosine\n------\n" + cosine->to_string() + "\n\n";
+  result += "energy\n------\n" + energy->to_string() + "\n\n";
+  return result;
 }

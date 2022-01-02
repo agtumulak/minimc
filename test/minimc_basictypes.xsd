@@ -244,26 +244,59 @@
   </xs:choice>
 </xs:complexType>
 
+<xs:complexType name="ParticleBinType">
+  <xs:all>
+    <xs:element name="energy" type="BinType" minOccurs="0"/>
+    <xs:element name="cosine" minOccurs="0">
+      <xs:complexType>
+        <xs:complexContent>
+          <xs:extension base="BinType">
+            <xs:attribute name="u" type="xs:double" use="required"/>
+            <xs:attribute name="v" type="xs:double" use="required"/>
+            <xs:attribute name="w" type="xs:double" use="required"/>
+          </xs:extension>
+        </xs:complexContent>
+      </xs:complexType>
+    </xs:element>
+  </xs:all>
+</xs:complexType>
+
+<xs:complexType name="EstimatorSensitivitiesType">
+  <xs:choice minOccurs="1" maxOccurs="unbounded">
+    <xs:element name="perturbation">
+      <xs:complexType>
+        <xs:attribute name="name" type="xs:normalizedString"/>
+      </xs:complexType>
+    </xs:element>
+  </xs:choice>
+</xs:complexType>
+
 <xs:complexType name="EstimatorDefinition">
   <xs:choice minOccurs="1" maxOccurs="unbounded">
     <xs:element name="current">
       <xs:complexType>
         <xs:all>
-          <xs:element name="energy" type="BinType" minOccurs="0"/>
-          <xs:element name="cosine" minOccurs="0">
-            <xs:complexType>
-              <xs:complexContent>
-                <xs:extension base="BinType" minOccurs="0">
-                  <xs:attribute name="u" type="xs:double" use="required"/>
-                  <xs:attribute name="v" type="xs:double" use="required"/>
-                  <xs:attribute name="w" type="xs:double" use="required"/>
-                </xs:extension>
-              </xs:complexContent>
-            </xs:complexType>
+          <xs:element name="bins" type="ParticleBinType" minOccurs="0"/>
+          <xs:element name="sensitivities" type="EstimatorSensitivitiesType" minOccurs="0">
+            <xs:unique name="unique-sensitivity-name">
+              <xs:selector xpath="./*"/>
+              <xs:field xpath="@name"/>
+            </xs:unique>
           </xs:element>
         </xs:all>
         <xs:attribute name="name" type="xs:normalizedString" use="required"/>
         <xs:attribute name="surface" type="xs:normalizedString" use="required"/>
+      </xs:complexType>
+    </xs:element>
+  </xs:choice>
+</xs:complexType>
+
+<xs:complexType name="PerturbationDefinition">
+  <xs:choice minOccurs="1" maxOccurs="unbounded">
+    <xs:element name="total">
+      <xs:complexType>
+        <xs:attribute name="name" type="xs:normalizedString" use="required"/>
+        <xs:attribute name="nuclide" type="xs:normalizedString" use="required"/>
       </xs:complexType>
     </xs:element>
   </xs:choice>
