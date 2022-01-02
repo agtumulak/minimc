@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2022-01-01
+- Implemented estimator standard deviation
+- Implemented differential operator sampling framework
+
 ## [0.1.0] - 2021-11-06
 - Begin using proper meaning of MAJOR, MINIOR, and PATCH numbers in semantic
   versioning
@@ -44,8 +48,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Continuous integration is performed with GitHub Actions
 
 [Unreleased]: https://github.com/agtumulak/minimc/compare/v0.0.1...develop
-[0.0.1]: https://github.com/agtumulak/minimc/releases/tag/v0.0.1
-[0.0.2]: https://github.com/agtumulak/minimc/releases/tag/v0.0.2
-[0.0.3]: https://github.com/agtumulak/minimc/releases/tag/v0.0.3
-[0.0.4]: https://github.com/agtumulak/minimc/releases/tag/v0.0.4
+[0.2.0]: https://github.com/agtumulak/minimc/releases/tag/v0.2.0
 [0.1.0]: https://github.com/agtumulak/minimc/releases/tag/v0.1.0
+[0.0.4]: https://github.com/agtumulak/minimc/releases/tag/v0.0.4
+[0.0.3]: https://github.com/agtumulak/minimc/releases/tag/v0.0.3
+[0.0.2]: https://github.com/agtumulak/minimc/releases/tag/v0.0.2
+[0.0.1]: https://github.com/agtumulak/minimc/releases/tag/v0.0.1
