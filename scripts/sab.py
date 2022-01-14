@@ -553,7 +553,7 @@ def compare_univariate_pdf(title, *series, axis='beta'):
 
 def parallel_apply(df_grouped, func, *args):
     func_args = ((group_index, group) + args for group_index, group in df_grouped)
-    with Pool(processes=10) as pool:
+    with Pool(processes=8) as pool:
         return pd.concat(
                 [x for x in tqdm(
                     pool.imap(func=func, iterable=func_args),
@@ -609,7 +609,7 @@ def beta_functional_expansion(sab_df, E_min=1e-5, E_max=4.0, n_Es=100,
     assert E_min > 0
     lethargies = np.linspace(0, np.log(E_max/E_min), num=n_Es+1)[:0:-1]
     Es = E_max * np.exp(-lethargies)
-    with Pool(processes=10) as pool:
+    with Pool(processes=8) as pool:
         # incident energy, temperature pairs
         E_T_values = np.array([(sab_df, E, T) for E in Es for T in df_Ts])
         results = (

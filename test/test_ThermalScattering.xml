@@ -20,9 +20,9 @@
             beta_cdf_file="/Users/atumulak/Developer/minimc/data/tsl/beta_cdf_chapman_data.hdf5"
             alpha_cdf_file="/Users/atumulak/Developer/minimc/data/tsl/alpha_cdf_chapman_data.hdf5"
             majorant="/Users/atumulak/Developer/minimc/data/tsl/majorant_chapman_data_safety_factor_1.05.hdf5"
-            total="/Users/atumulak/Developer/minimc/data/tsl/scatter_xs_chapman_data.hdf5"
-            min_temperature="293.6"
-            max_temperature="800.0"
+            total_E="/Users/atumulak/Developer/minimc/data/tsl/scatter_xs_chapman_data_E_coeffs.hdf5"
+            total_T="/Users/atumulak/Developer/minimc/data/tsl/scatter_xs_chapman_data_T_coeffs.hdf5"
+            total_S="/Users/atumulak/Developer/minimc/data/tsl/scatter_xs_chapman_data_S_coeffs.hdf5"
             beta_cutoff="20.0"
             alpha_cutoff="679.16461988"/>
         </scatter>

@@ -25,12 +25,11 @@ ThermalScattering::ThermalScattering(const pugi::xml_node& tsl_node) noexcept
       alpha_cdf{tsl_node.attribute("alpha_cdf_file").as_string()},
       majorant{HDF5DataSet<1>{tsl_node.attribute("majorant").as_string()}
                    .ToContinuousMap()},
-      total{HDF5DataSet<2>{tsl_node.attribute("total").as_string()}
-                .ToContinuousMap()},
+      scatter_xs_singular_values{tsl_node.attribute("total_S").as_string()},
+      scatter_xs_E_dependence{tsl_node.attribute("total_E").as_string()},
+      scatter_xs_T_dependence{tsl_node.attribute("total_T").as_string()},
       beta_cutoff{tsl_node.attribute("beta_cutoff").as_double()},
       alpha_cutoff{tsl_node.attribute("alpha_cutoff").as_double()},
-      min_temperature{tsl_node.attribute("min_temperature").as_double()},
-      max_temperature{tsl_node.attribute("max_temperature").as_double()},
       awr{tsl_node.parent().parent().parent().attribute("awr").as_double()} {}
 
 bool ThermalScattering::IsValid(const Particle& p) const noexcept {
@@ -45,9 +44,52 @@ ThermalScattering::GetMajorant(const Particle& p) const noexcept {
 
 MicroscopicCrossSection
 ThermalScattering::GetTotal(const Particle& p) const noexcept {
-  return total.at(
-      p.GetCell().temperature->at(p.GetPosition()),
-      std::get<ContinuousEnergy>(p.GetEnergy()));
+
+  // Find index of Energy above and below Particle Energy
+  const auto E = std::get<ContinuousEnergy>(p.GetEnergy());
+  const auto& energies = scatter_xs_E_dependence.GetAxis(0);
+  const size_t E_hi_i = std::distance(
+      energies.cbegin(),
+      std::upper_bound(energies.cbegin(), energies.cend(), E));
+  // We require that E is strictly less than cutoff energy
+  assert(E_hi_i != energies.size());
+  // If E < E_min, we use the same index for the lower value of E
+  const auto below_E_min = E_hi_i == 0;
+  const size_t E_lo_i = below_E_min ? E_hi_i : E_hi_i - 1;
+
+  // Find index of Temperature above and below target Temperature
+  const Temperature T = p.GetCell().temperature->at(p.GetPosition());
+  const auto& temperatures = scatter_xs_T_dependence.GetAxis(0);
+  const size_t candidate_T_hi_i = std::distance(
+      temperatures.cbegin(),
+      std::upper_bound(temperatures.cbegin(), temperatures.cend(), T));
+  // If T >= T_max, we use T_max for the upper value
+  const auto above_T_max = candidate_T_hi_i == temperatures.size();
+  const size_t T_hi_i = above_T_max ? candidate_T_hi_i - 1 : candidate_T_hi_i;
+  // If T < T_min, we use T_min as the lower value
+  const auto below_T_min = T_hi_i == 0;
+  const size_t T_lo_i = below_T_min ? T_hi_i : T_hi_i - 1;
+
+  // Evaluate neighboring points
+  const auto xs_E_lo_T_lo = EvaluateInelastic(E_lo_i, T_lo_i);
+  const auto xs_E_lo_T_hi = EvaluateInelastic(E_lo_i, T_hi_i);
+  const auto xs_E_hi_T_lo = EvaluateInelastic(E_hi_i, T_lo_i);
+  const auto xs_E_hi_T_hi = EvaluateInelastic(E_hi_i, T_hi_i);
+
+  // Linear interpolation in energy
+  const auto E_lo = energies.at(E_lo_i);
+  const auto E_hi = energies.at(E_hi_i);
+  const auto r_E = below_E_min ? 1 : (E - E_lo) / (E_hi - E_lo);
+  const auto xs_T_lo = xs_E_lo_T_lo + r_E * (xs_E_hi_T_lo - xs_E_lo_T_lo);
+  const auto xs_T_hi = xs_E_lo_T_hi + r_E * (xs_E_hi_T_hi - xs_E_lo_T_hi);
+
+  // Linear interpolation in temperature
+  const auto T_lo = temperatures.at(T_lo_i);
+  const auto T_hi = temperatures.at(T_hi_i);
+  const auto r_T = below_T_min   ? 1
+                   : above_T_max ? 0
+                                 : (T - T_lo) / (T_hi - T_lo);
+  return xs_T_lo + r_T * (xs_T_hi - xs_T_lo);
 }
 
 void ThermalScattering::Scatter(Particle& p) const noexcept {
@@ -65,6 +107,18 @@ void ThermalScattering::Scatter(Particle& p) const noexcept {
 }
 
 //// private
+
+MacroscopicCrossSection ThermalScattering::EvaluateInelastic(
+    const size_t E_index, const size_t T_index) const noexcept {
+  const size_t max_order = scatter_xs_singular_values.GetAxis(0).size();
+  MicroscopicCrossSection result = 0;
+  for (size_t order = 0; order < max_order; order++) {
+    result += scatter_xs_singular_values.at(order) *
+              scatter_xs_E_dependence.at(E_index, order) *
+              scatter_xs_T_dependence.at(T_index, order);
+  }
+  return result;
+}
 
 Real ThermalScattering::EvaluateBeta(
     const size_t E_index, const size_t cdf_index,
