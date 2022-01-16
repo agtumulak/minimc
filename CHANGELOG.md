@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 - Implemented proper orthogonal decomposition for evaluating total inelastic
-  scattering cross section
+  scattering cross section, beta, and alpha
 
 ## [0.2.0] - 2022-01-01
 - Implemented estimator standard deviation
