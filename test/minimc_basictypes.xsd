@@ -95,8 +95,12 @@
           <xs:element name="xs" type="ContinuousEvaluation"/>
           <xs:element name="tsl" minOccurs="0">
             <xs:complexType>
-              <xs:attribute name="beta_cdf_file" type="xs:anyURI" use="required"/>
-              <xs:attribute name="alpha_cdf_file" type="xs:anyURI" use="required"/>
+              <xs:attribute name="beta_cdf_T" type="xs:anyURI" use="required"/>
+              <xs:attribute name="beta_cdf_S" type="xs:anyURI" use="required"/>
+              <xs:attribute name="beta_cdf_E" type="xs:anyURI" use="required"/>
+              <xs:attribute name="alpha_cdf_T" type="xs:anyURI" use="required"/>
+              <xs:attribute name="alpha_cdf_S" type="xs:anyURI" use="required"/>
+              <xs:attribute name="alpha_cdf_beta" type="xs:anyURI" use="required"/>
               <xs:attribute name="majorant" type="xs:anyURI" use="required"/>
               <xs:attribute name="total_E" type="xs:anyURI" use="required"/>
               <xs:attribute name="total_T" type="xs:anyURI" use="required"/>
