@@ -17,12 +17,12 @@
         <scatter>
           <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-elastic.hdf5" temperature="293.6"/>
           <tsl
-            beta_cdf_T="/Users/atumulak/Developer/minimc/data/tsl/beta_cdf_chapman_data_T_coeffs.hdf5"
-            beta_cdf_S="/Users/atumulak/Developer/minimc/data/tsl/beta_cdf_chapman_data_S_coeffs.hdf5"
-            beta_cdf_E="/Users/atumulak/Developer/minimc/data/tsl/beta_cdf_chapman_data_E_coeffs.hdf5"
-            alpha_cdf_T="/Users/atumulak/Developer/minimc/data/tsl/alpha_cdf_chapman_data_T_coeffs.hdf5"
-            alpha_cdf_S="/Users/atumulak/Developer/minimc/data/tsl/alpha_cdf_chapman_data_S_coeffs.hdf5"
-            alpha_cdf_beta="/Users/atumulak/Developer/minimc/data/tsl/alpha_cdf_chapman_data_beta_coeffs.hdf5"
+            beta_T="/Users/atumulak/Developer/minimc/data/tsl/beta_chapman_data_T_coeffs.hdf5"
+            beta_S="/Users/atumulak/Developer/minimc/data/tsl/beta_chapman_data_S_coeffs.hdf5"
+            beta_E_CDF="/Users/atumulak/Developer/minimc/data/tsl/beta_chapman_data_E_CDF_coeffs.hdf5"
+            alpha_T="/Users/atumulak/Developer/minimc/data/tsl/alpha_chapman_data_T_coeffs.hdf5"
+            alpha_S="/Users/atumulak/Developer/minimc/data/tsl/alpha_chapman_data_S_coeffs.hdf5"
+            alpha_beta_CDF="/Users/atumulak/Developer/minimc/data/tsl/alpha_chapman_data_beta_CDF_coeffs.hdf5"
             majorant="/Users/atumulak/Developer/minimc/data/tsl/majorant_chapman_data_safety_factor_1.05.hdf5"
             total_T="/Users/atumulak/Developer/minimc/data/tsl/scatter_xs_chapman_data_T_coeffs.hdf5"
             total_S="/Users/atumulak/Developer/minimc/data/tsl/scatter_xs_chapman_data_S_coeffs.hdf5"
