@@ -33,11 +33,13 @@ public:
   ///          HDF5 dataset must correspond to a particular type of value.
   ///
   ///          The total inelastic scattering cross section is compressed using
-  ///          proper orthogonal decomposition:
+  ///          proper orthogonal decomposition
   ///          @f[
   ///            \sigma_\text{inelastic} (E, T)
   ///            = \sum_{n} c_{n} f_{n}(E) g_{n}(T)
   ///          @f]
+  ///          where @f$ E @f$ is the incident neutron energy, and @f$ T @f$ is
+  ///          the target temperature.
   ///
   ///          A path to the singular values @f$ c_{n} @f$ are expected under
   ///          the `total_S` attribute of a `tsl` node. The MultiIndex levels
@@ -69,24 +71,63 @@ public:
   ///             T_\text{max}) @f$ is returned, respectively.
   ///          2. Expansion order @f$ n @f$
   ///
-  ///          TODO: update using POD
-  ///          @f$ \beta @f$ MultiIndex must be in the following order:
-  ///          1. Incident neutron energies in @f$(0, E_{\text{cutoff}})@f$
-  ///             (non-inclusive) in MeV
+  ///          The sampled value of @f$ \beta @f$ is compressed using proper
+  ///          orthogonal decomposition:
+  ///          @f[
+  ///            \beta (E, F, T)
+  ///            = \sum_{n} c_{n} f_{n}(E, F) g_{n}(T)
+  ///          @f]
+  ///          where @f$ E @f$ is the incident neutron energy, @f$ F @f$ is the
+  ///          CDF value, and @f$ T @f$ is the target temperature.
+  ///
+  ///          A path to the singular values @f$ c_{n} @f$ are expected under
+  ///          the `beta_S` attribute of a `tsl` node. The MultiIndex levels
+  ///          must be
+  ///          1. Expansion order @f$ n @f$
+  ///
+  ///          A path to the energy and CDF dependent functions @f$ f_{n}
+  ///          (E, F) @f$ are expected under the `beta_E_CDF` attribute. The
+  ///          MultiIndex levels must be
+  ///          1. Incident neutron energies @f$ E @f$ in MeV. Does not need to
+  ///             be identical to other energy grids.
   ///          2. CDF values in @f$ (0, 1) @f$ (non-inclusive)
-  ///          3. Coefficient labels
+  ///          3. Expansion order @f$ n @f$
   ///
-  ///          Also, the levels of the @f$ \alpha @f$ MultiIndex must be in the
-  ///          following order:
-  ///          1. Sampled energy transfer @f$ \beta @f$ values in @f$ \left[0,
-  ///             \max (\frac{E}{kT}, \beta_{\text{cutoff}}) \right) @f$. Note
-  ///             that the conditional probability in @f$ \alpha @f$ is
-  ///             symmetric about @f$ \beta @f$.
-  ///          2. CDF values in @f$ (0, 1) @f$ (non-inclusive).
-  ///          3. Coefficient labels
+  ///          A path to the temperature dependent functions @f$ g_{n} (T) @f$
+  ///          are expected under the `beta_T` attribute. The MultiIndex levels
+  ///          must be
+  ///          1. Target temperatures @f$ T @f$ in Kelvin. Does not need to be
+  ///             identical to other temperature grids.
+  ///          2. Expansion order @f$ n @f$
   ///
-  ///          The actual values are therefore the coefficients required to
-  ///          reconstruct @f$ \beta(T) @f$ or @f$ \alpha(T) @f$.
+  ///          The sampled value @f$ \alpha @f$ is compressed using proper
+  ///          orthogonal decomposition:
+  ///          @f[
+  ///            \alpha (\beta, F, T)
+  ///            = \sum_{n} c_{n} f_{n}(\beta, F) g_{n}(T)
+  ///          @f]
+  ///          where @f$ \beta @f$ is the sampled value of @f$ \beta @f$, @f$ F
+  ///          @f$ is the CDF value, and @f$ T @f$ is the target temperature.
+  ///
+  ///          A path to the singular values @f$ c_{n} @f$ are expected under
+  ///          the `alpha_S` attribute of a `tsl` node. The MultiIndex levels
+  ///          must be
+  ///          1. Expansion order @f$ n @f$
+  ///
+  ///          A path to the beta and CDF dependent functions @f$ f_{n}
+  ///          (\beta, F) @f$ are expected under the `alpha_beta_CDF` attribute.
+  ///          The MultiIndex levels must be
+  ///          1. Sampled beta values @f$ \beta @f$. Does not need to be
+  ///             identical to other beta grids.
+  ///          2. CDF values in @f$ (0, 1) @f$ (non-inclusive)
+  ///          3. Expansion order @f$ n @f$
+  ///
+  ///          A path to the temperature dependent functions @f$ g_{n} (T) @f$
+  ///          are expected under the `alpha_T` attribute. The MultiIndex
+  ///          levels must be
+  ///          1. Target temperatures @f$ T @f$ in Kelvin. Does not need to be
+  ///             identical to other temperature grids.
+  ///          2. Expansion order @f$ n @f$
   ThermalScattering(const pugi::xml_node& tsl_node) noexcept;
   /// @brief Returns true if Particle is Type::neutron and is strictly below
   ///        the cutoff energy
@@ -110,11 +151,13 @@ private:
   // Evaluates the inelastic scattering cross section.
   MacroscopicCrossSection
   EvaluateInelastic(const size_t E_index, const size_t T_index) const noexcept;
-  // Evaluates beta using a functional expansion in temperature
-  Real EvaluateBeta(const size_t E_index, const size_t cdf_index, Temperature T)
+  // Evaluates beta using proper orthogonal decomposition and linear
+  // interpolation in T
+  Beta EvaluateBeta(const size_t E_index, const size_t cdf_index, Temperature T)
       const noexcept;
-  // Evaluates alpha using a functional expansion in temperature
-  Real EvaluateAlpha(
+  // Evaluates alpha using proper orthogonal decomposition and linear
+  // interpolation in T
+  Alpha EvaluateAlpha(
       const size_t beta_index, const size_t cdf_index,
       Temperature T) const noexcept;
   // Sample an outgoing energy. Requires Particle energy is strictly below
@@ -125,35 +168,22 @@ private:
   Alpha SampleAlpha(
       Particle& p, const Beta& b, ContinuousEnergy E,
       Temperature T) const noexcept;
-  // Raw cumulative distribution function data for beta and alpha (3
-  // independent axes each)
-  const HDF5DataSet<3> beta_cdf, alpha_cdf;
   // Majorant cross section
   const ContinuousMap<ContinuousEnergy, MicroscopicCrossSection> majorant;
-  // Total scattering cross section
-  const ContinuousMap<
-      Temperature, ContinuousMap<ContinuousEnergy, MicroscopicCrossSection>>
-      total;
-  // Total scattering cross section singular values
-  const HDF5DataSet<1> scatter_xs_singular_values;
-  // Total scattering cross section energy dependent functions
-  const HDF5DataSet<2> scatter_xs_E_dependence;
-  // Total scattering cross setion temperature dependent functions
-  const HDF5DataSet<2> scatter_xs_T_dependence;
-  // Incident energies for beta
-  const std::vector<ContinuousEnergy> beta_energies = beta_cdf.GetAxis(0);
-  // CDF values for beta
-  const std::vector<Real> beta_cdfs = beta_cdf.GetAxis(1);
-  // Number of beta coefficients
-  const size_t n_beta_coefficients = beta_cdf.GetAxis(2).size();
+  // Total scattering cross section POD coefficients
+  const HDF5DataSet<2> scatter_xs_T;
+  const HDF5DataSet<1> scatter_xs_S;
+  const HDF5DataSet<2> scatter_xs_E;
+  // beta proper orthogonal decomposition coefficients
+  const HDF5DataSet<2> beta_T;
+  const HDF5DataSet<1> beta_S;
+  const HDF5DataSet<3> beta_E_CDF;
+  // alpha proper orthogonal decomposition coefficients
+  const HDF5DataSet<2> alpha_T;
+  const HDF5DataSet<1> alpha_S;
+  const HDF5DataSet<3> alpha_beta_CDF;
   // Maximum value of beta which can be sampled
   const Beta beta_cutoff;
-  // Beta values for energy-independent alpha distributions
-  const std::vector<Real> alpha_betas = alpha_cdf.GetAxis(0);
-  // CDF valeus for alpha
-  const std::vector<Real> alpha_cdfs = alpha_cdf.GetAxis(1);
-  // Number of alpha coefficients
-  const size_t n_alpha_coefficients = alpha_cdf.GetAxis(2).size();
   // Maximum value of alpha which can be sampled
   const Alpha alpha_cutoff;
   // Atomic weight ratio of target, yes this is a copy rather than giving a
@@ -164,5 +194,5 @@ public:
   /// @brief Neutrons above the cutoff energy do not get the thermal scattering
   ///        treatment
   const ContinuousEnergy cutoff_energy =
-      scatter_xs_E_dependence.GetAxis(0).back();
+      scatter_xs_E.GetAxis(0).back();
 };
