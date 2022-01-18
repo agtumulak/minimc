@@ -233,18 +233,7 @@ ThermalScattering::Beta ThermalScattering::SampleBeta(
 
   // Evalute interpolated value of beta on the sampled E grid (assuming
   // histogram PDF)
-  const Beta b_prime =
-      E_s_b_lo + (F - F_lo) / (F_hi - F_lo) * (E_s_b_hi - E_s_b_lo);
-
-  // Scale to preserve thresholds at actual incident energy E. The minimum and
-  // maximum values of beta are not included in the dataset since their
-  // analytical form is known.
-  const Beta b_min = -E / (constants::boltzmann * T);
-  const Beta b_max = beta_cutoff;
-  const Beta E_s_b_min = -E_s / (constants::boltzmann * T);
-  const Beta E_s_b_max = beta_cutoff;
-  return b_min + (b_prime - E_s_b_min) * (b_max - b_min) /
-                     (E_s_b_max - E_s_b_min);
+  return E_s_b_lo + (F - F_lo) / (F_hi - F_lo) * (E_s_b_hi - E_s_b_lo);
 }
 
 ThermalScattering::Alpha ThermalScattering::SampleAlpha(
