@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cstddef>
 #include <functional>
+#include <sstream>
 #include <utility>
 
 // Scorable
@@ -48,24 +49,24 @@ Scorable& Scorable::operator+=(const Scorable& other) noexcept {
 //// protected
 
 std::string Scorable::GetScoreAsString(const Real total_weight) const noexcept {
-  std::string result;
-  result += "mean\n----\n";
+  std::stringstream sstream;
+  sstream << "mean\n----\n";
+  sstream << std::scientific;
   for (const auto& score : scores) { // wow so clean
-    result += std::to_string(score / total_weight) + ", ";
+    sstream << score / total_weight << ", ";
   }
-  result += "\n\n";
+  sstream << "\n\n";
   // gross
-  result += "std dev\n-------\n";
+  sstream << "std dev\n-------\n";
   for (size_t i = 0; i < scores.size(); i++) { // gross
     const auto& score = scores[i];
     const auto& square_score = square_scores[i];
-    result += std::to_string(
-                  std::sqrt(square_score - score * score / total_weight) /
-                  total_weight) +
-              ", ";
+    sstream << std::sqrt(square_score - score * score / total_weight) /
+                   total_weight
+            << ", ";
   }
-  result += "\n\n";
-  return result;
+  sstream << "\n\n";
+  return sstream.str();
 }
 
 // ScorableProxy
