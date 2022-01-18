@@ -805,12 +805,12 @@ def alpha_functional_expansion(sab_df, n_betas=100, n_cdfs=1000, order=3):
         A = U[:, :order] @ np.diag(S[:order]) @ Vt[:order,:]
         alpha_df_pod_form = alpha_df_pod_form.where(~nan_entries, A)
         trace_norm = S.sum()
-        abs_rel_diff = np.abs((trace_norm - trace_norm_prev) / trace_norm_prev)
+        abs_rel_diff = np.abs((trace_norm - prev_trace_norm) / prev_trace_norm)
         print (f"trace norm abs rel diff: {abs_rel_diff}", end=" " *  10 + '\r')
         if abs_rel_diff <  1e-7:
             break
         else:
-            trace_norm_prev = trace_norm
+            prev_trace_norm = trace_norm
     U_df = (pd.DataFrame(
         {'coefficient': U[:, :order].flatten()},
         index=pd.MultiIndex.from_product(
