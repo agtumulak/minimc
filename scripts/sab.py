@@ -177,39 +177,33 @@ def process_E_T(args):
     return beta_pdf, alpha_pdfs, beta_cdf, alpha_cdfs, total_inelastic_xs
 
 
-def process_b_T(args):
+def process_b_T(sab_s, max_alpha):
     """
-    Generates conditional CDF in alpha given beta at a particular value of
-    beta and temperature. Returns None if there is zero probability of the
-    given beta being sampled.
+    Generates conditional CDF in alpha given beta and temperature. Returns None
+    if there is zero probability of the given beta being sampled.
 
     Parameters
     ----------
-    args: tuple of (group key, group, double)
-        The first element is the group key (a (beta, temperature) pair).
-        The second element is a pd.Series containing a MultiIndex. The
-        MultiIndex levels are temperature `T`, `beta`, and `alpha`. There is
-        only a single value of `T` and `beta` while multiple `alpha` values
-        must be present. The values are corresponding value of S(a,b,T).
-        The third element is the maximum alpha in the entire data set.
+    sab_s : pd.Series
+        A pd.Series containing a MultiIndex. The MultiIndex levels are
+        temperature `T`, `beta`, and `alpha`. There is only a single value of
+        `T` and `beta` while multiple `alpha` values must be present. The
+        values are corresponding value of S(a,b,T).
+    max_alpha : double
+        largest alpha in the dataset
     """
-    (beta, T), sab_s, max_alpha = args
+    sab_s.index = sab_s.index.droplevel(['T', 'beta'])
     # set endpoints to zero
-    if not sab_s.index.isin([(T, beta, 0)]).any():
-        sab_s[T, beta, 0] = 0
-    if not sab_s.index.isin([(T, beta, max_alpha)]).any():
-        sab_s[T, beta, max_alpha] = 0
+    sab_s.loc[0] = 0
+    sab_s.loc[max_alpha] = 0
     sab_s = sab_s.sort_index()
-    E_independent_alpha_cdf = lin_log_cum_trapz(sab_s[T, beta])
+    E_independent_alpha_cdf = lin_log_cum_trapz(sab_s)
     E_independent_alpha_integral = E_independent_alpha_cdf.iloc[-1]
     # if integral is zero, return nothing
     if E_independent_alpha_integral == 0:
         E_independent_alpha_cdf = None
     else:
         E_independent_alpha_cdf /= E_independent_alpha_integral
-        E_independent_alpha_cdf.index = pd.MultiIndex.from_product(
-                [[beta], [T], E_independent_alpha_cdf.index],
-                names=['beta', 'T', 'alpha'])
     return E_independent_alpha_cdf
 
 
@@ -713,7 +707,7 @@ def fit_alpha(args):
                 names=['beta', 'CDF', 'coefficient']))
 
 
-def alpha_functional_expansion(sab_df, n_betas=100, n_cdfs=1000, order=3):
+def alpha_functional_expansion(sab_df, n_betas=1000, n_cdfs=1000, order=3):
     """
     Computes the energy-independent conditional CDF in alpha given beta at
     various beta values and temperatures, then performs a functional expansion
@@ -749,6 +743,7 @@ def alpha_functional_expansion(sab_df, n_betas=100, n_cdfs=1000, order=3):
         grid.
         """
         nonlocal sab_df
+        T = group.index.unique('T')[0]
         group.index = group.index.droplevel('T')
         # add betas from selected_betas which are not already in group
         new_betas = selected_betas.difference(group.index.unique('beta'))
@@ -773,11 +768,7 @@ def alpha_functional_expansion(sab_df, n_betas=100, n_cdfs=1000, order=3):
     print("computing alpha CDFs...")
     largest_alpha = sab_df.index.unique('alpha').max()
     print(f"largest alpha: {largest_alpha}")
-    alpha_cdfs = (
-            parallel_apply(
-                common_beta_sab_df.groupby(['beta', 'T']),
-                process_b_T, largest_alpha)
-            .sort_index())
+    alpha_cdfs = common_beta_sab_df.groupby(['T', 'beta']).apply(process_b_T, largest_alpha)
     # take the union of all CDF values that appear across all incident energies
     all_cdfs = sorted(set(alpha_cdfs))
     # choose number of CDF points we want to use
@@ -787,7 +778,7 @@ def alpha_functional_expansion(sab_df, n_betas=100, n_cdfs=1000, order=3):
     # last CDF must always be 1.
     print(f"using {len(F)} CDF values...")
     # interpolate alpha values at selected CDF values
-    alpha_df = alpha_cdfs.groupby(['beta', 'T']).apply(
+    alpha_df = alpha_cdfs.groupby(['T', 'beta']).apply(
             lambda s:
             pd.Series(
                 np.interp(F, s, s.index.get_level_values('alpha')),
@@ -807,7 +798,7 @@ def alpha_functional_expansion(sab_df, n_betas=100, n_cdfs=1000, order=3):
         trace_norm = S.sum()
         abs_rel_diff = np.abs((trace_norm - prev_trace_norm) / prev_trace_norm)
         print (f"trace norm abs rel diff: {abs_rel_diff}", end=" " *  10 + '\r')
-        if abs_rel_diff <  1e-7:
+        if abs_rel_diff <  1e-5:
             break
         else:
             prev_trace_norm = trace_norm
@@ -828,7 +819,7 @@ def alpha_functional_expansion(sab_df, n_betas=100, n_cdfs=1000, order=3):
     alpha_df_reconstructed = pd.DataFrame(
             U[:, :order] @ np.diag(S[:order]) @ Vt[:order, :],
             index=alpha_df_pod_form.index,
-            columns=alpha_df_pod_form.columns)[~nan_entries]
+            columns=alpha_df_pod_form.columns)
     print(f"RMSE: {np.sqrt(((alpha_df_reconstructed - alpha_df_pod_form)**2).mean().mean())}")
     # check that CDFS are monotonic for certain T values
     monotonic_check_df = alpha_df_reconstructed.stack('CDF').unstack('T')
