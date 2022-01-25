@@ -494,11 +494,50 @@ def get_pdf_mcnp(mctal_path, E, T, label=None):
             .rename(label))
 
 
+def get_pdf_minimc(minimc_path, E, T, label=None):
+    """
+    Creates bivariate PDF in alpha and beta from minimc output
+    """
+    label = label if label else 'minimc'
+    with open(minimc_path) as f:
+        line = ''
+        # skip to cosine bins
+        while not line.startswith('cosine'):
+            line = f.readline()
+        line = f.readline()
+        cosine_bounds = [float(x) for x in f.readline().split(',')[:-1]]
+        cosine_bounds = np.insert(cosine_bounds, 0, -np.inf);
+        # skip to energy bins
+        while not line.startswith('energy'):
+            line = f.readline()
+        line = f.readline()
+        energy_bounds = [float(x) * 1e6 for x in f.readline().split(',')[:-1]]
+        energy_bounds = np.insert(energy_bounds, 0, -np.inf)
+        # skip to values
+        while not line.startswith('mean'):
+            line = f.readline()
+        line = f.readline()
+        counts = [float(x) for x in f.readline().split(',')[:-1]]
+    # compute densities in cosine, MeV space
+    cosine_bounds = np.array(cosine_bounds)
+    energy_bounds = np.array(energy_bounds)
+    counts = np.array(counts)
+    cosine_widths = cosine_bounds[1:] - cosine_bounds[:-1]
+    energy_widths = energy_bounds[1:] - energy_bounds[:-1]
+    bin_areas = np.einsum('i,j->ij', energy_widths, cosine_widths).reshape(-1)
+    density = counts / bin_areas
     s = pd.Series(
             density,
             index=pd.MultiIndex.from_product(
-                [cosine_bounds[:-1], energy_bounds[:-1]], names=['mu', 'E']),
-            name='mcnp')
+                [cosine_bounds[1:], energy_bounds[1:]], names=['mu', 'E']),
+            name='minimc')
+    # convert to alpha, beta space; #TODO: this is identical to mcnp version
+    def to_alpha_beta(s):
+        beta = s.name
+        out_E = E + beta * k * T
+        mus = s.index.get_level_values('mu')
+        alphas = (E + out_E - 2 * mus * np.sqrt(E * out_E)) / (A * k * T)
+        return pd.Series(s.values, index=alphas).rename_axis(index={'mu': 'alpha'})
     # multiply by jacobian
     s = s * 0.5 * A * (k * T) ** 2 / (np.sqrt(s.index.get_level_values('E') * E))
     s = (
@@ -506,7 +545,7 @@ def get_pdf_mcnp(mctal_path, E, T, label=None):
             .rename(index=lambda out_E: (out_E - E) / (k * T), level='E')
             .rename_axis(index={'E': 'beta'})
             .groupby('beta')
-            .apply(myfoo))
+            .apply(to_alpha_beta))
     return (
             s[~s.index.duplicated()]
             .unstack('beta')
