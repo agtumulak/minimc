@@ -381,7 +381,7 @@ def get_pdf_pod(beta_T_path, beta_S_path, beta_E_CDF_path, alpha_T_path,
     return bivariate_pdf.rename(label)
 
 
-def get_pdf_minimc(counts_path, *bounds_paths):
+def get_pdf_runsab(counts_path, *bounds_paths):
     """
     Creates bivariate PDF in alpha and beta from a list of counts and N paths
     to axis boundaries
@@ -465,13 +465,35 @@ def get_pdf_mcnp(mctal_path, E, T, label=None):
     energy_widths = energy_bounds[1:] - energy_bounds[:-1]
     bin_areas = np.einsum('i,j->ij', cosine_widths, energy_widths).reshape(-1)
     density = counts / bin_areas
-    # convert to alpha, beta space
-    def myfoo(s):
+    s = pd.Series(
+            density,
+            index=pd.MultiIndex.from_product(
+                [cosine_bounds[:-1], energy_bounds[:-1]], names=['mu', 'E']),
+            name='mcnp')
+    def to_alpha_beta(s):
         beta = s.name
         out_E = E + beta * k * T
         mus = s.index.get_level_values('mu')
         alphas = (E + out_E - 2 * mus * np.sqrt(E * out_E)) / (A * k * T)
         return pd.Series(s.values, index=alphas).rename_axis(index={'mu': 'alpha'})
+    # multiply by jacobian
+    s = s * 0.5 * A * (k * T) ** 2 / (np.sqrt(s.index.get_level_values('E') * E))
+    s = (
+            s
+            .rename(index=lambda out_E: (out_E - E) / (k * T), level='E')
+            .rename_axis(index={'E': 'beta'})
+            .groupby('beta')
+            .apply(to_alpha_beta))
+    return (
+            s[~s.index.duplicated()]
+            .unstack('beta')
+            .interpolate(method='index', axis='index', limit_area='inside')
+            .fillna(0)
+            .stack()
+            .rename_axis(['alpha', 'beta'])
+            .rename(label))
+
+
     s = pd.Series(
             density,
             index=pd.MultiIndex.from_product(
