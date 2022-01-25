@@ -828,7 +828,8 @@ def alpha_functional_expansion(sab_df, n_betas=1000, n_cdfs=1000, order=3):
     sab_df : pd.DataFrame
         S(a,b,T) DataFrame
     n_betas : int, optional
-        Approximate number of betas to use
+        Approximate number of betas to use. Setting this too low may result in
+        poor marginal distributions in alpha.
     n_cdfs : int, optional
         Approximate number of CDF values to use
     order : int, optional
