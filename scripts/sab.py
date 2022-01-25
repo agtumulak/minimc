@@ -215,9 +215,9 @@ def alpha_fitting_function(T, c0, c1, c2):
     return c0 + c1 / T + c2 / T ** 2
 
 
-def get_pdf_pdos(sab_df, E, T):
+def get_pdf_direct(sab_df, E, T, label=None):
     """
-    Creates bivariate PDF in alpha and beta from given DataFrame
+    Creates bivariate PDF in alpha and beta from given S(a,b,T) DataFrame
 
     Alpha grid is unionized across all possible beta values. Linear
     interpolation is used in alpha for missing values. Zero values are used
@@ -232,6 +232,7 @@ def get_pdf_pdos(sab_df, E, T):
     T : float
         Temperature in K
     """
+    label = label if label else 'direct'
     beta_pdf, alpha_pdfs, _, _, _ = process_E_T((sab_df, E, T))
     for beta, p_beta in beta_pdf.iloc[1:-1].iteritems():
         alpha_pdfs[beta] *= p_beta
@@ -242,7 +243,7 @@ def get_pdf_pdos(sab_df, E, T):
             .fillna(0)
             .stack()
             .rename_axis(['alpha', 'beta'])
-            .rename('pdos'))
+            .rename(label))
 
 
 def get_pdf_pdos_reconstructed(beta_hdf_path, alpha_hdf_path, E, T):
