@@ -246,91 +246,139 @@ def get_pdf_direct(sab_df, E, T, label=None):
             .rename(label))
 
 
-def get_pdf_pdos_reconstructed(beta_hdf_path, alpha_hdf_path, E, T):
+def get_pdf_pod(beta_T_path, beta_S_path, beta_E_CDF_path, alpha_T_path,
+        alpha_S_path, alpha_beta_CDF_path, E, T, max_alpha, label=None):
     """
-    Reconstructs bivariate PDF in alpha and beta from expansion
-    coefficients in temperature for alpha and beta
+    Reconstructs bivariate PDF in alpha and beta from proper orthogonal
+    decomposition coefficients for alpha and beta
 
     Parameters
     ---------
-    beta_hdf_path : string
-        Path to CDF file for beta
-    alpha_cdf_path : string
-        Path to conditional CDF file for alpha
+    beta_T_path : string
+        Path to HDF5 file containing temperature dependent coefficients for beta
+    beta_S_path : string
+        Path to HDF5 file containing singular values for beta
+    beta_E_CDF : string
+        Path to HDF5 file containing energy and CDF dependent coefficients for
+        beta
+    alpha_T_path : string
+        Path to HDF5 file containing temperature dependent coefficients for alpha
+    alpha_S_path : string
+        Path to HDF5 file containing singular values for alpha
+    alpha_E_CDF : string
+        Path to HDF5 file containing beta and CDF dependent coefficients for
+        alpha
     E : float
         Incident energy in eV
     T : float
         Temperature in K
+    max_alpha : float
+        Largest alpha in the dataset
     """
-    # evaluate beta at E and T
-    beta_cdf = (
-            pd.read_hdf(beta_hdf_path)
-            .loc[E * 1e-6]
-            .groupby('CDF')
-            .apply(lambda s: beta_fitting_function(T, *s.values)[0]))
+    label = label if label else 'direct (pod reconstructed)'
+    # Load data
+    beta_T = pd.read_hdf(beta_T_path)
+    beta_S = pd.read_hdf(beta_S_path)
+    beta_E_CDF = pd.read_hdf(beta_E_CDF_path)
+    alpha_T = pd.read_hdf(alpha_T_path)
+    alpha_S = pd.read_hdf(alpha_S_path)
+    alpha_beta_CDF = pd.read_hdf(alpha_beta_CDF_path)
+    # evaluate beta at nearest E and nearest T
+    Ts = beta_T.index.unique('T')
+    nearest_T = Ts[np.argmin(np.abs(Ts - T))]
+    Es = beta_E_CDF.index.unique('E')
+    nearest_E = Es[np.argmin(np.abs(Es - E * 1e-6))]
+    # Reconstruct beta CDF
+    beta_cdf = pd.Series(
+            (
+                beta_T.loc[nearest_T].T.values
+              @ np.diag(beta_S.values.flatten())
+              @ beta_E_CDF.loc[nearest_E].unstack().T.values).flatten(),
+            index=beta_E_CDF.index.unique('CDF'))
     # compute PDF
     beta_pdf = pd.Series(
             (beta_cdf.index[1:] - beta_cdf.index[:-1])
           / (beta_cdf.values[1:] - beta_cdf.values[:-1]),
             index=beta_cdf.values[:-1])
-    # evaluate alpha at E and T
+    # evaluate alpha at (possibly different) nearest T and nearest beta
+    Ts = alpha_T.index.unique('T')
+    nearest_T = Ts[np.argmin(np.abs(Ts - T))]
+    # Reconstruct alpha CDF
     alpha_cdf = (
-            pd
-            .read_hdf(alpha_hdf_path)
-            .groupby(['beta', 'CDF'])
-            .apply(lambda s: alpha_fitting_function(T, *s.values)[0]))
+            pd.Series(
+                (
+                    alpha_T.loc[nearest_T].T.values
+                  @ np.diag(alpha_S.values.flatten())
+                  @ alpha_beta_CDF.unstack().T.values)
+                .flatten(),
+                index=alpha_beta_CDF.unstack().index)
+            .unstack('beta'))
     # append alpha CDFs for negative beta values
-    alpha_betas = alpha_cdf.index.unique('beta')
+    alpha_betas = alpha_cdf.columns
     # find largest beta in alpha_betas which is strictly less than E / (k * T)
     # we assume beta = 0 exists so result of searchsorted is >= 1
     min_beta = alpha_betas[np.searchsorted(alpha_betas, -beta_cdf.iloc[0]) - 1]
     neg_b_alpha_cdf = (
             alpha_cdf
-            .loc[alpha_betas[1]:min_beta] # don't include beta = 0
-            .rename(index=lambda x: -x, level='beta') # make beta labels negative
-            .sort_index(level='beta'))
+            .loc[:, alpha_betas[1]:min_beta] # don't include beta = 0
+            .rename(columns=lambda x: -x) # make beta labels negative
+            .sort_index(axis='columns'))
     # find largest beta in alpha_betas which is strictly less than 20
     max_beta = alpha_betas[np.searchsorted(alpha_betas, 20) - 1]
-    alpha_cdf = pd.concat((neg_b_alpha_cdf, alpha_cdf.loc[:max_beta]))
+    alpha_cdf = pd.concat(
+            (
+                neg_b_alpha_cdf,
+                alpha_cdf.loc[:max_beta]),
+            axis='columns')
+    # add endpoints
+    alpha_cdf.loc[0,:] = 0
+    alpha_cdf.loc[1,:] = max_alpha
+    alpha_cdf = alpha_cdf.sort_index()
+    # choose common alpha_grid
+    alphas = np.linspace(0, max_alpha, 10000)
+    # choose subset of alpha values
     def get_joint_probability(s):
         """
         Multiplies conditional probability in alpha with probability in beta
         """
-        # choose correct subset of CDF values within min_alpha and max_alpha
+        nonlocal alphas
         nonlocal E
         beta = s.name
-        s = pd.Series(s.index.get_level_values('CDF'), index=pd.Index(s, name='alpha'))
+        # skip values of beta which won't be reached
+        if E + beta * k * T < 0:
+            return pd.Series(0, index=alphas)
+        # choose correct subset of CDF values within min_alpha and max_alpha
+        s = pd.Series(s.index, index=pd.Index(s, name='alpha'))
         # insert values for min_alpha and max_apha
         min_alpha = np.square(np.sqrt(E) - np.sqrt(E + beta * k * T)) / (A * k * T)
         max_alpha = np.square(np.sqrt(E) + np.sqrt(E + beta * k * T)) / (A * k * T)
         s.loc[min_alpha] = np.nan # interpolate value later
         s.loc[max_alpha] = np.nan # interpolate value later
-        s.loc[0] = 0
-        # TODO: Get maximum rescaled alpha value programatically
-        s.loc[632.9 * 293.6 / 273.6] = 1 # 273.6 K is smallest T in dataset
+
         s = s.sort_index().interpolate(method='index').loc[min_alpha:max_alpha]
         # rescale CDF to be 0 at min_alpha and 1 at max_alpha
         s = (s - s.min()) / (s.max() - s.min())
         alpha_pdf = pd.Series(
                 (s.values[1:] - s.values[:-1]) / (s.index[1:] - s.index[:-1]),
                 index=s.index[:-1])
-        alpha_pdf[min_alpha] = 0
-        alpha_pdf[max_alpha] = 0
+        alpha_pdf.loc[min_alpha] = 0
+        alpha_pdf.loc[max_alpha] = 0
         alpha_pdf = alpha_pdf.sort_index()
+        # use common alpha grid
+        new_alphas = set(alphas).difference(set(alpha_pdf.index))
+        alpha_pdf = (
+                pd.concat([alpha_pdf, pd.Series(np.nan, index=new_alphas)])
+                .sort_index()
+                .interpolate(method='index', limit_area='inside')
+                .fillna(0)
+                .loc[alphas])
         # interpolate value of beta pdf
         nonlocal beta_pdf
         beta_pdf_value = np.interp(beta, beta_pdf.index, beta_pdf, left=0, right=0)
         return alpha_pdf * beta_pdf_value
-    return (
-            alpha_cdf
-            .groupby('beta')
-            .apply(get_joint_probability)
-            .unstack('beta')
-            .interpolate(method='index', axis='index', limit_area='inside')
-            .fillna(0)
-            .stack()
-            .rename_axis(['alpha', 'beta'])
-            .rename('pdos reconstructed'))
+    bivariate_pdf = alpha_cdf.apply(get_joint_probability).stack()
+    bivariate_pdf.index.names = ['alpha', 'beta']
+    return bivariate_pdf.rename(label)
 
 
 def get_pdf_minimc(counts_path, *bounds_paths):
