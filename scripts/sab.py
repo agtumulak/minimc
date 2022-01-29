@@ -736,6 +736,12 @@ def beta_functional_expansion(sab_df, E_min=1e-5, E_max=4.0, n_Es=1000,
             np.nan,
             index=pd.Index(F, name='CDF'),
             columns=pd.MultiIndex.from_product((Es, df_Ts), names=('E', 'T')))
+    # a good beta grid for the alpha functional expansion
+    unique_betas = np.unique(np.abs(beta_df))
+    N_betas = 1000
+    selected_betas = unique_betas[
+            np.round(np.linspace(0, unique_betas.size-1, N_betas)).astype(int)]
+    # interpolate to fill in selected CDF values
     for E, x_E in zip(Es, beta_cdfs):
         for T, beta_cdf in zip(df_Ts, x_E):
             beta_df.loc[:, (E, T)] = np.interp(F, beta_cdf, beta_cdf.index)
@@ -811,7 +817,7 @@ def fit_alpha(args):
                 names=['beta', 'CDF', 'coefficient']))
 
 
-def alpha_functional_expansion(sab_df, n_betas=1000, n_cdfs=1000, order=3):
+def alpha_functional_expansion(sab_df, selected_betas, n_cdfs=1000, order=3):
     """
     Computes the energy-independent conditional CDF in alpha given beta at
     various beta values and temperatures, then performs a functional expansion
@@ -821,27 +827,15 @@ def alpha_functional_expansion(sab_df, n_betas=1000, n_cdfs=1000, order=3):
     ----------
     sab_df : pd.DataFrame
         S(a,b,T) DataFrame
-    n_betas : int, optional
-        Approximate number of betas to use. Setting this too low may result in
-        poor marginal distributions in alpha.
+    n_betas : np.ndarray
+        Beta values to use
     n_cdfs : int, optional
         Approximate number of CDF values to use
     order : int, optional
         Expansion order for proper orthogonal decomposition
     """
     df_Ts = np.array(sorted(sab_df.index.unique('T')))
-
-    # take the union of all beta values that appear across all temperatures
-    all_betas = sab_df.index.unique('beta')
-    # choose number of beta points we want to use
-    selected_betas = all_betas[::len(all_betas) // n_betas]
-    # add largest beta from each temperature
-    selected_betas = (
-            pd.Index(sab_df.groupby('T').apply(
-                lambda s: s.index.unique('beta').max()),
-                name='beta')
-            .union(selected_betas))
-    print(f"using {len(selected_betas)} beta values...")
+    selected_betas = set(selected_betas)
     def common_beta_grid(group):
         """
         Modifies beta values at this temperature to conform with common beta
