@@ -678,7 +678,7 @@ def fit_points(args):
     return pd.concat([s], keys=[group_name], names=['E', 'CDF'])
 
 
-def beta_functional_expansion(sab_df, E_min=1e-5, E_max=4.0, n_Es=100,
+def beta_functional_expansion(sab_df, E_min=1e-5, E_max=4.0, n_Es=1000,
         n_cdfs=1000, order=3):
     """
     Computes the CDF in beta at various incident energies and temperatures,
