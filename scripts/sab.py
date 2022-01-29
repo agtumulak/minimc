@@ -897,7 +897,7 @@ def alpha_functional_expansion(sab_df, selected_betas, n_cdfs=1000, order=3):
         trace_norm = S.sum()
         abs_rel_diff = np.abs((trace_norm - prev_trace_norm) / prev_trace_norm)
         print (f"trace norm abs rel diff: {abs_rel_diff}", end=" " *  10 + '\r')
-        if abs_rel_diff <  1e-5:
+        if abs_rel_diff <  1e-8:
             break
         else:
             prev_trace_norm = trace_norm
