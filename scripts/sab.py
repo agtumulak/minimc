@@ -731,13 +731,7 @@ def beta_functional_expansion(sab_df, E_min=1e-5, E_max=4.0, n_Es=1000,
                     dtype=object).reshape(len(Es), len(df_Ts), -1))
         beta_cdfs = results[:,:,0]
         inelastic_xs = pd.DataFrame(results[:,:,1], index=Es, columns=df_Ts)
-    # take the union of all CDF values that appear across all incident energies
-    all_cdfs = sorted(set(np.concatenate(beta_cdfs.reshape(-1))))
-    # choose approximate number of CDF points we want to use
-    F = all_cdfs[::len(all_cdfs) // n_cdfs]
-    if F[-1] != 1:
-        F.append(1)
-    print(f"using {len(F)} CDF values")
+    F = np.linspace(0, 1, n_cdfs)
     beta_df = pd.DataFrame(
             np.nan,
             index=pd.Index(F, name='CDF'),
