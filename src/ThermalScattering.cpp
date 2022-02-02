@@ -13,6 +13,7 @@
 #include <iterator>
 #include <memory>
 #include <random>
+#include <stdexcept>
 #include <type_traits>
 #include <variant>
 
@@ -95,7 +96,7 @@ ThermalScattering::GetTotal(const Particle& p) const noexcept {
   return xs_T_lo + r_T * (xs_T_hi - xs_T_lo);
 }
 
-void ThermalScattering::Scatter(Particle& p) const noexcept {
+void ThermalScattering::Scatter(Particle& p) const {
   // get incident energy and target temperature
   const auto E = std::get<ContinuousEnergy>(p.GetEnergy());
   const Temperature T = p.GetCell().temperature->at(p.GetPosition());
@@ -194,7 +195,7 @@ ThermalScattering::Alpha ThermalScattering::EvaluateAlpha(
 }
 
 ThermalScattering::Beta ThermalScattering::SampleBeta(
-    Particle& p, const ContinuousEnergy E, const Temperature T) const noexcept {
+    Particle& p, const ContinuousEnergy E, const Temperature T) const {
 
   // find index of energy value strictly greater than E
   const auto& Es = beta_E_CDF.GetAxis(0);
@@ -213,27 +214,46 @@ ThermalScattering::Beta ThermalScattering::SampleBeta(
       r <= std::uniform_real_distribution{}(p.rng) ? E_hi_i - 1 : E_hi_i;
   const ContinuousEnergy E_s = Es.at(E_s_i);
 
-  // sample a CDF value
   const auto& Fs = beta_E_CDF.GetAxis(1);
-  const Real F = std::uniform_real_distribution{}(p.rng);
-  // find index of CDF value strictly greater than sampled CDF value
-  const size_t F_hi_i =
-      std::distance(Fs.cbegin(), std::upper_bound(Fs.cbegin(), Fs.cend(), F));
+  // Keep sampling until a physical value of beta is obtained
+  for (size_t resamples = 0; resamples < constants::beta_resample_limit;
+       resamples++) {
+    // sample a CDF value
+    const Real F = std::uniform_real_distribution{}(p.rng);
+    // find index of CDF value strictly greater than sampled CDF value
+    const size_t F_hi_i =
+        std::distance(Fs.cbegin(), std::upper_bound(Fs.cbegin(), Fs.cend(), F));
 
-  // Evaluate nearest Fs on the sampled E grid.
-  const Real F_lo = F_hi_i != 0 ? Fs.at(F_hi_i - 1) : 0;
-  const Real F_hi = F_hi_i != Fs.size() ? Fs.at(F_hi_i) : 1;
+    // Evaluate nearest Fs on the sampled E grid.
+    const Real F_lo = F_hi_i != 0 ? Fs.at(F_hi_i - 1) : 0;
+    const Real F_hi = F_hi_i != Fs.size() ? Fs.at(F_hi_i) : 1;
 
-  // Evaluate nearest betas on the sampled E grid.
-  const ContinuousEnergy E_s_b_lo = F_hi_i != 0
-                                        ? EvaluateBeta(E_s_i, F_hi_i - 1, T)
-                                        : -E_s / (constants::boltzmann * T);
-  const ContinuousEnergy E_s_b_hi =
-      F_hi_i != Fs.size() ? EvaluateBeta(E_s_i, F_hi_i, T) : beta_cutoff;
+    // Evaluate nearest betas on the sampled E grid.
+    const ContinuousEnergy E_s_b_lo = F_hi_i != 0
+                                          ? EvaluateBeta(E_s_i, F_hi_i - 1, T)
+                                          : -E_s / (constants::boltzmann * T);
+    const ContinuousEnergy E_s_b_hi =
+        F_hi_i != Fs.size() ? EvaluateBeta(E_s_i, F_hi_i, T) : beta_cutoff;
 
-  // Evalute interpolated value of beta on the sampled E grid (assuming
-  // histogram PDF)
-  return E_s_b_lo + (F - F_lo) / (F_hi - F_lo) * (E_s_b_hi - E_s_b_lo);
+    // Evalute interpolated value of beta on the sampled E grid (assuming
+    // histogram PDF)
+    const auto b_prime =
+        E_s_b_lo + (F - F_lo) / (F_hi - F_lo) * (E_s_b_hi - E_s_b_lo);
+
+    // Check if b_prime is above minimum allowed beta
+    const auto E_s_b_min = -E_s / (constants::boltzmann * T);
+    if (E_s_b_min < b_prime) {
+      // Scale to preserve thresholds at actual incident energy E. The minimum and
+      // maximum values of beta are not included in the dataset since their
+      // analytical form is known.
+      const auto b_min = -E / (constants::boltzmann * T);
+      const auto E_s_b_min = -E_s / (constants::boltzmann * T);
+      return b_min + (b_prime - E_s_b_min);
+    }
+  }
+  throw std::runtime_error(
+      "Number of thermal scattering beta resamples exceeded limit: " +
+      std::to_string(constants::beta_resample_limit));
 }
 
 ThermalScattering::Alpha ThermalScattering::SampleAlpha(

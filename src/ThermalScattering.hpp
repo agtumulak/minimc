@@ -145,7 +145,8 @@ public:
   ///       coefficients are adjacent in memory
   MicroscopicCrossSection GetTotal(const Particle& p) const noexcept;
   /// @brief The raison d'etre of this class
-  void Scatter(Particle& p) const noexcept;
+  /// @exception std::runtime_error Resample limit for beta exceeded
+  void Scatter(Particle& p) const;
 
 private:
   // Evaluates the inelastic scattering cross section.
@@ -162,8 +163,7 @@ private:
       Temperature T) const noexcept;
   // Sample an outgoing energy. Requires Particle energy is strictly below
   // ThermalScattering::cutoff_energy. Uses histogram interpolation in PDF.
-  Beta
-  SampleBeta(Particle& p, ContinuousEnergy E, Temperature T) const noexcept;
+  Beta SampleBeta(Particle& p, ContinuousEnergy E, Temperature T) const;
   // Sample an outgoing cosine given an outgoing energy.
   Alpha SampleAlpha(
       Particle& p, const Beta& b, ContinuousEnergy E,
