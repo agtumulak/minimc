@@ -58,7 +58,7 @@ public:
   /// @details The `bins` attribute is interpreted to mean the number of bins
   ///          of <em>finite</em> size. Two additional bins of infinte-width
   ///          are automatically included.
-  LinspaceBins(const pugi::xml_node& linspace_node) noexcept;
+  LinspaceBins(const pugi::xml_node& linspace_node);
   /// @brief Size required to store all bins
   size_t size() const noexcept override;
   /// @brief The equally spaced bin structure can take advantage of arithmetic
@@ -86,7 +86,7 @@ public:
   /// @details The `bins` attribute is interpreted to mean the number of bins
   ///          of <em>finite</em> size. Two additional bins of infinte-width
   ///          are automatically included.
-  LogspaceBins(const pugi::xml_node& logspace_node) noexcept;
+  LogspaceBins(const pugi::xml_node& logspace_node);
   /// @brief Size required to store all bins
   size_t size() const noexcept override;
   /// @brief The logarithmically spaced bin structure can take advantage of

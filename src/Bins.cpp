@@ -21,13 +21,7 @@ std::unique_ptr<const Bins> Bins::Create(const pugi::xml_node& bins_node) {
   if (bins_type.empty()) {
     return std::make_unique<const NoBins>();
   }
-  // check that min < max
-  if (!(bins_node.attribute("min").as_double() <
-        bins_node.attribute("max").as_double())) {
-    throw std::runtime_error(
-        bins_node.path() + ": condition not satisfied: min < max");
-  }
-  if (bins_type == "linspace") {
+  else if (bins_type == "linspace") {
     return std::make_unique<const LinspaceBins>(bins_node);
   }
   else if (bins_type == "logspace"){
@@ -55,10 +49,17 @@ std::string NoBins::to_string() const noexcept { return "none"; }
 
 //// public
 
-LinspaceBins::LinspaceBins(const pugi::xml_node& linspace_node) noexcept
+LinspaceBins::LinspaceBins(const pugi::xml_node& linspace_node)
     : n_bins{linspace_node.attribute("bins").as_ullong() + 2},
       lower_bound{linspace_node.attribute("min").as_double()},
-      upper_bound{linspace_node.attribute("max").as_double()},
+      upper_bound{[this, &linspace_node]() {
+        const auto upper_bound = linspace_node.attribute("max").as_double();
+        if (upper_bound <= lower_bound) {
+          throw std::runtime_error(
+              linspace_node.path() + ": max must be strictly greater than min");
+        }
+        return upper_bound;
+      }()},
       bin_width{(upper_bound - lower_bound) / (n_bins - 2)} {}
 
 size_t LinspaceBins::size() const noexcept { return n_bins; }
@@ -87,11 +88,18 @@ std::string LinspaceBins::to_string() const noexcept {
 
 //// public
 
-LogspaceBins::LogspaceBins(const pugi::xml_node& logspace_node) noexcept
+LogspaceBins::LogspaceBins(const pugi::xml_node& logspace_node)
     : n_bins{logspace_node.attribute("bins").as_ullong() + 2},
       base{logspace_node.attribute("base").as_double(10)},
       log_lower_bound{logspace_node.attribute("min").as_double()},
-      log_upper_bound{logspace_node.attribute("max").as_double()},
+      log_upper_bound{[this, &logspace_node]() {
+        const auto log_upper_bound = logspace_node.attribute("max").as_double();
+        if (log_upper_bound <= log_lower_bound) {
+          throw std::runtime_error(
+              logspace_node.path() + ": max must be strictly greater than min");
+        }
+        return log_upper_bound;
+      }()},
       log_bin_width{(log_upper_bound - log_lower_bound) / (n_bins - 2)} {}
 
 size_t LogspaceBins::size() const noexcept { return n_bins; }
