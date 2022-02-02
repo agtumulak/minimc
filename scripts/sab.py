@@ -506,30 +506,36 @@ def get_pdf_minimc(minimc_path, E, T, label=None):
             line = f.readline()
         line = f.readline()
         cosine_bounds = [float(x) for x in f.readline().split(',')[:-1]]
-        cosine_bounds = np.insert(cosine_bounds, 0, -np.inf);
         # skip to energy bins
         while not line.startswith('energy'):
             line = f.readline()
         line = f.readline()
         energy_bounds = [float(x) * 1e6 for x in f.readline().split(',')[:-1]]
-        energy_bounds = np.insert(energy_bounds, 0, -np.inf)
         # skip to values
         while not line.startswith('mean'):
             line = f.readline()
         line = f.readline()
         counts = [float(x) for x in f.readline().split(',')[:-1]]
-    # compute densities in cosine, MeV space
-    cosine_bounds = np.array(cosine_bounds)
-    energy_bounds = np.array(energy_bounds)
+    # compute densities in cosine, eV space
+    cosine_bounds = np.concatenate(([-np.inf], cosine_bounds, [np.inf]))
+    energy_bounds = np.concatenate(([-np.inf], energy_bounds, [np.inf]))
     counts = np.array(counts)
     cosine_widths = cosine_bounds[1:] - cosine_bounds[:-1]
     energy_widths = energy_bounds[1:] - energy_bounds[:-1]
-    bin_areas = np.einsum('i,j->ij', energy_widths, cosine_widths).reshape(-1)
-    density = counts / bin_areas
+    bin_areas = np.einsum('i,j->ij', cosine_widths, energy_widths).reshape(-1)
+    # compute densities and remove infinitely sized bins
+    density = (
+             (counts / bin_areas)
+            .reshape(cosine_widths.size, energy_widths.size)
+            [1:-1, 1:-1]
+            .reshape(-1))
+    # create pd.Series
+    cosine_midpoints = (cosine_bounds[2:-1] + cosine_bounds[1:-2]) / 2
+    energy_midpoints = (energy_bounds[2:-1] + energy_bounds[1:-2]) / 2
     s = pd.Series(
             density,
             index=pd.MultiIndex.from_product(
-                [cosine_bounds[1:], energy_bounds[1:]], names=['mu', 'E']),
+                [cosine_midpoints, energy_midpoints], names=['mu', 'E']),
             name='minimc')
     # convert to alpha, beta space; #TODO: this is identical to mcnp version
     def to_alpha_beta(s):

@@ -3,8 +3,10 @@
 #include "Particle.hpp"
 #include "pugixml.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <limits>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -26,6 +28,9 @@ std::unique_ptr<const Bins> Bins::Create(const pugi::xml_node& bins_node) {
   }
   else if (bins_type == "logspace"){
     return std::make_unique<const LogspaceBins>(bins_node);
+  }
+  else if (bins_type == "boundaries"){
+    return std::make_unique<const BoundaryBins>(bins_node);
   }
   else {
     assert(false); // this should have been caught by the validator
@@ -122,6 +127,44 @@ std::string LogspaceBins::to_string() const noexcept {
   for (size_t i = 0; i < n_bins - 2; i++) {
     sstream << std::scientific
             << std::pow(base, log_lower_bound + i * log_bin_width) << ", ";
+  }
+  return sstream.str();
+}
+
+// BoundaryBins
+
+//// public
+
+BoundaryBins::BoundaryBins(const pugi::xml_node& boundaries_node)
+    : boundaries{[&boundaries_node]() {
+        std::vector<Real> result;
+        std::stringstream boundary_stringlist{boundaries_node.child_value()};
+        Real prev_boundary = -std::numeric_limits<Real>::infinity();
+        Real boundary;
+        while (boundary_stringlist >> boundary) {
+          if (boundary <= prev_boundary) {
+            throw std::runtime_error(
+                boundaries_node.path() + ": nonincreasing elements found: " +
+                std::to_string(prev_boundary) + " " + std::to_string(boundary));
+          }
+          result.push_back(boundary);
+          prev_boundary = boundary;
+        }
+        return result;
+      }()} {}
+
+size_t BoundaryBins::size() const noexcept { return boundaries.size() + 1; }
+
+size_t BoundaryBins::GetIndex(const Real& v) const noexcept {
+  return std::distance(
+      boundaries.cbegin(),
+      std::upper_bound(boundaries.cbegin(), boundaries.cend(), v));
+}
+
+std::string BoundaryBins::to_string() const noexcept {
+  std::stringstream sstream;
+  for (const auto boundary : boundaries) {
+    sstream << std::scientific << boundary << ", ";
   }
   return sstream.str();
 }

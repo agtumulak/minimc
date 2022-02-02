@@ -26,10 +26,6 @@
   <xs:list itemType="ParticleType"/>
 </xs:simpleType>
 
-<xs:simpleType name="ParticleTypeEntries">
-  <xs:list itemType="NonNegativeDouble"/>
-</xs:simpleType>
-
 <xs:simpleType name="GroupXS">
   <xs:list itemType="NonNegativeDouble"/>
 </xs:simpleType>
@@ -39,6 +35,10 @@
     <xs:enumeration value="surface"/>
     <xs:enumeration value="cell delta"/>
   </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="DoubleList">
+  <xs:list itemType="xs:double"/>
 </xs:simpleType>
 
 <!-- complex types -->
@@ -244,6 +244,13 @@
           </xs:extension>
         </xs:complexContent>
       </xs:complexType>
+    </xs:element>
+    <xs:element name="boundaries">
+      <xs:simpleType>
+        <xs:restriction base="DoubleList">
+          <xs:minLength value="1"/>
+        </xs:restriction>
+      </xs:simpleType>
     </xs:element>
   </xs:choice>
 </xs:complexType>

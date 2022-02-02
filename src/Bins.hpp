@@ -9,6 +9,7 @@
 #include <iterator>
 #include <memory>
 #include <optional>
+#include <vector>
 
 namespace pugi {
 class xml_node;
@@ -106,6 +107,24 @@ private:
   const Real log_upper_bound;
   // bin width in log space
   const Real log_bin_width;
+};
+
+/// @brief A Bin with explicitly specified bin boundaries
+class BoundaryBins : public Bins {
+public:
+  /// @brief Constructs a BoundaryBins from a `boundaries` node of an XML
+  ///        document
+  BoundaryBins(const pugi::xml_node& boundaries_node);
+  /// @brief Returns the number of elements
+  size_t size() const noexcept override;
+  /// @brief Return an index to the bin that would contain a given value
+  size_t GetIndex(const Real& v) const noexcept override;
+  /// @brief Prints space-separated array of bin boundaries
+  std::string to_string() const noexcept override;
+
+private:
+  // bin boundaries
+  const std::vector<Real> boundaries;
 };
 
 /// @brief Partitions all @ref estimators_phase_space "phase space" into
