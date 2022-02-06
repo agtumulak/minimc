@@ -240,15 +240,11 @@ ThermalScattering::Beta ThermalScattering::SampleBeta(
     const auto b_prime =
         E_s_b_lo + (F - F_lo) / (F_hi - F_lo) * (E_s_b_hi - E_s_b_lo);
 
+    // TODO: fix strange behavior near b_prime = 0 while preserving thresholds
     // Check if b_prime is above minimum allowed beta
-    const auto E_s_b_min = -E_s / (constants::boltzmann * T);
-    if (E_s_b_min < b_prime) {
-      // Scale to preserve thresholds at actual incident energy E. The minimum and
-      // maximum values of beta are not included in the dataset since their
-      // analytical form is known.
-      const auto b_min = -E / (constants::boltzmann * T);
-      const auto E_s_b_min = -E_s / (constants::boltzmann * T);
-      return b_min + (b_prime - E_s_b_min);
+    const auto b_min = -E / (constants::boltzmann * T);
+    if (b_min <= b_prime) {
+      return b_prime;
     }
   }
   throw std::runtime_error(
