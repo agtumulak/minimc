@@ -2,6 +2,7 @@
 *.DS_Store
 
 # clang
+.clangd
 .cache/
 .clang-format
 compile_commands.json
