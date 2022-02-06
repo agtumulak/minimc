@@ -41,6 +41,9 @@ compile_commands.json
 *.out
 *.app
 
+# Python
+**/__pycache__/
+
 # misc
 build/
 COMMIT_EDITMSG
