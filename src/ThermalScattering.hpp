@@ -166,8 +166,7 @@ private:
   Beta SampleBeta(Particle& p, ContinuousEnergy E, Temperature T) const;
   // Sample an outgoing cosine given an outgoing energy.
   Alpha SampleAlpha(
-      Particle& p, const Beta& b, ContinuousEnergy E,
-      Temperature T) const noexcept;
+      Particle& p, const Beta& b, ContinuousEnergy E, Temperature T) const;
   // Majorant cross section
   const ContinuousMap<ContinuousEnergy, MicroscopicCrossSection> majorant;
   // Total scattering cross section POD coefficients

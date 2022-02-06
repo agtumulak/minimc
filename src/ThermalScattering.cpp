@@ -257,8 +257,7 @@ ThermalScattering::Beta ThermalScattering::SampleBeta(
 }
 
 ThermalScattering::Alpha ThermalScattering::SampleAlpha(
-    Particle& p, const Beta& b, ContinuousEnergy E,
-    Temperature T) const noexcept {
+    Particle& p, const Beta& b, ContinuousEnergy E, Temperature T) const {
 
   // assume S(a,b) = S(a,-b)
   const Beta abs_b = std::abs(b);
@@ -325,33 +324,43 @@ ThermalScattering::Alpha ThermalScattering::SampleAlpha(
   const auto F_min = find_cdf(b_s_a_min);
   const auto F_max = find_cdf(b_s_a_max);
 
-  // sample a CDF value which is scaled to return a result in [b_s_a_min,
-  // b_s_a_max]
-  const Real F =
-      F_min + std::uniform_real_distribution{}(p.rng) * (F_max - F_min);
-  // find index of CDF value strictly greater than sampled CDF value
-  const size_t F_hi_i =
-      std::distance(Fs.cbegin(), std::upper_bound(Fs.cbegin(), Fs.cend(), F));
+  // Keep sampling until a physical value of alpha is obtained
+  for (size_t resamples = 0; resamples < constants::alpha_resample_limit;
+       resamples++) {
+    // sample a CDF value which is scaled to return a result in [b_s_a_min,
+    // b_s_a_max]
+    const Real F =
+        F_min + std::uniform_real_distribution{}(p.rng) * (F_max - F_min);
+    // find index of CDF value strictly greater than sampled CDF value
+    const size_t F_hi_i =
+        std::distance(Fs.cbegin(), std::upper_bound(Fs.cbegin(), Fs.cend(), F));
 
-  // Evaluate nearest Fs on the sampled beta grid
-  const Real F_lo = F_hi_i != 0 ? Fs.at(F_hi_i - 1) : 0;
-  const Real F_hi = F_hi_i != Fs.size() ? Fs.at(F_hi_i) : 1;
+    // Evaluate nearest Fs on the sampled beta grid
+    const Real F_lo = F_hi_i != 0 ? Fs.at(F_hi_i - 1) : 0;
+    const Real F_hi = F_hi_i != Fs.size() ? Fs.at(F_hi_i) : 1;
 
-  // Evaluate nearest alphas on the sampled beta grid.
-  const Real b_s_a_lo = F_hi_i != 0 ? EvaluateAlpha(b_s_i, F_hi_i - 1, T) : 0;
-  const Real b_s_a_hi =
-      F_hi_i != Fs.size() ? EvaluateAlpha(b_s_i, F_hi_i, T) : alpha_cutoff;
+    // Evaluate nearest alphas on the sampled beta grid.
+    const Real b_s_a_lo = F_hi_i != 0 ? EvaluateAlpha(b_s_i, F_hi_i - 1, T) : 0;
+    const Real b_s_a_hi =
+        F_hi_i != Fs.size() ? EvaluateAlpha(b_s_i, F_hi_i, T) : alpha_cutoff;
 
-  // Evalute interpolated value of alpha on the sampled beta grid (assuming
-  // histogram PDF)
-  const Beta a_prime =
-      b_s_a_lo + (F - F_lo) / (F_hi - F_lo) * (b_s_a_hi - b_s_a_lo);
+    // Evalute interpolated value of alpha on the sampled beta grid (assuming
+    // histogram PDF)
+    const auto a_prime =
+        b_s_a_lo + (F - F_lo) / (F_hi - F_lo) * (b_s_a_hi - b_s_a_lo);
 
-  // Scale to preserve thresholds at actual beta value b. The minimum and
-  // maximum values of alpha have analytical forms which are known.
-  const auto b_sqrt_E_bkT = std::sqrt(E + b * constants::boltzmann * T);
-  const Alpha b_a_min = std::pow(sqrt_E - b_sqrt_E_bkT, 2) / akT;
-  const Alpha b_a_max = std::pow(sqrt_E + b_sqrt_E_bkT, 2) / akT;
-  return b_a_min +
-         (a_prime - b_s_a_min) * (b_a_max - b_a_min) / (b_s_a_max - b_s_a_min);
+    if (b_s_a_min < a_prime && a_prime < b_s_a_max) {
+      // Scale to preserve thresholds at actual beta value b. The minimum and
+      // maximum values of alpha have analytical forms which are known.
+      const auto b_sqrt_E_bkT = std::sqrt(E + b * constants::boltzmann * T);
+      const Alpha b_a_min = std::pow(sqrt_E - b_sqrt_E_bkT, 2) / akT;
+      const Alpha b_a_max = std::pow(sqrt_E + b_sqrt_E_bkT, 2) / akT;
+      return b_a_min + (a_prime - b_s_a_min) * (b_a_max - b_a_min) /
+                           (b_s_a_max - b_s_a_min);
+      }
+
+  }
+  throw std::runtime_error(
+      "Number of thermal scattering alpha resamples exceeded limit: " +
+      std::to_string(constants::alpha_resample_limit));
 }

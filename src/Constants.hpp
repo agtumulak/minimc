@@ -32,4 +32,7 @@ constexpr Real relative_temperature_difference_tolerance = 0.01;
 /// @brief Number of times to resample thermal scattering beta when an
 ///        unphysical value is encountered
 constexpr size_t beta_resample_limit = 10;
+/// @brief Number of times to resample thermal scattering alpha when an
+///        unphysical value is encountered
+constexpr size_t alpha_resample_limit = 10;
 } // namespace constants
