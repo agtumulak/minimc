@@ -8,6 +8,12 @@
 
 Welcome to MiniMC
 
+@section ans-2022 ANS 2022
+
+@image html broomstick_beta.pdf "Broomstick Problem: PDF in Beta (Dimensionless Energy Transfer)"
+@image html broomstick_alpha.pdf "Broomstick Problem: PDF in Alpha (Dimensionless Momentum Transfer)"
+@image html slab_spectrum.pdf "1D Slab Problem: Leakage Energy Spectra"
+
 @section development Development
 
 - @ref developer_guide

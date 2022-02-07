@@ -16,5 +16,6 @@ if(Doxygen_FOUND)
   set(DOXYGEN_HTML_EXTRA_STYLESHEET
     ${CMAKE_CURRENT_SOURCE_DIR}/doxygen-awesome-css/doxygen-awesome.css
     ${CMAKE_CURRENT_SOURCE_DIR}/doxygen-awesome-css/doxygen-awesome-sidebar-only.css)
+  set(DOXYGEN_IMAGE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/resources)
   doxygen_add_docs(doc ${DOXYGEN_SOURCES} ${CMAKE_SOURCE_DIR}/src)
 endif()
