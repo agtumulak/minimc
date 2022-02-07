@@ -13,9 +13,9 @@ Welcome to MiniMC
 A Continuous-Temperature Thermal Scattering Treatment Using Proper Orthogonal
 Decomposition
 
-@image html broomstick_beta.pdf "Broomstick Problem: PDF in Beta (Dimensionless Energy Transfer)"
-@image html broomstick_alpha.pdf "Broomstick Problem: PDF in Alpha (Dimensionless Momentum Transfer)"
-@image html slab_spectrum.pdf "1D Slab Problem: Leakage Energy Spectra"
+@image html broomstick_beta.png "Broomstick Problem: PDF in Beta (Dimensionless Energy Transfer)" width=250px
+@image html broomstick_alpha.png "Broomstick Problem: PDF in Alpha (Dimensionless Momentum Transfer)" width=250px
+@image html slab_spectrum.png "1D Slab Problem: Leakage Energy Spectra" width=250px
 
 @section development Development
 
