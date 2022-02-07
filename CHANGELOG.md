@@ -5,8 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.3.0] - 2022-02-06
 - Implemented proper orthogonal decomposition for evaluating total inelastic
   scattering cross section, beta, and alpha
+- Redefined Bin boundary definitions to inlude all possible values
+- Added benchmark problems and results from ANS 2022 summary
 
 ## [0.2.0] - 2022-01-01
 - Implemented estimator standard deviation
@@ -49,7 +53,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Code is documented with Doxygen
 - Continuous integration is performed with GitHub Actions
 
-[Unreleased]: https://github.com/agtumulak/minimc/compare/v0.0.1...develop
+[Unreleased]: https://github.com/agtumulak/minimc/compare/v0.3.0...develop
+[0.3.0]: https://github.com/agtumulak/minimc/releases/tag/v0.3.0
 [0.2.0]: https://github.com/agtumulak/minimc/releases/tag/v0.2.0
 [0.1.0]: https://github.com/agtumulak/minimc/releases/tag/v0.1.0
 [0.0.4]: https://github.com/agtumulak/minimc/releases/tag/v0.0.4
