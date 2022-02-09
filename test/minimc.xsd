@@ -63,27 +63,36 @@
           <xs:choice minOccurs="1" maxOccurs="unbounded">
             <xs:element name="sphere">
               <xs:complexType>
-                <xs:all>
-                  <xs:element name="center" type="PointType"/>
-                  <xs:element name="radius">
-                    <xs:complexType>
-                      <xs:attribute name="r" type="StrictlyPositiveDouble" use="required"/>
-                    </xs:complexType>
-                  </xs:element>
-                </xs:all>
-                <xs:attribute name="name" type="xs:normalizedString" use="required"/>
+                <xs:complexContent>
+                  <xs:extension base="SurfaceDefinition">
+                    <xs:all>
+                      <xs:element name="center" type="PointType"/>
+                      <xs:element name="radius">
+                        <xs:complexType>
+                          <xs:attribute name="r" type="StrictlyPositiveDouble" use="required"/>
+                        </xs:complexType>
+                      </xs:element>
+                    </xs:all>
+                  </xs:extension>
+                </xs:complexContent>
               </xs:complexType>
             </xs:element>
             <xs:element name="planex">
               <xs:complexType>
-                <xs:attribute name="name" type="xs:normalizedString" use="required"/>
-                <xs:attribute name="x" type="xs:double" use="required"/>
+                <xs:complexContent>
+                  <xs:extension base="SurfaceDefinition">
+                    <xs:attribute name="x" type="xs:double" use="required"/>
+                  </xs:extension>
+                </xs:complexContent>
               </xs:complexType>
             </xs:element>
             <xs:element name="cylinderx">
               <xs:complexType>
-                <xs:attribute name="name" type="xs:normalizedString" use="required"/>
-                <xs:attribute name="r" type="xs:double" use="required"/>
+                <xs:complexContent>
+                  <xs:extension base="SurfaceDefinition">
+                    <xs:attribute name="r" type="xs:double" use="required"/>
+                  </xs:extension>
+                </xs:complexContent>
               </xs:complexType>
             </xs:element>
           </xs:choice>

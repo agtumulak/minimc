@@ -138,6 +138,10 @@
   </xs:choice>
 </xs:complexType>
 
+<xs:complexType name="SurfaceDefinition">
+  <xs:attribute name="name" type="xs:normalizedString" use="required"/>
+</xs:complexType>
+
 <xs:complexType name="CSGDefinition">
   <xs:choice minOccurs="1" maxOccurs="unbounded">
     <xs:element name="surface">
