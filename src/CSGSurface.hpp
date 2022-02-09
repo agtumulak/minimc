@@ -21,8 +21,6 @@ public:
   ///          Guidelines R.30)
   /// @exception std::runtime_error `surface` node with matching `name`
   ///            attribute not found
-  /// @todo Throw exception when there exist more than one `surface` node with
-  ///       the same `name` attribute
   /// @todo Use abstract nodes in CSGSurface definitions; e.g. `name` attribute
   ///       is common to all CSGSurface derived types.
   static std::unique_ptr<const CSGSurface>
