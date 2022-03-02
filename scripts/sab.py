@@ -17,11 +17,16 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import re
 import tikzplotlib
+from dask import dataframe as dd
+from dask.diagnostics import ProgressBar
 from functools import partial
 from inspect import signature
 from multiprocessing import Pool
-from scipy import optimize
+from scipy import optimize, interpolate
 from tqdm import tqdm
+
+pbar = ProgressBar()
+pbar.register()
 
 
 # target nuclide mass ratio
@@ -941,6 +946,70 @@ def alpha_functional_expansion(sab_df, selected_betas, n_cdfs=1000, order=3):
         print("The following CDFs are not monotonic:")
         print(monotonic_check_df.loc[:, ~is_monotonic])
     return U_df, S_df, V_df
+
+
+def uniform_coarsen(U, S, V):
+    # helper function
+    def compute_rel_frobenius_norm(row, full_df, interpolation_points):
+        idx = pd.IndexSlice
+        fine_Ts = full_df.index
+        fine_betas = full_df.columns.unique('beta')
+        fine_CDFs = full_df.columns.unique('CDF')
+        coarse_Ts = fine_Ts[np.round(np.linspace(0, fine_Ts.size - 1, row['T gridsize'])).astype(int)]
+        coarse_betas = fine_betas[np.round(np.linspace(0, fine_betas.size - 1, row['beta gridsize'])).astype(int)]
+        coarse_CDFs = fine_CDFs[np.round(np.linspace(0, fine_CDFs.size - 1, row['CDF gridsize'])).astype(int)]
+        coarse_interpolator = interpolate.RegularGridInterpolator(
+                (coarse_Ts, coarse_betas, coarse_CDFs),
+                (
+                    full_df
+                    .loc[coarse_Ts, idx[coarse_betas, coarse_CDFs]]
+                    .values
+                    .reshape(coarse_Ts.size, coarse_betas.size, coarse_CDFs.size)))
+        interpolated_df = pd.DataFrame(
+                coarse_interpolator(interpolation_points),
+                index=full_df.index,
+                columns=full_df.columns)
+        norm = np.linalg.norm(full_df - interpolated_df) / np.linalg.norm(full_df)
+        return norm
+    # parse hdf5 data
+    U = U.unstack()
+    S = pd.DataFrame(np.diag(S.values.flatten()), index=U.columns, columns=U.columns)
+    V = V.unstack()
+    full_df = U @ S @ V.T
+    # get full grids
+    fine_Ts = U.index
+    fine_betas = V.index.unique('beta')
+    fine_CDFs = V.index.unique('CDF')
+    # points which will be interpolated
+    interpolation_points = (
+            np.fromiter(
+                (
+                    val
+                    for T in fine_Ts
+                    for beta in fine_betas
+                    for CDF in fine_CDFs
+                    for val in (T, beta, CDF)),
+                float,
+                count=fine_Ts.size * fine_betas.size * fine_CDFs.size * 3)
+            .reshape(fine_Ts.size, fine_betas.size * fine_CDFs.size, -1))
+    # get coarsened gridsizes
+    T_gridsizes = range(2, fine_Ts.size + 1)
+    E_gridsizes = range(100, fine_betas.size + 1, 100)
+    CDF_gridsizes = range(100, fine_CDFs.size + 1, 100)
+    # initialize Series of relative errors
+    index = pd.MultiIndex.from_product(
+            (T_gridsizes, E_gridsizes, CDF_gridsizes),
+            names=['T gridsize', 'beta gridsize', 'CDF gridsize'])
+    rel_frobenius_norms = (
+            pd.Series(0, index=index, name='relative error')
+            .reset_index())
+    ddf = dd.from_pandas(rel_frobenius_norms, npartitions=8)
+    ddf['relative error'] = ddf.apply(
+            compute_rel_frobenius_norm,
+            axis='columns',
+            args=(full_df, interpolation_points), meta='double')
+    rel_frobenius_norms = ddf.compute().set_index(['T gridsize', 'beta gridsize', 'CDF gridsize'])
+    return rel_frobenius_norms
 
 
 if __name__ == '__main__':
