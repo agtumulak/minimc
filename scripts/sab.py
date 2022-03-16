@@ -57,9 +57,12 @@ def parse_file7(mf7_path):
     with open(mf7_path, mode='r') as sab_file:
         # skip headers
         while True:
-            if sab_file.readline().endswith('1 7  4    5\n'):
-                N_beta = int(sab_file.readline().split()[0])
+            if sab_file.readline().endswith('1 7  4\n'):
                 break
+        # skip to relevant part
+        for _ in range(4):
+            next(sab_file)
+        N_beta = int(sab_file.readline().split()[0])
         alphas, betas, Ts, Ss = [], [], [], []
         for _ in range(N_beta):
             # Read first temperature, beta block
@@ -846,7 +849,8 @@ def alpha_functional_expansion(sab_df, selected_betas, n_cdfs=1000, order=3):
     n_cdfs : int, optional
         Approximate number of CDF values to use
     order : int, optional
-        Expansion order for proper orthogonal decomposition
+        Expansion order for proper orthogonal decomposition. Setting to None
+        will return the full expansion.
     """
     df_Ts = np.array(sorted(sab_df.index.unique('T')))
     selected_betas = set(selected_betas)
@@ -906,6 +910,7 @@ def alpha_functional_expansion(sab_df, selected_betas, n_cdfs=1000, order=3):
     prev_trace_norm = np.nan
     while not converged:
         U, S, Vt = np.linalg.svd(alpha_df_pod_form, full_matrices=False)
+        order = S.size if order is None else order
         A = U[:, :order] @ np.diag(S[:order]) @ Vt[:order,:]
         alpha_df_pod_form = alpha_df_pod_form.where(~nan_entries, A)
         trace_norm = S.sum()
