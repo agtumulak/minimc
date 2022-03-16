@@ -711,7 +711,8 @@ def beta_functional_expansion(sab_df, E_min=1e-5, E_max=4.0, n_Es=1000,
     n_cdfs : int, optional
         Approximate number of CDF values to use
     order : int, optional
-        Expansion order for proper orthogonal decomposition
+        Expansion order for proper orthogonal decomposition. Setting to None
+        will return the full expansion.
 
     Returns
     -------
@@ -760,6 +761,7 @@ def beta_functional_expansion(sab_df, E_min=1e-5, E_max=4.0, n_Es=1000,
     # perform proper orthogonal decomposition
     beta_df_pod_form = beta_df.stack('T').unstack('CDF')
     U, S, Vt = np.linalg.svd(beta_df_pod_form, full_matrices=False)
+    order = S.size if order is None else order
     U_df = (pd.DataFrame(
         {'coefficient': U[:, :order].flatten()},
         index=pd.MultiIndex.from_product(
