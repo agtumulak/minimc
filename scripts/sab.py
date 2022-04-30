@@ -881,11 +881,10 @@ def alpha_functional_expansion(sab_df, selected_betas, n_cdfs=1000, order=3):
     print(f"largest alpha: {largest_alpha}")
     alpha_cdfs = common_beta_sab_df.groupby(['T', 'beta']).apply(process_b_T, largest_alpha)
     # take the union of all CDF values that appear across all incident energies
-    all_cdfs = sorted(set(alpha_cdfs))
-    # choose number of CDF points we want to use
-    F = all_cdfs[::len(all_cdfs) // n_cdfs]
-    # don't include 0
-    F = F if F[0] != 0 else F[1:]
+    all_cdfs = np.array(sorted(set(alpha_cdfs)))
+    # choose number of CDF points we want to use; don't include 0
+    F = all_cdfs[
+            np.round(np.linspace(0, all_cdfs.size-1, n_cdfs + 1)).astype(int)][1:]
     # last CDF must always be 1.
     print(f"using {len(F)} CDF values...")
     # interpolate alpha values at selected CDF values
