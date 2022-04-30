@@ -14,9 +14,12 @@ https://doi.org/10.1016/j.anucene.2014.04.028.
 
 import numpy as np
 import pandas as pd
+import itertools
 import matplotlib.pyplot as plt
+import pickle
 import re
 import tikzplotlib
+from collections import OrderedDict
 from dask import dataframe as dd
 from dask.diagnostics import ProgressBar
 from functools import partial
@@ -675,15 +678,6 @@ def compare_univariate_pdf(title, *series, axis='beta'):
     plt.show()
 
 
-def parallel_apply(df_grouped, func, *args):
-    func_args = ((group_index, group) + args for group_index, group in df_grouped)
-    with Pool(processes=8) as pool:
-        return pd.concat(
-                [x for x in tqdm(
-                    pool.imap(func=func, iterable=func_args),
-                    total=len(df_grouped))])
-
-
 def fit_points(args):
     group_name, s = args
     s = pd.Series(
@@ -1019,99 +1013,198 @@ def uniform_coarsen(U, S, V):
     return rel_frobenius_norms
 
 
+def adaptive_coarsen(full_df, rel_err_tol=1e-2, abs_err_tol=1e-12, graphics=False):
+    # removed axes from least important to most important
+    removed = []
+    # initialize data which will not be updated by coarsening loop
+    fine_axes = [x.values for x in full_df.index.levels]
+    fine_array = full_df.values.reshape(full_df.index.levshape)
+    # initialize data which will be updated by coarsening loop
+    coarse_axes = fine_axes.copy()
+    coarse_array = fine_array.copy()
+    fine_interped = fine_array.copy()
+    residuals = fine_interped - fine_array
+    local_sqr_errs = (residuals * residuals) / residuals.size
+    global_err = 0.
+    fine_idx = [np.arange(axis.size) for axis in fine_axes]
+    # prepare figure
+    if graphics:
+        figure, ax = plt.subplots()
+        fig = plt.figure()
+        ax = fig.gca()
+        im = ax.imshow(fine_array[:, :, 8])
+        ax.set_xlabel('CDF Index')
+        ax.set_ylabel('Energy Index')
+        ax.set_title(r'$\beta$ at 450K')
+        figure.show()
+    while True:
+        # identify least important gridpoint
+        selected_axis, selected_idx = None, None
+        selected_global_err = np.inf
+        for axis in range(coarse_array.ndim):
+            fine_axis = fine_axes[axis]
+            axis_fine_idx = fine_idx[axis]
+            # get contribution of each axis gridpoint to total error
+            axis_sqr_err = local_sqr_errs.sum(
+                    axis=tuple(i for i in range(coarse_array.ndim) if i != axis))
+            resize_shapes = [1 if a != axis else -1 for a in range(coarse_array.ndim)]
+            for coarse_idx in range(1, coarse_array.shape[axis] - 1):
+                # get the fine axis indices that will be used as the left/right
+                # boundaries for the interpolated points
+                left_fine_idx = axis_fine_idx[coarse_idx - 1]
+                right_fine_idx = axis_fine_idx[coarse_idx + 1]
+                # get fine axis indices for new points that have to be
+                # interpolated
+                interped_fine_idx = np.arange(left_fine_idx + 1, right_fine_idx)
+                # compute the interpolation factor for axis points that will be
+                # interpolated
+                interp_factor = (
+                        (
+                            (fine_axis[interped_fine_idx] - fine_axis[left_fine_idx])
+                          / (fine_axis[right_fine_idx] - fine_axis[left_fine_idx]))
+                        .reshape(resize_shapes))
+                # get the previous iteration's interpolated values that will be
+                # used as the left/right faces for the interpolated points
+                left_face = fine_interped.take([left_fine_idx], axis=axis)
+                right_face = fine_interped.take([right_fine_idx], axis=axis)
+                # interpolate fine points
+                interped_fine = (left_face + interp_factor * (right_face - left_face))
+                # get error contribution from points which are unaffected by
+                # removing gridpoint at coarse_idx
+                unaffected_err_sum = (
+                          axis_sqr_err[:left_fine_idx + 1].sum()
+                        + axis_sqr_err[right_fine_idx:].sum())
+                # get absolute relative error of interpolated points
+                true_values = fine_array.take(interped_fine_idx, axis=axis)
+                residuals = interped_fine - true_values
+                affected_err = (residuals * residuals) / fine_array.size
+                global_err = np.sqrt(unaffected_err_sum + affected_err.sum())
+                # # print diagnostics
+                # print(
+                #         f"axis: {axis}, coarse_idx: {coarse_idx}, "
+                #         f"max_new_local_rel_err: {new_local_rel_err.max()}, "
+                #         f"global_err: {global_err}")
+                abs_rel_errs = np.abs(residuals / true_values)
+                abs_errs = np.abs(residuals)
+                # automatically reject this coarse gridpoint if it makes any
+                # local error too large
+                if np.any((abs_errs > abs_err_tol) & (abs_rel_errs > rel_err_tol)):
+                    continue
+                # if removing this gridpoint doesn't improve on the candidate
+                # gridpoint, skip it
+                elif global_err > selected_global_err:
+                    continue
+                # update
+                else:
+                    selected_axis = axis
+                    selected_idx = coarse_idx
+                    selected_global_err = global_err
+                    selected_interped = interped_fine
+                    selected_interped_fine_idx = interped_fine_idx
+        if selected_axis != None:
+            # update figure
+            if graphics:
+                if selected_axis == 0:
+                    im.axes.axhline(fine_idx[selected_axis][selected_idx], color='k', linewidth=0.5)
+                elif selected_axis == 1:
+                    im.axes.axvline(fine_idx[selected_axis][selected_idx], color='k', linewidth=0.5)
+                plt.pause(0.1)
+                fig.canvas.draw()
+            # array of indices to keep
+            keep_idx = np.concatenate((
+                np.arange(selected_idx),
+                np.arange(selected_idx + 1, coarse_axes[selected_axis].size)))
+            # renmove gridpoint
+            coarse_axes[selected_axis] = coarse_axes[selected_axis][keep_idx]
+            coarse_array = coarse_array.take(keep_idx, axis=selected_axis)
+            # construct indices where new interpolated values belong
+            # https://stackoverflow.com/a/42657219/5101335
+            idx = [slice(None)] * fine_interped.ndim
+            idx[selected_axis] = selected_interped_fine_idx
+            # compute new interpolated
+            fine_interped[idx] = selected_interped
+            # compute residuals
+            residuals = fine_interped - fine_array
+            local_abs_rel_errs = np.abs(residuals / fine_array)
+            max_local_abs_rel_err_idx = np.unravel_index(
+                    local_abs_rel_errs.argmax(),
+                    local_abs_rel_errs.shape)
+            max_local_abs_rel_err = local_abs_rel_errs[max_local_abs_rel_err_idx]
+            max_local_abs_err = np.abs(residuals[max_local_abs_rel_err_idx])
+            local_sqr_errs = (residuals * residuals) / fine_array.size
+            global_err = local_sqr_errs.sum()
+            fine_idx[selected_axis] = fine_idx[selected_axis][keep_idx]
+            diagnostics = OrderedDict()
+            diagnostics["removed axis".rjust(15)] = f'{selected_axis:15}'
+            diagnostics["removed index".rjust(15)] = f'{selected_idx:15}'
+            diagnostics["max local abs. rel. err.".rjust(26)] = f'{max_local_abs_rel_err:26.5E}'
+            diagnostics["corresponding abs. err.".rjust(25)] = f'{max_local_abs_err:25.5E}'
+            diagnostics["global err.".rjust(13)] = f'{global_err:13.5E}'
+            diagnostics["coarse axes shape".rjust(20)] = f'{coarse_array.shape}'.rjust(20)
+            if len(removed) % 25 == 0:
+                hlines = ''.join(('-' * len(s.strip())).rjust(len(s)) for s in diagnostics.keys())
+                headings = ''.join(diagnostics.keys())
+                print('\n'.join((hlines, headings, hlines)))
+            print(''.join(diagnostics.values()))
+            removed.append((selected_axis, selected_idx))
+        else:
+            break
+    with open('removed.pkl', 'wb') as f:
+        pickle.dump(removed, f)
+
+
+def remove_removed(full_df, removed):
+    fine_axes = [x.values for x in full_df.index.levels]
+    fine_array = full_df.values.reshape(full_df.index.levshape)
+    # remove removed indices
+    coarse_axes = fine_axes.copy()
+    coarse_array = fine_array
+    for axis in range(fine_array.ndim):
+        removed_indices = [index for a, index in removed if axis==a]
+        coarse_array = np.delete(coarse_array, removed_indices, axis=axis)
+        coarse_axes[axis] = np.delete(fine_axes[axis], removed_indices)
+    interpolated = interpolate.RegularGridInterpolator(coarse_axes, coarse_array)(
+                    np.fromiter(
+                        itertools.chain(*itertools.product(*(fine_axes))), dtype=float)
+                    .reshape(fine_array.shape + (-1,)))
+
+
+def monotonic_check(U, S, V, order=None):
+    orders = U.index.unique('order')
+    orders = orders if order is None else orders[:order]
+    U = U['coefficient'].loc[:, orders].unstack()
+    S = pd.DataFrame(np.diag(S.values.flatten()[:len(orders)]), index=orders, columns=orders)
+    V = V['coefficient'].loc[:, :, orders].unstack()
+    full_df = (U @ S @ V.T).T.unstack('E')
+    is_monotonic = full_df.apply(lambda col: col.is_monotonic).unstack()
+    x_indices = range(0, is_monotonic.columns.size, 100)
+    y_indices = range(is_monotonic.index.size)
+    plt.imshow(is_monotonic, aspect='auto', interpolation='None')
+    plt.title(r'Monotonic $\beta(G), $' + f'Order={order}')
+    plt.xlabel('Energy (eV)')
+    plt.xticks(x_indices, [f'{x:3.1E}' for x in is_monotonic.columns[x_indices]], rotation=90)
+    plt.ylabel('Temperature (K)')
+    plt.yticks(y_indices, is_monotonic.index[y_indices])
+    print(
+            f'{is_monotonic.sum().sum()} of {is_monotonic.size} '
+            f'({is_monotonic.sum().sum() / is_monotonic.size * 100}%) '
+            f'is monotonic')
+    plt.tight_layout()
+    plt.show()
+    # plt.savefig(f'order{order}.png')
+    print(is_monotonic)
+
+
 if __name__ == '__main__':
-    # Broomstick problem
-    E = 0.56 # energy in eV
-    T = 450.0 # temperature in K
-    pdf_mcnp = get_pdf_mcnp(f'/Users/atumulak/Developer/mcnp6-runs/broomstick/endf80-{E}eV-{T:.1f}K.mctal', E, T, label='MCNP (tabular)')
-    pdf_minimc = get_pdf_minimc(f'/Users/atumulak/Developer/minimc/broomstick_{E}eV_{T:.1f}K.minimc', E, T, label='MiniMC (POD)')
 
-    plt.clf()
-    plt.ticklabel_format(style='plain')
-    beta_pdf_mcnp = marginalize(pdf_mcnp, axis='beta')
-    beta_pdf_minimc = marginalize(pdf_minimc, axis='beta')
-    beta_pdf_mcnp.plot(linestyle='-', color='k')
-    beta_pdf_minimc.plot(linestyle=':', color='k')
-    # plt.tight_layout()
-    plt.ylabel(r'$p_{\beta}(\beta)$')
-    plt.xlabel(r'$\beta$')
-    plt.xlim(max(beta_pdf_mcnp.index.min(), beta_pdf_minimc.index.min()), 10)
-    plt.ylim(0, 0.25)
-    plt.legend(frameon=False, loc='upper left')
-    plt.grid(True)
-    tikzplotlib.clean_figure()
-    tikzplotlib.save('beta_comparison.tex')
+    # parse hdf5 data
+    U = pd.read_hdf('../data/tsl/endfb8-fullorder/beta_endfb8_T_coeffs.hdf5')
+    S = pd.read_hdf('../data/tsl/endfb8-fullorder/beta_endfb8_S_coeffs.hdf5')
+    V = pd.read_hdf('../data/tsl/endfb8-fullorder/beta_endfb8_E_CDF_coeffs.hdf5')
 
-    plt.clf()
-    alpha_pdf_mcnp = marginalize(pdf_mcnp, axis='alpha')
-    alpha_pdf_minimc = marginalize(pdf_minimc, axis='alpha')
-    alpha_pdf_mcnp.plot(linestyle='-', color='k')
-    alpha_pdf_minimc.plot(linestyle=':', color='k')
-    # plt.tight_layout()
-    plt.ylabel(r'$p_{\alpha}(\alpha)$')
-    plt.xlabel(r'$\alpha$')
-    plt.xlim(0, 50)
-    plt.ylim(0, 0.07)
-    plt.legend(frameon=False)
-    plt.grid(True)
-    tikzplotlib.clean_figure()
-    tikzplotlib.save('alpha_comparison.tex')
-
-
-    # Segmented Problem
-
-    # MCNP
-    plt.clf()
-    mcnp_x = np.array([0.0, 1.3888E-11, 1.4747E-11, 1.5659E-11, 1.6627E-11, 1.7655E-11, 1.8747E-11, 1.9906E-11, 2.1137E-11, 2.2444E-11, 2.3832E-11, 2.5305E-11, 2.6870E-11, 2.8532E-11, 3.0296E-11, 3.2170E-11, 3.4159E-11, 3.6271E-11, 3.8514E-11, 4.0896E-11, 4.3424E-11, 4.6110E-11, 4.8961E-11, 5.1988E-11, 5.5203E-11, 5.8617E-11, 6.2241E-11, 6.6090E-11, 7.0177E-11, 7.4517E-11, 7.9124E-11, 8.4017E-11, 8.9212E-11, 9.4729E-11, 1.0059E-10, 1.0681E-10, 1.1341E-10, 1.2042E-10, 1.2787E-10, 1.3578E-10, 1.4417E-10, 1.5309E-10, 1.6256E-10, 1.7261E-10, 1.8328E-10, 1.9461E-10, 2.0665E-10, 2.1943E-10, 2.3300E-10, 2.4740E-10, 2.6270E-10, 2.7895E-10, 2.9620E-10, 3.1451E-10, 3.3396E-10, 3.5461E-10, 3.7654E-10, 3.9982E-10, 4.2455E-10, 4.5080E-10, 4.7867E-10, 5.0827E-10, 5.3970E-10, 5.7308E-10, 6.0851E-10, 6.4614E-10, 6.8610E-10, 7.2852E-10, 7.7357E-10, 8.2141E-10, 8.7220E-10, 9.2614E-10, 9.8341E-10, 1.0442E-09, 1.1088E-09, 1.1774E-09, 1.2502E-09, 1.3275E-09, 1.4095E-09, 1.4967E-09, 1.5893E-09, 1.6875E-09, 1.7919E-09, 1.9027E-09, 2.0203E-09, 2.1453E-09, 2.2779E-09, 2.4188E-09, 2.5684E-09, 2.7272E-09, 2.8958E-09, 3.0749E-09, 3.2650E-09, 3.4669E-09, 3.6813E-09, 3.9089E-09, 4.1507E-09, 4.4073E-09, 4.6798E-09, 4.9692E-09, 5.2765E-09, 5.6028E-09, 5.9493E-09, 6.3171E-09, 6.7078E-09, 7.1225E-09, 7.5630E-09, 8.0307E-09, 8.5272E-09, 9.0545E-09, 9.6144E-09, 1.0209E-08, 1.0840E-08, 1.1511E-08, 1.2222E-08, 1.2978E-08, 1.3781E-08, 1.4633E-08, 1.5538E-08, 1.6498E-08, 1.7519E-08, 1.8602E-08, 1.9752E-08, 2.0974E-08, 2.2271E-08, 2.3648E-08, 2.5110E-08, 2.6663E-08, 2.8311E-08, 3.0062E-08, 3.1921E-08, 3.3895E-08, 3.5991E-08, 3.8216E-08, 4.0580E-08, 4.3089E-08, 4.5753E-08, 4.8583E-08, 5.1587E-08, 5.4777E-08, 5.8164E-08, 6.1761E-08, 6.5580E-08, 6.9635E-08, 7.3941E-08, 7.8513E-08, 8.3368E-08, 8.8523E-08, 9.3997E-08, 9.9810E-08, 1.0598E-07, 1.1254E-07, 1.1949E-07, 1.2688E-07, 1.3473E-07, 1.4306E-07, 1.5191E-07, 1.6130E-07, 1.7127E-07, 1.8187E-07, 1.9311E-07, 2.0505E-07, 2.1773E-07, 2.3120E-07, 2.4549E-07, 2.6067E-07, 2.7679E-07, 2.9391E-07, 3.1208E-07, 3.3138E-07, 3.5187E-07, 3.7363E-07, 3.9673E-07, 4.2127E-07, 4.4732E-07, 4.7498E-07, 5.0435E-07, 5.3553E-07, 5.6865E-07, 6.0381E-07, 6.4115E-07, 6.8080E-07, 7.2290E-07, 7.6760E-07, 8.1506E-07, 8.6546E-07, 9.1898E-07, 9.7581E-07, 1.0361E-06, 1.1002E-06, 1.1683E-06, 1.2405E-06, 1.3172E-06, 1.3987E-06, 1.4851E-06, 1.5770E-06, 1.6745E-06, 1.7780E-06, 1.8880E-06, 2.0047E-06, 2.1287E-06, 2.2603E-06])
-    mcnp_y = np.array([0.00000E+00, 0.00000E+00, 0.00000E+00, 8.47025E-08, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 8.70354E-08, 6.19715E-08, 0.00000E+00, 0.00000E+00, 0.00000E+00, 9.16434E-08, 7.96543E-08, 0.00000E+00, 0.00000E+00, 7.24145E-08, 0.00000E+00, 4.21454E-08, 0.00000E+00, 1.18403E-07, 0.00000E+00, 6.70947E-08, 2.40811E-07, 0.00000E+00, 0.00000E+00, 1.39505E-07, 1.42467E-07, 1.65032E-07, 0.00000E+00, 5.71574E-08, 0.00000E+00, 1.53026E-07, 1.97758E-07, 2.42679E-07, 3.59412E-07, 4.34465E-07, 4.13759E-07, 3.32021E-07, 7.08945E-07, 7.88901E-07, 8.10570E-07, 8.38619E-07, 1.07238E-06, 7.97081E-07, 1.46928E-06, 2.08201E-06, 1.37004E-06, 1.26826E-06, 1.72541E-06, 2.04854E-06, 2.02357E-06, 2.00285E-06, 3.10952E-06, 3.54243E-06, 3.42757E-06, 5.25450E-06, 5.07330E-06, 5.11579E-06, 6.59894E-06, 8.46631E-06, 7.86158E-06, 9.81307E-06, 1.11746E-05, 1.26110E-05, 1.35622E-05, 1.42971E-05, 1.61058E-05, 2.06618E-05, 2.36974E-05, 2.54540E-05, 2.96002E-05, 3.60012E-05, 3.86273E-05, 4.49236E-05, 5.02828E-05, 5.45810E-05, 6.31841E-05, 7.45957E-05, 8.29121E-05, 9.26663E-05, 1.07870E-04, 1.22184E-04, 1.39470E-04, 1.55324E-04, 1.75970E-04, 1.94682E-04, 2.18780E-04, 2.55589E-04, 2.73570E-04, 3.15368E-04, 3.61919E-04, 3.99988E-04, 4.56209E-04, 5.12500E-04, 5.81657E-04, 6.62079E-04, 7.40609E-04, 8.26175E-04, 9.29266E-04, 1.04715E-03, 1.14894E-03, 1.29892E-03, 1.42747E-03, 1.61018E-03, 1.75669E-03, 1.98022E-03, 2.19032E-03, 2.42768E-03, 2.67316E-03, 2.90153E-03, 3.20034E-03, 3.47882E-03, 3.82311E-03, 4.14036E-03, 4.44038E-03, 4.84306E-03, 5.14048E-03, 5.52561E-03, 5.85232E-03, 6.26373E-03, 6.58475E-03, 6.88797E-03, 7.20599E-03, 7.46233E-03, 7.68745E-03, 7.92206E-03, 8.03783E-03, 8.07696E-03, 8.10170E-03, 8.07846E-03, 7.97689E-03, 7.79583E-03, 7.53001E-03, 7.19942E-03, 6.86645E-03, 6.47997E-03, 5.96922E-03, 5.52570E-03, 5.05106E-03, 4.50534E-03, 3.99768E-03, 3.56550E-03, 3.13483E-03, 2.68274E-03, 2.34219E-03, 2.01003E-03, 1.76915E-03, 1.51363E-03, 1.37651E-03, 1.21478E-03, 1.10748E-03, 1.04479E-03, 1.01496E-03, 1.00566E-03, 9.93991E-04, 2.80501E-03, 6.14868E-04, 2.75682E-04, 1.23904E-04, 5.47378E-05, 2.18376E-05, 8.40966E-06, 3.28966E-06, 1.36932E-06, 9.91850E-07, 2.98193E-07, 9.91244E-08, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00])
-    mcnp_midpoints = (mcnp_x[1:] + mcnp_x[:-1]) / 2
-    mcnp_segments_density = mcnp_y / (mcnp_x[1:] - mcnp_x[:-1])
-    plt.plot(
-            mcnp_midpoints * 1e6, mcnp_segments_density / 1e6, label='MCNP (tabular)',
-            color='k', linestyle='-')
-
-    # MINIMC
-    pod_x = np.array([
-        -np.inf,
-        1.388794e-11, 1.474673e-11, 1.565861e-11, 1.662689e-11, 1.765504e-11, 1.874676e-11, 1.990600e-11, 2.113692e-11, 2.244395e-11, 2.383181e-11, 2.530548e-11, 2.687029e-11, 2.853185e-11, 3.029616e-11, 3.216957e-11, 3.415883e-11, 3.627109e-11, 3.851397e-11, 4.089554e-11, 4.342438e-11, 4.610960e-11, 4.896086e-11, 5.198843e-11, 5.520321e-11, 5.861679e-11, 6.224145e-11, 6.609024e-11, 7.017703e-11, 7.451654e-11, 7.912438e-11, 8.401716e-11, 8.921249e-11, 9.472909e-11, 1.005868e-10, 1.068067e-10, 1.134113e-10, 1.204243e-10, 1.278709e-10, 1.357780e-10, 1.441740e-10, 1.530893e-10, 1.625558e-10, 1.726077e-10, 1.832811e-10, 1.946146e-10, 2.066489e-10, 2.194273e-10, 2.329960e-10, 2.474036e-10, 2.627022e-10, 2.789468e-10, 2.961959e-10, 3.145116e-10, 3.339600e-10, 3.546109e-10, 3.765388e-10, 3.998227e-10, 4.245463e-10, 4.507988e-10, 4.786746e-10, 5.082742e-10, 5.397041e-10, 5.730776e-10, 6.085147e-10, 6.461432e-10, 6.860984e-10, 7.285244e-10, 7.735738e-10, 8.214090e-10, 8.722020e-10, 9.261360e-10, 9.834051e-10, 1.044215e-09, 1.108786e-09, 1.177350e-09, 1.250153e-09, 1.327458e-09, 1.409543e-09, 1.496705e-09, 1.589256e-09, 1.687530e-09, 1.791881e-09, 1.902685e-09, 2.020340e-09, 2.145271e-09, 2.277927e-09, 2.418786e-09, 2.568356e-09, 2.727174e-09, 2.895813e-09, 3.074880e-09, 3.265020e-09, 3.466917e-09, 3.681300e-09, 3.908938e-09, 4.150654e-09, 4.407316e-09, 4.679849e-09, 4.969235e-09, 5.276515e-09, 5.602796e-09, 5.949254e-09, 6.317135e-09, 6.707765e-09, 7.122550e-09, 7.562984e-09, 8.030653e-09, 8.527241e-09, 9.054536e-09, 9.614437e-09, 1.020896e-08, 1.084025e-08, 1.151057e-08, 1.222234e-08, 1.297813e-08, 1.378066e-08, 1.463280e-08, 1.553765e-08, 1.649844e-08, 1.751865e-08, 1.860194e-08, 1.975222e-08, 2.097363e-08, 2.227056e-08, 2.364770e-08, 2.510999e-08, 2.666271e-08, 2.831144e-08, 3.006212e-08, 3.192106e-08, 3.389494e-08, 3.599089e-08, 3.821644e-08, 4.057961e-08, 4.308892e-08, 4.575339e-08, 4.858262e-08, 5.158680e-08, 5.477675e-08, 5.816395e-08, 6.176061e-08, 6.557968e-08, 6.963490e-08, 7.394088e-08, 7.851313e-08, 8.336811e-08, 8.852330e-08, 9.399728e-08, 9.980975e-08, 1.059816e-07, 1.125352e-07, 1.194940e-07, 1.268831e-07, 1.347291e-07, 1.430602e-07, 1.519066e-07, 1.613000e-07, 1.712742e-07, 1.818652e-07, 1.931111e-07, 2.050525e-07, 2.177322e-07, 2.311960e-07, 2.454924e-07, 2.606728e-07, 2.767919e-07, 2.939077e-07, 3.120820e-07, 3.313800e-07, 3.518714e-07, 3.736299e-07, 3.967339e-07, 4.212666e-07, 4.473162e-07, 4.749767e-07, 5.043477e-07, 5.355348e-07, 5.686504e-07, 6.038138e-07, 6.411515e-07, 6.807981e-07, 7.228963e-07, 7.675977e-07, 8.150633e-07, 8.654640e-07, 9.189814e-07, 9.758080e-07, 1.036149e-06, 1.100220e-06, 1.168254e-06, 1.240495e-06, 1.317203e-06, 1.398654e-06, 1.485142e-06, 1.576978e-06, 1.674493e-06, 1.778038e-06, 1.887986e-06, 2.004732e-06, 2.128698e-06, 2.260329e-06,
-        np.inf])
-    pod_midpoints = (pod_x[2:-1] + pod_x[1:-2]) / 2
-
-    # Piecewise constant temperature
-    pod_segments_y = np.array([0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 1.000000e-07, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 1.000000e-07, 1.000000e-07, 0.000000e+00, 1.000000e-07, 4.000000e-07, 0.000000e+00, 1.000000e-07, 0.000000e+00, 0.000000e+00, 1.000000e-07, 2.000000e-07, 1.000000e-07, 1.000000e-07, 5.000000e-07, 2.000000e-07, 4.000000e-07, 4.000000e-07, 5.000000e-07, 5.000000e-07, 8.000000e-07, 6.000000e-07, 1.200000e-06, 7.000000e-07, 8.000000e-07, 1.400000e-06, 2.000000e-06, 1.600000e-06, 3.600000e-06, 2.100000e-06, 2.700000e-06, 3.600000e-06, 4.000000e-06, 4.700000e-06, 5.500000e-06, 6.500000e-06, 5.500000e-06, 8.000000e-06, 1.110000e-05, 1.270000e-05, 1.160000e-05, 1.350000e-05, 1.670000e-05, 1.760000e-05, 2.080000e-05, 2.350000e-05, 2.790000e-05, 3.050000e-05, 3.790000e-05, 4.040000e-05, 4.570000e-05, 5.330000e-05, 6.190000e-05, 6.870000e-05, 8.110000e-05, 8.650000e-05, 1.056000e-04, 1.153000e-04, 1.291000e-04, 1.489000e-04, 1.769000e-04, 1.929000e-04, 2.158000e-04, 2.406000e-04, 2.807000e-04, 3.118000e-04, 3.516000e-04, 3.917000e-04, 4.542000e-04, 5.108000e-04, 5.815000e-04, 6.491000e-04, 7.273000e-04, 8.277000e-04, 9.230000e-04, 1.038400e-03, 1.168800e-03, 1.311900e-03, 1.434400e-03, 1.619600e-03, 1.801400e-03, 2.012800e-03, 2.222600e-03, 2.469000e-03, 2.704100e-03, 2.929900e-03, 3.215500e-03, 3.527300e-03, 3.836800e-03, 4.133600e-03, 4.494900e-03, 4.857800e-03, 5.211200e-03, 5.558700e-03, 5.922800e-03, 6.348000e-03, 6.611400e-03, 6.971200e-03, 7.234000e-03, 7.481500e-03, 7.788100e-03, 7.958200e-03, 8.075300e-03, 8.181400e-03, 8.227500e-03, 8.190300e-03, 8.094600e-03, 7.858100e-03, 7.650200e-03, 7.333100e-03, 6.977800e-03, 6.527800e-03, 6.092900e-03, 5.583100e-03, 5.104100e-03, 4.581900e-03, 4.094900e-03, 3.632300e-03, 3.170700e-03, 2.737700e-03, 2.378900e-03, 2.062700e-03, 1.777600e-03, 1.556700e-03, 1.355200e-03, 1.230900e-03, 1.146500e-03, 1.074700e-03, 1.071000e-03, 1.072200e-03, 1.063700e-03, 2.912700e-03, 7.005000e-04, 3.262000e-04, 1.793000e-04, 1.080000e-04, 7.760000e-05, 5.850000e-05, 5.540000e-05, 4.530000e-05, 4.400000e-05, 3.320000e-05, 2.040000e-05, 1.190000e-05, 5.400000e-06, 3.800000e-06, 1.400000e-06, 1.000000e-06, 4.000000e-07, 2.000000e-07, 2.000000e-07, 1.000000e-07, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00])
-    pod_segments_density = pod_segments_y[1:-1] / (pod_x[2:-1] - pod_x[1:-2])
-    plt.plot(
-            pod_midpoints * 1e6, pod_segments_density / 1e6, label=r'MiniMC(POD, piecewise constant $T$)',
-            color='k', linestyle=':')
-
-    # Continuous temperature
-    pod_continuous_y = np.array([0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 1.000000e-07, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 1.000000e-07, 0.000000e+00, 0.000000e+00, 0.000000e+00, 1.000000e-07, 0.000000e+00, 1.000000e-07, 2.000000e-07, 0.000000e+00, 1.000000e-07, 1.000000e-07, 2.000000e-07, 2.000000e-07, 6.000000e-07, 3.000000e-07, 2.000000e-07, 6.000000e-07, 4.000000e-07, 1.100000e-06, 1.200000e-06, 8.000000e-07, 1.100000e-06, 1.800000e-06, 1.900000e-06, 2.800000e-06, 2.900000e-06, 2.700000e-06, 3.800000e-06, 4.100000e-06, 3.800000e-06, 5.700000e-06, 5.200000e-06, 5.700000e-06, 9.200000e-06, 8.900000e-06, 1.170000e-05, 1.380000e-05, 1.160000e-05, 1.550000e-05, 1.650000e-05, 2.300000e-05, 2.180000e-05, 2.340000e-05, 3.140000e-05, 3.350000e-05, 3.820000e-05, 4.250000e-05, 4.950000e-05, 5.320000e-05, 6.210000e-05, 6.900000e-05, 8.100000e-05, 9.150000e-05, 1.100000e-04, 1.207000e-04, 1.415000e-04, 1.614000e-04, 1.748000e-04, 1.994000e-04, 2.178000e-04, 2.507000e-04, 2.846000e-04, 3.281000e-04, 3.645000e-04, 4.061000e-04, 4.634000e-04, 5.353000e-04, 5.803000e-04, 6.718000e-04, 7.540000e-04, 8.341000e-04, 9.396000e-04, 1.059500e-03, 1.189400e-03, 1.333200e-03, 1.472600e-03, 1.658500e-03, 1.785000e-03, 2.026800e-03, 2.234100e-03, 2.479200e-03, 2.774400e-03, 3.001500e-03, 3.277100e-03, 3.581400e-03, 3.902000e-03, 4.251800e-03, 4.570600e-03, 4.958100e-03, 5.276900e-03, 5.709700e-03, 5.954100e-03, 6.341600e-03, 6.656100e-03, 6.967900e-03, 7.277500e-03, 7.543400e-03, 7.794500e-03, 7.951900e-03, 8.086900e-03, 8.148900e-03, 8.217200e-03, 8.150000e-03, 7.964300e-03, 7.807400e-03, 7.556800e-03, 7.300100e-03, 6.897300e-03, 6.427400e-03, 5.975200e-03, 5.465400e-03, 4.995700e-03, 4.501000e-03, 4.028800e-03, 3.523000e-03, 3.101200e-03, 2.684100e-03, 2.304300e-03, 1.997200e-03, 1.712900e-03, 1.522500e-03, 1.316900e-03, 1.193800e-03, 1.114000e-03, 1.100800e-03, 1.057800e-03, 1.080700e-03, 1.050000e-03, 2.885400e-03, 7.053000e-04, 3.313000e-04, 1.850000e-04, 1.047000e-04, 7.450000e-05, 6.060000e-05, 5.420000e-05, 4.730000e-05, 4.300000e-05, 3.260000e-05, 1.810000e-05, 8.600000e-06, 4.800000e-06, 2.600000e-06, 1.600000e-06, 7.000000e-07, 4.000000e-07, 1.000000e-07, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00])
-    pod_continuous_density = pod_continuous_y[1:-1] / (pod_x[2:-1] - pod_x[1:-2])
-    plt.plot(
-            pod_midpoints * 1e6, pod_continuous_density / 1e6, label=r'MiniMC(POD, linear $T$)',
-            color='k', linestyle='dashdot')
-
-    # plt.tight_layout()
-    plt.xlabel(r'$E$ (eV)');
-    plt.ylabel('Leakage Rate (per source particle per eV)')
-    plt.xlim(0, 1.);
-    plt.ylim(0, 1.8)
-    plt.legend([
-        'MCNP (tabular)',
-        'MiniMC\n(piecewise constant T)',
-        'MiniMC\n(linear T)'], frameon=False)
-    plt.grid(True)
-
-    tikzplotlib.clean_figure()
-    tikzplotlib.save('spectrum_comparison.tex')
-
-    compare_univariate_pdf(
-            f'Beta E={E} eV, T={T} K',
-            marginalize(pdf_minimc, axis='beta'),
-            marginalize(pdf_mcnp, axis='beta'),
-            axis='beta')
-    compare_univariate_pdf(
-            f'Alpha E={E} eV, T={T} K',
-            marginalize(pdf_minimc, axis='alpha'),
-            marginalize(pdf_mcnp, axis='alpha'),
-            axis='alpha')
+    U = U.unstack()
+    S = pd.DataFrame(np.diag(S.values.flatten()), index=U.columns, columns=U.columns)
+    V = V.unstack()
+    full_df = (U @ S @ V.T).unstack()
+    abs_err_tol = 0.1 / (k * 800)
+    adaptive_coarsen(full_df, rel_err_tol=0.01, abs_err_tol=abs_err_tol)
