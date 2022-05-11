@@ -679,7 +679,7 @@ def compare_univariate_pdf(title, *series, axis='beta'):
 
 
 def beta_functional_expansion(sab_df, E_min=1e-5, E_max=4.0, n_Es=1000,
-        n_cdfs=1000, order=3):
+        n_cdfs=1000, order=None):
     """
     Computes the CDF in beta at various incident energies and temperatures,
     then performs a functional expansion in temperature at various incident
@@ -697,7 +697,7 @@ def beta_functional_expansion(sab_df, E_min=1e-5, E_max=4.0, n_Es=1000,
     n_Es : int, optional
         Approximate number of incident energies (equally spaced in lethargy)
     n_cdfs : int, optional
-        Approximate number of CDF values to use
+        Number of CDF values to use
     order : int, optional
         Expansion order for proper orthogonal decomposition. Setting to None
         will return the full expansion.
@@ -747,13 +747,13 @@ def beta_functional_expansion(sab_df, E_min=1e-5, E_max=4.0, n_Es=1000,
         for T, beta_cdf in zip(df_Ts, x_E):
             beta_df.loc[:, (E, T)] = np.interp(F, beta_cdf, beta_cdf.index)
     # perform proper orthogonal decomposition
-    beta_df_pod_form = beta_df.stack('T').unstack('CDF')
+    beta_df_pod_form = beta_df
     U, S, Vt = np.linalg.svd(beta_df_pod_form, full_matrices=False)
     order = S.size if order is None else order
     U_df = (pd.DataFrame(
         {'coefficient': U[:, :order].flatten()},
         index=pd.MultiIndex.from_product(
-            [df_Ts, range(order)], names=['T', 'order'])))
+            [F, range(order)], names=['CDF', 'order'])))
     S_df = (pd.DataFrame(
         {'coefficient': S[:order]},
         index=pd.MultiIndex.from_product(
@@ -761,7 +761,7 @@ def beta_functional_expansion(sab_df, E_min=1e-5, E_max=4.0, n_Es=1000,
     V_df = (pd.DataFrame(
         {'coefficient': Vt.T[:, :order].flatten()},
         index=pd.MultiIndex.from_product(
-            [Es, F, range(order)], names=['E', 'CDF', 'order'])))
+            [Es, df_Ts, range(order)], names=['E', 'T', 'order'])))
     # set energy units to MeV
     V_df.index = V_df.index.set_levels(
             V_df.index.unique(level='E') * 1e-6, level='E')
@@ -772,8 +772,7 @@ def beta_functional_expansion(sab_df, E_min=1e-5, E_max=4.0, n_Es=1000,
             columns=beta_df_pod_form.columns)
     # check that CDFS are monotonic for certain T values
     print(f"RMSE: {np.sqrt(((beta_df_reconstructed - beta_df_pod_form)**2).mean().mean())}")
-    monotonic_check_df = beta_df_reconstructed.stack('CDF').unstack('T')
-    is_monotonic = monotonic_check_df.apply(lambda s: s.is_monotonic)
+    is_monotonic = beta_df_reconstructed.apply(lambda s: s.is_monotonic)
     print(
             f"Of {Es.size} incident energies and {df_Ts.size} target "
             f"temperatures, {is_monotonic.sum()} of {is_monotonic.size} "
@@ -781,7 +780,7 @@ def beta_functional_expansion(sab_df, E_min=1e-5, E_max=4.0, n_Es=1000,
             f"monotonic beta as a function of CDF")
     if not is_monotonic.all():
         print("The following CDFs are not monotonic:")
-        print(monotonic_check_df.loc[:, ~is_monotonic])
+        print(beta_df_reconstructed.loc[:, ~is_monotonic])
     return U_df, S_df, V_df
 
 
