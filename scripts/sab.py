@@ -678,15 +678,6 @@ def compare_univariate_pdf(title, *series, axis='beta'):
     plt.show()
 
 
-def fit_points(args):
-    group_name, s = args
-    s = pd.Series(
-            coeffs := optimize.curve_fit(
-                beta_fitting_function, s.index.unique(level='T'), s)[0],
-            index=pd.Index(range(len(coeffs)), name='coefficient'))
-    return pd.concat([s], keys=[group_name], names=['E', 'CDF'])
-
-
 def beta_functional_expansion(sab_df, E_min=1e-5, E_max=4.0, n_Es=1000,
         n_cdfs=1000, order=3):
     """
@@ -792,40 +783,6 @@ def beta_functional_expansion(sab_df, E_min=1e-5, E_max=4.0, n_Es=1000,
         print("The following CDFs are not monotonic:")
         print(monotonic_check_df.loc[:, ~is_monotonic])
     return U_df, S_df, V_df
-
-
-def fit_alpha(args):
-    """
-    Fits alpha as a function of temperature for a given beta and CDF value.
-
-    Parameters
-    ----------
-    args : tuple of (group key, group)
-        The first argument is the group key (a (beta, CDF) pair).
-        The second element is a pd.Series containing a MultiIndex. The
-        MultiIndex levels are `beta`, `CDF`, and temperature `T`. There is only
-        a single value of `beta` and `CDF` while multiple `T` values must be
-        present. The values are values of alpha.
-    """
-    [beta, F], s= args
-    try:
-        coeffs = optimize.curve_fit(
-                alpha_fitting_function, s.index.get_level_values('T'), s)[0]
-    except TypeError:
-        # This happens when there are N coefficients to fit, M data points, and
-        # N > M. In this case, we only fit the first M coefficients and set the
-        # other N - M coefficients to zero.
-        n_coeffs = len(signature(alpha_fitting_function).parameters) - 1
-        kwargs = {f'c{i}': 0 for i in range(len(s), n_coeffs)}
-        coeffs = optimize.curve_fit(
-                partial(alpha_fitting_function, **kwargs),
-                s.index.get_level_values('T'), s)[0]
-        coeffs = np.concatenate([coeffs, np.zeros(n_coeffs - len(s))])
-    return pd.Series(
-            coeffs,
-            index=pd.MultiIndex.from_product(
-                [[beta], [F], range(len(coeffs))],
-                names=['beta', 'CDF', 'coefficient']))
 
 
 def alpha_functional_expansion(sab_df, selected_betas, n_cdfs=1000, order=None):
