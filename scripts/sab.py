@@ -828,20 +828,20 @@ def fit_alpha(args):
                 names=['beta', 'CDF', 'coefficient']))
 
 
-def alpha_functional_expansion(sab_df, selected_betas, n_cdfs=1000, order=3):
+def alpha_functional_expansion(sab_df, selected_betas, n_cdfs=1000, order=None):
     """
     Computes the energy-independent conditional CDF in alpha given beta at
     various beta values and temperatures, then performs a functional expansion
-    in temperature at various beta values and CDF values.
+    in CDF at various beta and temperature values.
 
     Parameters
     ----------
     sab_df : pd.DataFrame
         S(a,b,T) DataFrame
-    n_betas : np.ndarray
+    selected_betas : np.ndarray
         Beta values to use
     n_cdfs : int, optional
-        Approximate number of CDF values to use
+        Number of CDF values to use
     order : int, optional
         Expansion order for proper orthogonal decomposition. Setting to None
         will return the full expansion.
@@ -854,7 +854,6 @@ def alpha_functional_expansion(sab_df, selected_betas, n_cdfs=1000, order=3):
         grid.
         """
         nonlocal sab_df
-        T = group.index.unique('T')[0]
         group.index = group.index.droplevel('T')
         # add betas from selected_betas which are not already in group
         new_betas = selected_betas.difference(group.index.unique('beta'))
@@ -871,7 +870,7 @@ def alpha_functional_expansion(sab_df, selected_betas, n_cdfs=1000, order=3):
                 np.exp(
                     np.log(combined_df)
                     .interpolate(method='index', axis='index', limit_area='inside'))
-                .loc[selected_betas]
+                .loc[list(selected_betas)]
                 .stack())
     common_beta_sab_df = sab_df.groupby('T').apply(common_beta_grid)
     # alpha grids do not have to match across T-beta pairs, but they do have to
@@ -879,25 +878,31 @@ def alpha_functional_expansion(sab_df, selected_betas, n_cdfs=1000, order=3):
     print("computing alpha CDFs...")
     largest_alpha = sab_df.index.unique('alpha').max()
     print(f"largest alpha: {largest_alpha}")
-    alpha_cdfs = common_beta_sab_df.groupby(['T', 'beta']).apply(process_b_T, largest_alpha)
-    # take the union of all CDF values that appear across all incident energies
-    all_cdfs = np.array(sorted(set(alpha_cdfs)))
-    # choose number of CDF points we want to use; don't include 0
-    F = all_cdfs[
-            np.round(np.linspace(0, all_cdfs.size-1, n_cdfs + 1)).astype(int)][1:]
-    # last CDF must always be 1.
-    print(f"using {len(F)} CDF values...")
-    # interpolate alpha values at selected CDF values
-    alpha_df = alpha_cdfs.groupby(['T', 'beta']).apply(
-            lambda s:
-            pd.Series(
-                np.interp(F, s, s.index.get_level_values('alpha')),
-                index=pd.Index(F, name='CDF')))
+    # choose number of CDF points we want to use; don't include 0 or 1
+    F = np.linspace(0, 1, n_cdfs + 2)[1: -1]
+    # Some T-beta values will have all-zeros and result in missing entries for
+    # such T-beta values.
+    alpha_df = (
+            common_beta_sab_df
+            .groupby(['T', 'beta'])
+            .apply(process_b_T, largest_alpha)
+            .groupby(['T', 'beta'])
+            .apply(
+                lambda s:
+                pd.Series(
+                    np.interp(F, s, s.index.get_level_values('alpha')),
+                    index=pd.Index(F, name='CDF'))))
     # construct matrix to decompose with POD
-    alpha_df_pod_form = alpha_df.unstack(['beta', 'CDF'])
+    alpha_df_pod_form = alpha_df.unstack(['beta', 'T'])
+    # add back T-beta pairs which didn't have a well-defined alpha CDF
+    undefined_cdfs = common_beta_sab_df.unstack('alpha').index.difference(
+            alpha_df.unstack('CDF').index)
+    alpha_df_pod_form[undefined_cdfs] = np.nan
+    alpha_df_pod_form = alpha_df_pod_form.sort_index(axis='columns')
+
     # impute NaN entries: https://stackoverflow.com/a/35611142/5101335
     nan_entries = alpha_df_pod_form.isna()
-    alpha_df_pod_form = alpha_df_pod_form.fillna(value=alpha_df_pod_form.mean())
+    alpha_df_pod_form = alpha_df_pod_form.T.fillna(value=alpha_df_pod_form.T.mean()).T
     # repeat multiple times until convergence
     converged = False
     prev_trace_norm = np.nan
@@ -916,7 +921,7 @@ def alpha_functional_expansion(sab_df, selected_betas, n_cdfs=1000, order=3):
     U_df = (pd.DataFrame(
         {'coefficient': U[:, :order].flatten()},
         index=pd.MultiIndex.from_product(
-            [df_Ts, range(order)], names=['T', 'order'])))
+            [F, range(order)], names=['CDF', 'order'])))
     S_df = (pd.DataFrame(
         {'coefficient': S[:order]},
         index=pd.MultiIndex.from_product(
@@ -924,8 +929,8 @@ def alpha_functional_expansion(sab_df, selected_betas, n_cdfs=1000, order=3):
     V_df = (pd.DataFrame(
         {'coefficient': Vt.T[:, :order].flatten()},
         index=pd.MultiIndex.from_product([
-            alpha_df.index.unique('beta'), F, range(order)],
-            names=['beta', 'CDF', 'order'])))
+            alpha_df.index.unique('beta'), df_Ts, range(order)],
+            names=['beta', 'T', 'order'])))
     # reconstruct
     alpha_df_reconstructed = pd.DataFrame(
             U[:, :order] @ np.diag(S[:order]) @ Vt[:order, :],
@@ -933,18 +938,14 @@ def alpha_functional_expansion(sab_df, selected_betas, n_cdfs=1000, order=3):
             columns=alpha_df_pod_form.columns)
     print(f"RMSE: {np.sqrt(((alpha_df_reconstructed - alpha_df_pod_form)**2).mean().mean())}")
     # check that CDFS are monotonic for certain T values
-    monotonic_check_df = alpha_df_reconstructed.stack('CDF').unstack('T')
-    monotonic_check_df = monotonic_check_df.loc[:, ~monotonic_check_df.isna().any()]
-    is_monotonic = monotonic_check_df.apply(lambda s: s.is_monotonic)
+    is_monotonic = alpha_df_reconstructed.apply(lambda s: s.is_monotonic)
     print(
-            f"Of {alpha_df.index.unique('beta').size} betas and {df_Ts.size} "
-            f"target temperatures, there are {is_monotonic.size} non-NaN "
-            f"columns. {is_monotonic.sum()} of {is_monotonic.size} "
+            f"{is_monotonic.sum()} of {is_monotonic.size} "
             f"({is_monotonic.sum() / is_monotonic.size * 100}%) have "
             f"monotonic alpha as a function of CDF")
     if not is_monotonic.all():
         print("The following CDFs are not monotonic:")
-        print(monotonic_check_df.loc[:, ~is_monotonic])
+        print(alpha_df_reconstructed.loc[:, ~is_monotonic])
     return U_df, S_df, V_df
 
 
