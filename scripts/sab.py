@@ -1151,16 +1151,92 @@ def monotonic_check(U, S, V, order=None):
     print(is_monotonic)
 
 
+def split_into_monotonic_subsets(full_df, split_on='beta', rs=[5,11],
+        split_idx=217, value_at_max_cdf=1636.7475317348378, print_errors=False):
+    cdf_values = full_df.index.unique('CDF')
+    # split ranges into subsets
+    boundaries = [0, V.index.unique(split_on)[split_idx], np.inf]
+    monotonic_subsets = []
+    for i in range(len(rs)):
+        # select a subset of the full dataset
+        in_subset = (
+                (boundaries[i] <= full_df.columns.get_level_values(split_on)) &
+                (full_df.columns.get_level_values(split_on) < boundaries[i+1]))
+        A_subset_full = full_df.loc[:,in_subset]
+        # perform SVD on the subset
+        U_subset, S_subset, Vt_subset = np.linalg.svd(
+                A_subset_full, full_matrices=False)
+        r = rs[i]
+        U_subset_truncated = U_subset[:,:r]
+        S_subset_truncated = S_subset[:r]
+        Vt_subset_truncated = Vt_subset[:r,:]
+        # reconstruct rank-r approximation
+        A_subset_truncated = (
+                U_subset_truncated * S_subset_truncated @ Vt_subset_truncated)
+        # a monotonic entry is one one which is greater than or equal to all
+        # entries that appeared previously
+        monotonic_nondecreasing = (
+                A_subset_truncated >= np.maximum.accumulate(A_subset_truncated)).all(axis=1)
+        # save monotonic subset
+        monotonic_subset = pd.DataFrame(
+                U_subset_truncated[monotonic_nondecreasing] *
+                S_subset_truncated @
+                Vt_subset_truncated,
+                index=U_df.index.unique('CDF')[monotonic_nondecreasing],
+                columns=V_df.unstack().index[in_subset])
+        # check monoticity
+        assert (monotonic_subset.diff().iloc[1:] > 0).all().all()
+        monotonic_subsets.append(monotonic_subset)
+
+    print_errors = True
+    if print_errors:
+        # linearly interpolate removed CDF values
+        def interpolate_monotonic_subset(df):
+            df = pd.concat((
+                df,
+                pd.DataFrame(
+                    np.nan,
+                    index=cdf_values.difference(df.index),
+                    columns=df.columns)))
+            # if the last CDF value is nonmonotonic the maximum value/CDF pair
+            # will be necessary for interpolation
+            if 1 not in df.index:
+                df.loc[1] = value_at_max_cdf
+                return df.sort_index().interpolate(method='index').iloc[:-1]
+            else:
+                return df.sort_index().interpolate(method='index')
+        interpolated_monotonic_reconstruction = pd.concat(
+                [interpolate_monotonic_subset(df) for df in monotonic_subsets],
+                axis='columns')
+        # reconstruct the original matrix
+        residuals = interpolated_monotonic_reconstruction - full_df
+        l2_error = np.linalg.norm(residuals) / np.linalg.norm(full_df)
+        linf_error = residuals.abs().max().max() / full_df.abs().max().max()
+        print(
+                f"rs: {rs}\n"
+                f"split_idx: {split_idx}\n"
+                f"l2_error: {l2_error}\n"
+                f"linf_error: {linf_error}\n")
+    return monotonic_subsets
+
+
 if __name__ == '__main__':
-
-    # parse hdf5 data
-    U = pd.read_hdf('../data/tsl/endfb8-fullorder/beta_endfb8_T_coeffs.hdf5')
-    S = pd.read_hdf('../data/tsl/endfb8-fullorder/beta_endfb8_S_coeffs.hdf5')
-    V = pd.read_hdf('../data/tsl/endfb8-fullorder/beta_endfb8_E_CDF_coeffs.hdf5')
-
-    U = U.unstack()
-    S = pd.DataFrame(np.diag(S.values.flatten()), index=U.columns, columns=U.columns)
-    V = V.unstack()
-    full_df = (U @ S @ V.T).unstack()
-    abs_err_tol = 0.1 / (k * 800)
-    adaptive_coarsen(full_df, rel_err_tol=0.01, abs_err_tol=abs_err_tol)
+    # read full sab_data
+    U_df = pd.read_hdf('~/Developer/minimc/data/tsl/endfb8-fullorder-cdfrows/beta_endfb8_CDF_coeffs.hdf5')
+    S_df = pd.read_hdf('~/Developer/minimc/data/tsl/endfb8-fullorder-cdfrows/beta_endfb8_S_coeffs.hdf5')
+    V_df = pd.read_hdf('~/Developer/minimc/data/tsl/endfb8-fullorder-cdfrows/beta_endfb8_E_T_coeffs.hdf5')
+    # U_df = pd.read_hdf('~/Developer/minimc/data/tsl/endfb8-fullorder-cdfrows/alpha_endfb8_CDF_coeffs.hdf5')
+    # S_df = pd.read_hdf('~/Developer/minimc/data/tsl/endfb8-fullorder-cdfrows/alpha_endfb8_S_coeffs.hdf5')
+    # V_df = pd.read_hdf('~/Developer/minimc/data/tsl/endfb8-fullorder-cdfrows/alpha_endfb8_beta_T_coeffs.hdf5')
+    # reconstruct full-rank matrix
+    U = U_df['coefficient'].unstack()
+    S = pd.DataFrame(
+            np.diag(S_df.values.flatten()),
+            index=S_df.index.get_level_values('order'),
+            columns=S_df.index.get_level_values('order'))
+    V = V_df['coefficient'].unstack()
+    A_full = U @ S @ V.T
+    # split
+    monotonic_subsets = split_into_monotonic_subsets(
+            A_full, split_on='E', rs=[3,5], split_idx=600, value_at_max_cdf=20)
+    # res = split_subsets(A_full, split_on='beta', rs=[5,11], split_idx=217)
