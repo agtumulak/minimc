@@ -1116,7 +1116,6 @@ def split_into_monotonic_subsets(full_df, split_on='beta', rs=[5,11],
         assert (monotonic_subset.diff().iloc[1:] > 0).all().all()
         monotonic_subsets.append(monotonic_subset)
 
-    print_errors = True
     if print_errors:
         # linearly interpolate removed CDF values
         def interpolate_monotonic_subset(df):
