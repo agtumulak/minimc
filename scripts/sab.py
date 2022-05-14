@@ -1082,7 +1082,6 @@ def monotonic_check(U, S, V, order=None):
 
 def split_into_monotonic_subsets(full_df, split_on='beta', rs=[5,11],
         split_idx=217, value_at_max_cdf=1636.7475317348378, print_errors=False):
-    cdf_values = full_df.index.unique('CDF')
     # split ranges into subsets
     boundaries = [0, V.index.unique(split_on)[split_idx], np.inf]
     monotonic_subsets = []
@@ -1125,7 +1124,7 @@ def split_into_monotonic_subsets(full_df, split_on='beta', rs=[5,11],
                 df,
                 pd.DataFrame(
                     np.nan,
-                    index=cdf_values.difference(df.index),
+                    index=full_df.index.unique('CDF').difference(df.index),
                     columns=df.columns)))
             # if the last CDF value is nonmonotonic the maximum value/CDF pair
             # will be necessary for interpolation
