@@ -1054,32 +1054,6 @@ def remove_removed(full_df, removed):
                     .reshape(fine_array.shape + (-1,)))
 
 
-def monotonic_check(U, S, V, order=None):
-    orders = U.index.unique('order')
-    orders = orders if order is None else orders[:order]
-    U = U['coefficient'].loc[:, orders].unstack()
-    S = pd.DataFrame(np.diag(S.values.flatten()[:len(orders)]), index=orders, columns=orders)
-    V = V['coefficient'].loc[:, :, orders].unstack()
-    full_df = (U @ S @ V.T).T.unstack('E')
-    is_monotonic = full_df.apply(lambda col: col.is_monotonic).unstack()
-    x_indices = range(0, is_monotonic.columns.size, 100)
-    y_indices = range(is_monotonic.index.size)
-    plt.imshow(is_monotonic, aspect='auto', interpolation='None')
-    plt.title(r'Monotonic $\beta(G), $' + f'Order={order}')
-    plt.xlabel('Energy (eV)')
-    plt.xticks(x_indices, [f'{x:3.1E}' for x in is_monotonic.columns[x_indices]], rotation=90)
-    plt.ylabel('Temperature (K)')
-    plt.yticks(y_indices, is_monotonic.index[y_indices])
-    print(
-            f'{is_monotonic.sum().sum()} of {is_monotonic.size} '
-            f'({is_monotonic.sum().sum() / is_monotonic.size * 100}%) '
-            f'is monotonic')
-    plt.tight_layout()
-    plt.show()
-    # plt.savefig(f'order{order}.png')
-    print(is_monotonic)
-
-
 def split_into_monotonic_subsets(full_df, split_on='beta', rs=[5,11],
         split_idx=217, value_at_max_cdf=1636.7475317348378, print_errors=False):
     # split ranges into subsets
