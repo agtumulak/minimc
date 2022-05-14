@@ -18,18 +18,11 @@ import itertools
 import matplotlib.pyplot as plt
 import pickle
 import re
-import tikzplotlib
 from collections import OrderedDict
-from dask import dataframe as dd
 from dask.diagnostics import ProgressBar
-from functools import partial
-from inspect import signature
 from multiprocessing import Pool
-from scipy import optimize, interpolate
+from scipy import interpolate
 from tqdm import tqdm
-
-pbar = ProgressBar()
-pbar.register()
 
 
 # target nuclide mass ratio
