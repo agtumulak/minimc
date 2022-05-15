@@ -19,7 +19,6 @@ import matplotlib.pyplot as plt
 import pickle
 import re
 from collections import OrderedDict
-from dask.diagnostics import ProgressBar
 from multiprocessing import Pool
 from scipy import interpolate
 from tqdm import tqdm
