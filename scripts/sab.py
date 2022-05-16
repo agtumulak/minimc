@@ -23,6 +23,7 @@ from collections import OrderedDict
 from multiprocessing import Pool
 from scipy import interpolate
 from tqdm import tqdm
+from typing import Iterable, Literal
 
 
 # target nuclide mass ratio
@@ -1221,13 +1222,36 @@ def remove_removed(full_df, removed):
 
 
 def split_into_monotonic_subsets(
-    full_df,
-    split_on="beta",
-    rs=[5, 11],
-    split_idx=217,
-    value_at_max_cdf=1636.7475317348378,
-    print_errors=False,
-):
+    full_df: pd.DataFrame,
+    split_on: Literal["E", "beta"],
+    rs: list[int],
+    split_idx: int,
+    value_at_max_cdf: float,
+    print_errors: bool = False,
+) -> Iterable[pd.DataFrame]:
+    """
+    Splits thermal scattering data into subsets, then removes nonmonotonic
+    CDF values in each subset.
+
+    Parameters
+    ----------
+    full_df
+        The DataFrame which will be split up
+    split_on
+        Name of the column Index level where the splits will occur
+    rs
+        Indices of `split_on` where splits will be made
+    value_at_max_cdf
+        In some cases, the last CDF value is not monotonic so it will be
+        removed. This sets what the correct value at the last CDF value will be
+    print_errors
+        Print diagnostics about error introduced from the CDF removal process
+
+
+    Returns
+    -------
+    A split DataFrame where each DataFrame is monotonic
+    """
     # split ranges into subsets
     boundaries = [0, V.index.unique(split_on)[split_idx], np.inf]
     monotonic_subsets = []
