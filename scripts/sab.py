@@ -3,7 +3,8 @@
 
 Based on:
 Andrew T. Pavlou, Wei Ji,
-On-the-fly sampling of temperature-dependent thermal neutron scattering data for Monte Carlo simulations,
+On-the-fly sampling of temperature-dependent thermal neutron scattering data
+for Monte Carlo simulations,
 Annals of Nuclear Energy,
 Volume 71,
 2014,
@@ -90,7 +91,7 @@ def parse_file7(mf7_path):
                 )
                 # Subsequent betas use the first beta's alpha grid.
                 unique_alphas = (a for a in alphas[:N_alpha])
-                for row in range(N_full_rows + (remainder != 0)):
+                for _ in range(N_full_rows + (remainder != 0)):
                     line = sab_file.readline()[:66]
                     for S in [
                         to_float(line[start : start + 11])
@@ -166,7 +167,7 @@ def process_E_T(args):
     )
     alpha_cdfs = {}
     alpha_pdfs = {}
-    beta_pdf = pd.Series(0, index=betas)  # pdf is zero at min_beta and max_beta
+    beta_pdf = pd.Series(0, index=betas)  # pdf is zero at min_beta & max_beta
     for beta in betas[1:-1]:
         # energy-independent alpha distribution
         S_values = sab_df.xs(
@@ -385,6 +386,7 @@ def get_pdf_pod(
     alpha_cdf = alpha_cdf.sort_index()
     # choose common alpha_grid
     alphas = np.linspace(0, max_alpha, 10000)
+
     # choose subset of alpha values
     def get_joint_probability(s):
         """
@@ -614,6 +616,7 @@ def get_pdf_minimc(minimc_path, E, T, label=None):
         ),
         name="minimc",
     )
+
     # convert to alpha, beta space; #TODO: this is identical to mcnp version
     def to_alpha_beta(s):
         beta = s.name
@@ -1303,18 +1306,13 @@ def split_into_monotonic_subsets(
 
 if __name__ == "__main__":
     # read full sab_data
-    U_df = pd.read_hdf(
-        "~/Developer/minimc/data/tsl/endfb8-fullorder-cdfrows/beta_endfb8_CDF_coeffs.hdf5"
-    )
-    S_df = pd.read_hdf(
-        "~/Developer/minimc/data/tsl/endfb8-fullorder-cdfrows/beta_endfb8_S_coeffs.hdf5"
-    )
-    V_df = pd.read_hdf(
-        "~/Developer/minimc/data/tsl/endfb8-fullorder-cdfrows/beta_endfb8_E_T_coeffs.hdf5"
-    )
-    # U_df = pd.read_hdf('~/Developer/minimc/data/tsl/endfb8-fullorder-cdfrows/alpha_endfb8_CDF_coeffs.hdf5')
-    # S_df = pd.read_hdf('~/Developer/minimc/data/tsl/endfb8-fullorder-cdfrows/alpha_endfb8_S_coeffs.hdf5')
-    # V_df = pd.read_hdf('~/Developer/minimc/data/tsl/endfb8-fullorder-cdfrows/alpha_endfb8_beta_T_coeffs.hdf5')
+    prefix = "~/Developer/minimc/data/tsl/endfb8-fullorder-cdfrows/"
+    U_df = pd.read_hdf(prefix + "beta_endfb8_CDF_coeffs.hdf5")
+    S_df = pd.read_hdf(prefix + "beta_endfb8_S_coeffs.hdf5")
+    V_df = pd.read_hdf(prefix + "beta_endfb8_E_T_coeffs.hdf5")
+    # U_df = pd.read_hdf(prefix + "alpha_endfb8_CDF_coeffs.hdf5")
+    # S_df = pd.read_hdf(prefix + "alpha_endfb8_S_coeffs.hdf5")
+    # V_df = pd.read_hdf(prefix + "alpha_endfb8_beta_T_coeffs.hdf5")
     # reconstruct full-rank matrix
     U = U_df["coefficient"].unstack()
     S = pd.DataFrame(
