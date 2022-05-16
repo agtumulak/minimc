@@ -1254,7 +1254,7 @@ def split_into_monotonic_subsets(
     """
     # split ranges into subsets
     boundaries = np.concatenate(
-        ([0], V.index.unique(split_on)[splits], [np.inf])
+        ([0], full_df.columns.unique(split_on)[splits], [np.inf])
     )
     monotonic_subsets = []
     for i in range(len(rs)):
@@ -1285,8 +1285,8 @@ def split_into_monotonic_subsets(
             U_subset_truncated[monotonic_nondecreasing]
             * S_subset_truncated
             @ Vt_subset_truncated,
-            index=U_df.index.unique("CDF")[monotonic_nondecreasing],
-            columns=V_df.unstack().index[in_subset],
+            index=full_df.index.unique("CDF")[monotonic_nondecreasing],
+            columns=full_df.columns[in_subset],
         )
         # check monoticity
         assert (monotonic_subset.diff().iloc[1:] > 0).all().all()
