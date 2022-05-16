@@ -1225,7 +1225,7 @@ def split_into_monotonic_subsets(
     full_df: pd.DataFrame,
     split_on: Literal["E", "beta"],
     rs: list[int],
-    split_idx: int,
+    splits: list[int],
     value_at_max_cdf: float,
     print_errors: bool = False,
 ) -> Iterable[pd.DataFrame]:
@@ -1253,7 +1253,9 @@ def split_into_monotonic_subsets(
     A split DataFrame where each DataFrame is monotonic
     """
     # split ranges into subsets
-    boundaries = [0, V.index.unique(split_on)[split_idx], np.inf]
+    boundaries = np.concatenate(
+        ([0], V.index.unique(split_on)[splits], [np.inf])
+    )
     monotonic_subsets = []
     for i in range(len(rs)):
         # select a subset of the full dataset
@@ -1321,7 +1323,7 @@ def split_into_monotonic_subsets(
         linf_error = residuals.abs().max().max() / full_df.abs().max().max()
         print(
             f"rs: {rs}\n"
-            f"split_idx: {split_idx}\n"
+            f"splits: {splits}\n"
             f"l2_error: {l2_error}\n"
             f"linf_error: {linf_error}\n"
         )
