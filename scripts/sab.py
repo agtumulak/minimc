@@ -1330,16 +1330,13 @@ def split_into_monotonic_subsets(
     return monotonic_subsets
 
 
-if __name__ == "__main__":
-    # read full sab_data
-    prefix = "~/Developer/minimc/data/tsl/endfb8-fullorder-cdfrows/"
-    U_df = pd.read_hdf(prefix + "beta_endfb8_CDF_coeffs.hdf5")
-    S_df = pd.read_hdf(prefix + "beta_endfb8_S_coeffs.hdf5")
-    V_df = pd.read_hdf(prefix + "beta_endfb8_E_T_coeffs.hdf5")
-    # U_df = pd.read_hdf(prefix + "alpha_endfb8_CDF_coeffs.hdf5")
-    # S_df = pd.read_hdf(prefix + "alpha_endfb8_S_coeffs.hdf5")
-    # V_df = pd.read_hdf(prefix + "alpha_endfb8_beta_T_coeffs.hdf5")
-    # reconstruct full-rank matrix
+def reconstruct_from_svd_dfs(
+    U_df: pd.DataFrame, S_df: pd.DataFrame, V_df: pd.DataFrame
+) -> pd.DataFrame:
+    """
+    Reconstructs the original matrix from formatted U, S, and V DataFrames
+    obtained from singular value decomposition
+    """
     U = U_df["coefficient"].unstack()
     S = pd.DataFrame(
         np.diag(S_df.values.flatten()),
@@ -1347,9 +1344,34 @@ if __name__ == "__main__":
         columns=S_df.index.get_level_values("order"),
     )
     V = V_df["coefficient"].unstack()
-    A_full = U @ S @ V.T
-    # split
-    monotonic_subsets = split_into_monotonic_subsets(
-        A_full, split_on="E", rs=[3, 5], split_idx=600, value_at_max_cdf=20
+    return U @ S @ V.T
+
+
+if __name__ == "__main__":
+    # reconstruct full-rank matrices
+    prefix = "~/Developer/minimc/data/tsl/endfb8-fullorder-cdfrows/"
+    beta_full = reconstruct_from_svd_dfs(
+        pd.read_hdf(prefix + "beta_endfb8_CDF_coeffs.hdf5"),
+        pd.read_hdf(prefix + "beta_endfb8_S_coeffs.hdf5"),
+        pd.read_hdf(prefix + "beta_endfb8_E_T_coeffs.hdf5"),
     )
-    # res = split_subsets(A_full, split_on='beta', rs=[5,11], split_idx=217)
+    alpha_full = reconstruct_from_svd_dfs(
+        pd.read_hdf(prefix + "alpha_endfb8_CDF_coeffs.hdf5"),
+        pd.read_hdf(prefix + "alpha_endfb8_S_coeffs.hdf5"),
+        pd.read_hdf(prefix + "alpha_endfb8_beta_T_coeffs.hdf5"),
+    )
+    # split
+    beta_monotonic_subsets = split_into_monotonic_subsets(
+        beta_full,
+        split_on="E",
+        rs=[3, 5],
+        splits=[600],
+        value_at_max_cdf=20,
+    )
+    alpha_monotonic_subsets = split_into_monotonic_subsets(
+        alpha_full,
+        split_on="beta",
+        rs=[5, 11],
+        splits=[217],
+        value_at_max_cdf=1636.7475317348378,
+    )
