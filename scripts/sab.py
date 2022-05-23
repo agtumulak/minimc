@@ -14,16 +14,15 @@ https://doi.org/10.1016/j.anucene.2014.04.028.
 """
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
-import itertools
 import matplotlib.pyplot as plt
-import pickle
 import re
 from collections import OrderedDict
 from multiprocessing import Pool
 from scipy import interpolate
 from tqdm import tqdm
-from typing import Iterable, Literal
+from typing import Literal
 
 
 # target nuclide mass ratio
@@ -1221,113 +1220,91 @@ def remove_removed(full_df, removed):
     )
 
 
-def split_into_monotonic_subsets(
-    full_df: pd.DataFrame,
-    split_on: Literal["E", "beta"],
-    rs: list[int],
-    splits: list[int],
-    value_at_max_cdf: float,
-    print_errors: bool = False,
-) -> Iterable[pd.DataFrame]:
+def truncate(df: pd.DataFrame, rank: int) -> pd.DataFrame:
     """
-    Splits thermal scattering data into subsets, then removes nonmonotonic
-    CDF values in each subset.
-
     Parameters
     ----------
-    full_df
-        The DataFrame which will be split up
-    split_on
-        Name of the column Index level where the splits will occur
-    rs
-        Indices of `split_on` where splits will be made
-    value_at_max_cdf
-        In some cases, the last CDF value is not monotonic so it will be
-        removed. This sets what the correct value at the last CDF value will be
-    print_errors
-        Print diagnostics about error introduced from the CDF removal process
-
+    df
+        DataFrame which will be approximated using SVD
+    rank
+        Rank of low-rank approximation
 
     Returns
     -------
-    A split DataFrame where each DataFrame is monotonic
+    Low-rank approximation of DataFrame
     """
-    # split ranges into subsets
-    boundaries = np.concatenate(
-        ([0], full_df.columns.unique(split_on)[splits], [np.inf])
+    U, S, Vt = np.linalg.svd(df, full_matrices=False)
+    U_truncated = U[:, :rank]
+    S_truncated = S[:rank]
+    Vt_truncated = Vt[:rank, :]
+    return pd.DataFrame(
+        U_truncated * S_truncated @ Vt_truncated,
+        index=df.index,
+        columns=df.columns,
     )
-    monotonic_subsets = []
-    for i in range(len(rs)):
-        # select a subset of the full dataset
-        in_subset = (
-            boundaries[i] <= full_df.columns.get_level_values(split_on)
-        ) & (full_df.columns.get_level_values(split_on) < boundaries[i + 1])
-        A_subset_full = full_df.loc[:, in_subset]
-        # perform SVD on the subset
-        U_subset, S_subset, Vt_subset = np.linalg.svd(
-            A_subset_full, full_matrices=False
-        )
-        r = rs[i]
-        U_subset_truncated = U_subset[:, :r]
-        S_subset_truncated = S_subset[:r]
-        Vt_subset_truncated = Vt_subset[:r, :]
-        # reconstruct rank-r approximation
-        A_subset_truncated = (
-            U_subset_truncated * S_subset_truncated @ Vt_subset_truncated
-        )
-        # a monotonic entry is one one which is greater than or equal to all
-        # entries that appeared previously
-        monotonic_nondecreasing = (
-            A_subset_truncated >= np.maximum.accumulate(A_subset_truncated)
-        ).all(axis=1)
-        # save monotonic subset
-        monotonic_subset = pd.DataFrame(
-            U_subset_truncated[monotonic_nondecreasing]
-            * S_subset_truncated
-            @ Vt_subset_truncated,
-            index=full_df.index.unique("CDF")[monotonic_nondecreasing],
-            columns=full_df.columns[in_subset],
-        )
-        # check monoticity
-        assert (monotonic_subset.diff().iloc[1:] > 0).all().all()
-        monotonic_subsets.append(monotonic_subset)
 
-    if print_errors:
-        # linearly interpolate removed CDF values
-        def interpolate_monotonic_subset(df):
-            df = pd.concat(
-                (
-                    df,
-                    pd.DataFrame(
-                        np.nan,
-                        index=full_df.index.unique("CDF").difference(df.index),
-                        columns=df.columns,
-                    ),
-                )
-            )
-            # if the last CDF value is nonmonotonic the maximum value/CDF pair
-            # will be necessary for interpolation
-            if 1 not in df.index:
-                df.loc[1] = value_at_max_cdf
-                return df.sort_index().interpolate(method="index").iloc[:-1]
-            else:
-                return df.sort_index().interpolate(method="index")
 
-        interpolated_monotonic_reconstruction = pd.concat(
-            [interpolate_monotonic_subset(df) for df in monotonic_subsets],
-            axis="columns",
+def remove_nonmonotonic_cdfs(
+    df: pd.DataFrame,
+) -> pd.DataFrame:
+    """
+    Parameters
+    ----------
+    df
+        DataFrame which may contain nonmonotonic CDF
+
+    Returns
+    -------
+    A DataFrame where each nonmonotonic CDF has been removed
+    """
+    # a monotonic entry is one which is greater than or equal to all entries
+    # that appeared previously
+    monotonic_nondecreasing = (df >= np.maximum.accumulate(df)).all(axis=1)
+    # return monotonic CDF
+    df = df.loc[monotonic_nondecreasing]
+    # check monoticity
+    assert (df.diff().iloc[1:] > 0).all().all()
+    return df
+
+
+def interpolate_cdfs(
+    df: pd.DataFrame,
+    cdfs: pd.Index,
+    value_at_max_cdf: float,
+) -> pd.DataFrame:
+    """
+    Linearly interpolates missing CDF values
+
+    Parameters
+    ----------
+    df
+        DataFrame whose missing CDF values will be linearly interpolated
+    cdfs
+        Complete set of CDF values which will be included in returned DataFrame
+    value_at_max_cdf
+        In some cases, the last CDF value is not monotonic so it will be
+        removed. This sets what the correct value at the last CDF value will be
+
+    Returns
+    -------
+    DataFrame with all values from `cdfs` present
+    """
+    df = pd.concat(
+        (
+            df,
+            pd.DataFrame(
+                np.nan, index=cdfs.difference(df.index), columns=df.columns
+            ),
         )
-        # reconstruct the original matrix
-        residuals = interpolated_monotonic_reconstruction - full_df
-        l2_error = np.linalg.norm(residuals) / np.linalg.norm(full_df)
-        linf_error = residuals.abs().max().max() / full_df.abs().max().max()
-        print(
-            f"rs: {rs}\n"
-            f"splits: {splits}\n"
-            f"l2_error: {l2_error}\n"
-            f"linf_error: {linf_error}\n"
-        )
-    return monotonic_subsets
+    )
+    end_included = 1 in df.index
+    if not end_included:
+        df.loc[1] = value_at_max_cdf
+    df = pd.DataFrame(df.sort_index().interpolate(method="index"))
+    if end_included:
+        return df
+    else:
+        return df.iloc[:-1]
 
 
 def reconstruct_from_svd_dfs(
@@ -1347,31 +1324,112 @@ def reconstruct_from_svd_dfs(
     return U @ S @ V.T
 
 
+def print_errors(reference_df: pd.DataFrame, test_df: pd.DataFrame):
+    """
+    Computes the error between a reference and test DataFrame
+
+    Parameters
+    ----------
+    reference_df
+        The "correct" DataFrame
+    test_df
+        The "approximate" DataFrame
+    """
+    # print out normalized l2 error for DataFrame
+    residuals = test_df - reference_df
+    rel_frobenius_norm = np.linalg.norm(residuals, ord="fro") / np.linalg.norm(
+        reference_df, ord="fro"
+    )
+    print(f"relative frobenius: {rel_frobenius_norm}")
+    # print out normalized l-inf error for DataFrame
+    rel_linf_norm = residuals.abs().max().max() / reference_df.abs().max().max()
+    print(f"relative l-inf norm: {rel_linf_norm}")
+
+
+def apply_approximations(
+    full_df: pd.DataFrame,
+    split_on: Literal["E", "beta"],
+    splits: list[int],
+    ranks: list[int],
+    value_at_max_cdf: float,
+):
+    """
+    Applies a sequence of approximations to a CDF DataFrame
+
+    Parameters
+    ----------
+    full_df
+        DataFrame which will be approximated
+    split_on
+        Name of the column Index level where the splits will occur
+    splits
+        Indices of `split_on` where splits will be made
+    ranks
+        Rank of each subset when performing SVD
+    value_at_max_cdf
+        In some cases, the last CDF value is not monotonic so it will be
+        removed. This sets what the correct value at the last CDF value will be
+    """
+    # split DataFrame along columns at indices at selected level of MultiIndex
+    boundaries = np.concatenate(
+        ([0], full_df.columns.unique(split_on)[splits], [np.inf])
+    )
+    subsets = [
+        full_df.loc[
+            :,
+            (left_boundary <= full_df.columns.get_level_values(split_on))
+            & (full_df.columns.get_level_values(split_on) < right_boundary),
+        ]
+        for left_boundary, right_boundary in zip(
+            boundaries[:-1], boundaries[1:]
+        )
+    ]
+    # obtain low-rank approximations of each subset
+    print("\nobtaining low-rank approximations...")
+    truncated_subsets = [
+        truncate(subset, rank) for subset, rank in zip(subsets, ranks)
+    ]
+    print_errors(full_df, pd.concat(truncated_subsets, axis="columns"))
+    # remove nonmonotonic CDF points from each subset
+    print("\nremoving nonmonotonic CDFs...")
+    monotonic_subsets = [
+        remove_nonmonotonic_cdfs(subset) for subset in truncated_subsets
+    ]
+    print_errors(
+        full_df,
+        pd.concat(
+            [
+                interpolate_cdfs(
+                    subset, full_df.index, value_at_max_cdf=value_at_max_cdf
+                )
+                for subset in monotonic_subsets
+            ],
+            axis="columns",
+        ),
+    )
+
+
 if __name__ == "__main__":
-    # reconstruct full-rank matrices
     prefix = "~/Developer/minimc/data/tsl/endfb8-fullorder-cdfrows/"
-    beta_full = reconstruct_from_svd_dfs(
-        pd.read_hdf(prefix + "beta_endfb8_CDF_coeffs.hdf5"),
-        pd.read_hdf(prefix + "beta_endfb8_S_coeffs.hdf5"),
-        pd.read_hdf(prefix + "beta_endfb8_E_T_coeffs.hdf5"),
-    )
-    alpha_full = reconstruct_from_svd_dfs(
-        pd.read_hdf(prefix + "alpha_endfb8_CDF_coeffs.hdf5"),
-        pd.read_hdf(prefix + "alpha_endfb8_S_coeffs.hdf5"),
-        pd.read_hdf(prefix + "alpha_endfb8_beta_T_coeffs.hdf5"),
-    )
-    # split
-    beta_monotonic_subsets = split_into_monotonic_subsets(
-        beta_full,
+    apply_approximations(
+        reconstruct_from_svd_dfs(
+            pd.read_hdf(prefix + "beta_endfb8_CDF_coeffs.hdf5"),
+            pd.read_hdf(prefix + "beta_endfb8_S_coeffs.hdf5"),
+            pd.read_hdf(prefix + "beta_endfb8_E_T_coeffs.hdf5"),
+        ),
         split_on="E",
-        rs=[3, 5],
         splits=[600],
+        ranks=[3, 5],
         value_at_max_cdf=20,
     )
-    alpha_monotonic_subsets = split_into_monotonic_subsets(
-        alpha_full,
+    apply_approximations(
+        reconstruct_from_svd_dfs(
+            pd.read_hdf(prefix + "alpha_endfb8_CDF_coeffs.hdf5"),
+            pd.read_hdf(prefix + "alpha_endfb8_S_coeffs.hdf5"),
+            pd.read_hdf(prefix + "alpha_endfb8_beta_T_coeffs.hdf5"),
+        ),
         split_on="beta",
-        rs=[5, 11],
         splits=[217],
+        ranks=[5, 11],
         value_at_max_cdf=1636.7475317348378,
     )
