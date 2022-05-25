@@ -14,13 +14,11 @@ https://doi.org/10.1016/j.anucene.2014.04.028.
 """
 
 import numpy as np
-import numpy.typing as npt
 import pandas as pd
 import matplotlib.pyplot as plt
 import re
 from collections import OrderedDict
 from multiprocessing import Pool
-from scipy import interpolate
 from tqdm import tqdm
 from typing import Literal
 
@@ -1029,85 +1027,133 @@ def alpha_functional_expansion(sab_df, selected_betas, n_cdfs=1000, order=None):
 
 
 def adaptive_coarsen(
-    full_df, rel_err_tol=1e-2, abs_err_tol=1e-12, graphics=False
-):
-    # removed axes from least important to most important
-    removed = []
+    true_df: pd.DataFrame,
+    coarse_df: pd.DataFrame,
+    value_at_max_cdf: float,
+    rel_err_tol: float = 0.1,
+    abs_err_tol: float = 1e-5,
+    global_err_tol: float = 0.1,
+    plotting: bool = False,
+) -> pd.DataFrame:
+    """
+    Adaptively removes points from a DataFrame using a greedy algorithm that
+    minimizes the local and global error introduced by linear interpolation.
+    Stops when either:
+
+    1. `global_err_tol` is exceeded, or
+    2. Removing any more gridpoints would exceed `rel_err_tol` and
+       `abs_err_tol`
+
+    This function assumes that `true_df` and `coarse_df` have the same columns
+    but may have different indices. This is because this function is meant to
+    be used after nonmonotonic CDF values have been removed.
+
+    Parameters
+    ----------
+    true_df
+        Reference DataFrame to be used for error comparison
+    coarse_df
+        DataFrame to be used as starting point for grid coarsening
+    value_at_max_cdf
+        Used to interpolate missing values in initial_df and compute initial
+        errors
+    plotting
+        Plot visualization of removed gridpoints
+
+    Returns
+    -------
+    DataFrame with least important gridpoints removed
+    """
+    # this will be used to compute initial errors
+    interp_df = interpolate_cdfs(coarse_df, true_df.index, value_at_max_cdf)
+    # flatten input DataFrames
+    true_df = true_df.stack().stack()
+    coarse_df = coarse_df.stack().stack()
+    interp_df = interp_df.stack().stack()
     # initialize data which will not be updated by coarsening loop
-    fine_axes = [x.values for x in full_df.index.levels]
-    fine_array = full_df.values.reshape(full_df.index.levshape)
+    true_axes = [level.values for level in true_df.index.levels]
+    true_array = true_df.values.reshape(true_df.index.levshape)
     # initialize data which will be updated by coarsening loop
-    coarse_axes = fine_axes.copy()
-    coarse_array = fine_array.copy()
-    fine_interped = fine_array.copy()
-    residuals = fine_interped - fine_array
-    local_sqr_errs = (residuals * residuals) / residuals.size
-    global_err = 0.0
-    fine_idx = [np.arange(axis.size) for axis in fine_axes]
+    coarse_axes = [level.values for level in coarse_df.index.levels]
+    coarse_array = coarse_df.values.reshape(coarse_df.index.levshape)
+    interp_array = interp_df.values.reshape(interp_df.index.levshape)
+    # compute initial errors
+    residuals = interp_array - true_array
+    true_array_norm = np.linalg.norm(true_array.flatten(), ord=2)
+    global_err = np.linalg.norm(residuals.flatten(), ord=2) / true_array_norm
+    # create mapping from coarse indices to corresponding true (fine) indices
+    true_idx = [
+        np.searchsorted(true_axis, coarse_axis)
+        for true_axis, coarse_axis in zip(true_axes, coarse_axes)
+    ]
     # prepare figure
-    if graphics:
+    if plotting:
         figure, ax = plt.subplots()
         fig = plt.figure()
         ax = fig.gca()
-        im = ax.imshow(fine_array[:, :, 8])
-        ax.set_xlabel("CDF Index")
-        ax.set_ylabel("Energy Index")
+        im = ax.imshow(true_array[:, 8, :], aspect="auto")
+        ax.set_xlabel("Energy Index")
+        ax.set_ylabel("CDF  Index")
         ax.set_title(r"$\beta$ at 450K")
         figure.show()
-    while True:
+    elapsed = 0
+    while global_err < global_err_tol:
         # identify least important gridpoint
         selected_axis, selected_idx = None, None
         selected_global_err = np.inf
         for axis in range(coarse_array.ndim):
-            fine_axis = fine_axes[axis]
-            axis_fine_idx = fine_idx[axis]
+            true_axis = true_axes[axis]
+            axis_true_idx = true_idx[axis]
             # get contribution of each axis gridpoint to total error
-            axis_sqr_err = local_sqr_errs.sum(
-                axis=tuple(i for i in range(coarse_array.ndim) if i != axis)
+            inactive_axes = tuple(
+                i for i in range(coarse_array.ndim) if i != axis
+            )
+            axis_sqr_residuals = np.sum(
+                np.square(residuals), axis=inactive_axes
             )
             resize_shapes = [
                 1 if a != axis else -1 for a in range(coarse_array.ndim)
             ]
             for coarse_idx in range(1, coarse_array.shape[axis] - 1):
-                # get the fine axis indices that will be used as the left/right
+                # get the true axis indices that will be used as the left/right
                 # boundaries for the interpolated points
-                left_fine_idx = axis_fine_idx[coarse_idx - 1]
-                right_fine_idx = axis_fine_idx[coarse_idx + 1]
+                left_true_idx = axis_true_idx[coarse_idx - 1]
+                right_true_idx = axis_true_idx[coarse_idx + 1]
                 # get fine axis indices for new points that have to be
                 # interpolated
-                interped_fine_idx = np.arange(left_fine_idx + 1, right_fine_idx)
+                interped_true_idx = np.arange(left_true_idx + 1, right_true_idx)
                 # compute the interpolation factor for axis points that will be
                 # interpolated
                 interp_factor = (
-                    (fine_axis[interped_fine_idx] - fine_axis[left_fine_idx])
-                    / (fine_axis[right_fine_idx] - fine_axis[left_fine_idx])
+                    (true_axis[interped_true_idx] - true_axis[left_true_idx])
+                    / (true_axis[right_true_idx] - true_axis[left_true_idx])
                 ).reshape(resize_shapes)
                 # get the previous iteration's interpolated values that will be
                 # used as the left/right faces for the interpolated points
-                left_face = fine_interped.take([left_fine_idx], axis=axis)
-                right_face = fine_interped.take([right_fine_idx], axis=axis)
-                # interpolate fine points
-                interped_fine = left_face + interp_factor * (
-                    right_face - left_face
-                )
+                left_face = interp_array.take([left_true_idx], axis=axis)
+                right_face = interp_array.take([right_true_idx], axis=axis)
+                # interpolated points
+                interped = left_face + interp_factor * (right_face - left_face)
                 # get error contribution from points which are unaffected by
                 # removing gridpoint at coarse_idx
-                unaffected_err_sum = (
-                    axis_sqr_err[: left_fine_idx + 1].sum()
-                    + axis_sqr_err[right_fine_idx:].sum()
+                axis_unaffected_sqr_residuals = np.delete(
+                    axis_sqr_residuals, interped_true_idx
                 )
                 # get absolute relative error of interpolated points
-                true_values = fine_array.take(interped_fine_idx, axis=axis)
-                residuals = interped_fine - true_values
-                affected_err = (residuals * residuals) / fine_array.size
-                global_err = np.sqrt(unaffected_err_sum + affected_err.sum())
-                # # print diagnostics
-                # print(
-                #         f"axis: {axis}, coarse_idx: {coarse_idx}, "
-                #         f"max_new_local_rel_err: {new_local_rel_err.max()}, "
-                #         f"global_err: {global_err}")
-                abs_rel_errs = np.abs(residuals / true_values)
-                abs_errs = np.abs(residuals)
+                true_values = true_array.take(interped_true_idx, axis=axis)
+                affected_residuals = interped - true_values
+                axis_affected_sqr_residuals = np.sum(
+                    np.square(affected_residuals), axis=inactive_axes
+                )
+                global_err = (
+                    np.sqrt(
+                        axis_unaffected_sqr_residuals.sum()
+                        + axis_affected_sqr_residuals.sum()
+                    )
+                    / true_array_norm
+                )
+                abs_rel_errs = np.abs(affected_residuals / true_values)
+                abs_errs = np.abs(affected_residuals)
                 # automatically reject this coarse gridpoint if it makes any
                 # local error too large
                 if np.any(
@@ -1123,70 +1169,65 @@ def adaptive_coarsen(
                     selected_axis = axis
                     selected_idx = coarse_idx
                     selected_global_err = global_err
-                    selected_interped = interped_fine
-                    selected_interped_fine_idx = interped_fine_idx
-        if selected_axis != None:
+                    selected_interped = interped
+                    selected_interped_true_idx = interped_true_idx
+        if selected_axis is None:
+            break
+        else:
             # update figure
-            if graphics:
+            if plotting:
                 if selected_axis == 0:
                     im.axes.axhline(
-                        fine_idx[selected_axis][selected_idx],
+                        true_idx[selected_axis][selected_idx],
                         color="k",
                         linewidth=0.5,
                     )
-                elif selected_axis == 1:
+                elif selected_axis == 2:
                     im.axes.axvline(
-                        fine_idx[selected_axis][selected_idx],
+                        true_idx[selected_axis][selected_idx],
                         color="k",
                         linewidth=0.5,
                     )
                 plt.pause(0.1)
                 fig.canvas.draw()
             # array of indices to keep
-            keep_idx = np.concatenate(
-                (
-                    np.arange(selected_idx),
-                    np.arange(
-                        selected_idx + 1, coarse_axes[selected_axis].size
-                    ),
-                )
+            keep_idx = np.delete(
+                np.arange(coarse_axes[selected_axis].size), selected_idx
             )
             # renmove gridpoint
             coarse_axes[selected_axis] = coarse_axes[selected_axis][keep_idx]
             coarse_array = coarse_array.take(keep_idx, axis=selected_axis)
             # construct indices where new interpolated values belong
             # https://stackoverflow.com/a/42657219/5101335
-            idx = [slice(None)] * fine_interped.ndim
-            idx[selected_axis] = selected_interped_fine_idx
-            # compute new interpolated
-            fine_interped[idx] = selected_interped
+            idx = [slice(None)] * interp_array.ndim
+            idx[selected_axis] = selected_interped_true_idx
+            interp_array[tuple(idx)] = selected_interped
             # compute residuals
-            residuals = fine_interped - fine_array
-            local_abs_rel_errs = np.abs(residuals / fine_array)
-            max_local_abs_rel_err_idx = np.unravel_index(
-                local_abs_rel_errs.argmax(), local_abs_rel_errs.shape
+            residuals = interp_array - true_array
+            abs_rel_residuals = np.abs(residuals / true_array)
+            max_abs_rel_residual_idx = np.unravel_index(
+                abs_rel_residuals.argmax(), abs_rel_residuals.shape
             )
-            max_local_abs_rel_err = local_abs_rel_errs[
-                max_local_abs_rel_err_idx
-            ]
-            max_local_abs_err = np.abs(residuals[max_local_abs_rel_err_idx])
-            local_sqr_errs = (residuals * residuals) / fine_array.size
-            global_err = local_sqr_errs.sum()
-            fine_idx[selected_axis] = fine_idx[selected_axis][keep_idx]
+            max_abs_rel_residual = abs_rel_residuals[max_abs_rel_residual_idx]
+            max_abs_residual = np.abs(residuals[max_abs_rel_residual_idx])
+            global_err = (
+                np.linalg.norm(residuals.flatten(), ord=2) / true_array_norm
+            )
+            true_idx[selected_axis] = true_idx[selected_axis][keep_idx]
             diagnostics = OrderedDict()
             diagnostics["removed axis".rjust(15)] = f"{selected_axis:15}"
             diagnostics["removed index".rjust(15)] = f"{selected_idx:15}"
             diagnostics[
-                "max local abs. rel. err.".rjust(26)
-            ] = f"{max_local_abs_rel_err:26.5E}"
+                "max  abs. rel. err.".rjust(26)
+            ] = f"{max_abs_rel_residual:26.5E}"
             diagnostics[
                 "corresponding abs. err.".rjust(25)
-            ] = f"{max_local_abs_err:25.5E}"
-            diagnostics["global err.".rjust(13)] = f"{global_err:13.5E}"
+            ] = f"{max_abs_residual:25.5E}"
+            diagnostics["global err.".rjust(17)] = f"{global_err:17.9E}"
             diagnostics[
                 "coarse axes shape".rjust(20)
             ] = f"{coarse_array.shape}".rjust(20)
-            if len(removed) % 25 == 0:
+            if elapsed % 25 == 0:
                 hlines = "".join(
                     ("-" * len(s.strip())).rjust(len(s))
                     for s in diagnostics.keys()
@@ -1194,30 +1235,13 @@ def adaptive_coarsen(
                 headings = "".join(diagnostics.keys())
                 print("\n".join((hlines, headings, hlines)))
             print("".join(diagnostics.values()))
-            removed.append((selected_axis, selected_idx))
-        else:
-            break
-    with open("removed.pkl", "wb") as f:
-        pickle.dump(removed, f)
-
-
-def remove_removed(full_df, removed):
-    fine_axes = [x.values for x in full_df.index.levels]
-    fine_array = full_df.values.reshape(full_df.index.levshape)
-    # remove removed indices
-    coarse_axes = fine_axes.copy()
-    coarse_array = fine_array
-    for axis in range(fine_array.ndim):
-        removed_indices = [index for a, index in removed if axis == a]
-        coarse_array = np.delete(coarse_array, removed_indices, axis=axis)
-        coarse_axes[axis] = np.delete(fine_axes[axis], removed_indices)
-    interpolated = interpolate.RegularGridInterpolator(
-        coarse_axes, coarse_array
-    )(
-        np.fromiter(
-            itertools.chain(*itertools.product(*(fine_axes))), dtype=float
-        ).reshape(fine_array.shape + (-1,))
+            elapsed += 1
+    # return interpolated coarsened DataFrame
+    result = pd.Series(
+        interp_array.flatten(),
+        index=pd.MultiIndex.from_product(true_axes, names=true_df.index.names),
     )
+    return result.unstack().unstack()
 
 
 def truncate(df: pd.DataFrame, rank: int) -> pd.DataFrame:
@@ -1407,6 +1431,20 @@ def apply_approximations(
             axis="columns",
         ),
     )
+    # adaptively coarsen each subset
+    print("\nadaptively coarsening...")
+    coarsened_subsets = [
+        adaptive_coarsen(
+            full_df,
+            initial_df,
+            value_at_max_cdf=value_at_max_cdf,
+            plotting=False,
+        )
+        for full_df, initial_df in zip(subsets, monotonic_subsets)
+    ]
+    print_errors(
+        full_df,
+        pd.concat(coarsened_subsets, axis="columns"))
 
 
 if __name__ == "__main__":
@@ -1418,8 +1456,8 @@ if __name__ == "__main__":
             pd.read_hdf(prefix + "beta_endfb8_E_T_coeffs.hdf5"),
         ),
         split_on="E",
-        splits=[600],
-        ranks=[3, 5],
+        splits=[400],
+        ranks=[21, 15],
         value_at_max_cdf=20,
     )
     apply_approximations(
@@ -1429,7 +1467,7 @@ if __name__ == "__main__":
             pd.read_hdf(prefix + "alpha_endfb8_beta_T_coeffs.hdf5"),
         ),
         split_on="beta",
-        splits=[217],
-        ranks=[5, 11],
+        splits=[200],
+        ranks=[28, 37],
         value_at_max_cdf=1636.7475317348378,
     )
