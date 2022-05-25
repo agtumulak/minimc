@@ -1331,23 +1331,6 @@ def interpolate_cdfs(
         return df.iloc[:-1]
 
 
-def reconstruct_from_svd_dfs(
-    U_df: pd.DataFrame, S_df: pd.DataFrame, V_df: pd.DataFrame
-) -> pd.DataFrame:
-    """
-    Reconstructs the original matrix from formatted U, S, and V DataFrames
-    obtained from singular value decomposition
-    """
-    U = U_df["coefficient"].unstack()
-    S = pd.DataFrame(
-        np.diag(S_df.values.flatten()),
-        index=S_df.index.get_level_values("order"),
-        columns=S_df.index.get_level_values("order"),
-    )
-    V = V_df["coefficient"].unstack()
-    return U @ S @ V.T
-
-
 def print_errors(reference_df: pd.DataFrame, test_df: pd.DataFrame):
     """
     Computes the error between a reference and test DataFrame
@@ -1368,6 +1351,23 @@ def print_errors(reference_df: pd.DataFrame, test_df: pd.DataFrame):
     # print out normalized l-inf error for DataFrame
     rel_linf_norm = residuals.abs().max().max() / reference_df.abs().max().max()
     print(f"relative l-inf norm: {rel_linf_norm}")
+
+
+def reconstruct_from_svd_dfs(
+    U_df: pd.DataFrame, S_df: pd.DataFrame, V_df: pd.DataFrame
+) -> pd.DataFrame:
+    """
+    Reconstructs the original matrix from formatted U, S, and V DataFrames
+    obtained from singular value decomposition
+    """
+    U = U_df["coefficient"].unstack()
+    S = pd.DataFrame(
+        np.diag(S_df.values.flatten()),
+        index=S_df.index.get_level_values("order"),
+        columns=S_df.index.get_level_values("order"),
+    )
+    V = V_df["coefficient"].unstack()
+    return U @ S @ V.T
 
 
 def apply_approximations(
