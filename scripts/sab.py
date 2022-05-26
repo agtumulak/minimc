@@ -1027,12 +1027,13 @@ def alpha_functional_expansion(sab_df, selected_betas, n_cdfs=1000, order=None):
 
 
 def adaptive_coarsen(
-    true_df: pd.DataFrame,
-    coarse_df: pd.DataFrame,
+    true_dfs: list[pd.DataFrame],
+    coarse_dfs: list[pd.DataFrame],
+    df_index: int,
     value_at_max_cdf: float,
     rel_err_tol: float = 0.1,
     abs_err_tol: float = 1e-5,
-    global_err_tol: float = 0.1,
+    global_err_tol: float = 1e-3,
     plotting: bool = False,
 ) -> pd.DataFrame:
     """
@@ -1050,10 +1051,12 @@ def adaptive_coarsen(
 
     Parameters
     ----------
-    true_df
-        Reference DataFrame to be used for error comparison
+    true_dfs
+        Reference DataFrames to be used for error comparison
     coarse_df
-        DataFrame to be used as starting point for grid coarsening
+        DataFrames to be used as starting point for grid coarsening
+    df_index
+        Index of DataFrame to adaptively coarsen
     value_at_max_cdf
         Used to interpolate missing values in initial_df and compute initial
         errors
@@ -1064,12 +1067,26 @@ def adaptive_coarsen(
     -------
     DataFrame with least important gridpoints removed
     """
-    # this will be used to compute initial errors
-    interp_df = interpolate_cdfs(coarse_df, true_df.index, value_at_max_cdf)
+    interp_dfs = [
+        interpolate_cdfs(coarse_df, true_df.index, value_at_max_cdf)
+        for true_df, coarse_df in zip(true_dfs, coarse_dfs)
+    ]
+    # get contribution to global error from each subset
+    df_sum_sqr_residuals = np.fromiter(
+        (
+            np.sum(np.square(interp_df.values - true_df.values))
+            for true_df, interp_df in zip(true_dfs, interp_dfs)
+        ),
+        float,
+    )
+    total_true_array_norm = np.linalg.norm(
+        pd.concat(true_dfs, axis="columns").values.flatten(), ord=2
+    )
+    df_unaffected_sqr_residuals = np.delete(df_sum_sqr_residuals, df_index)
     # flatten input DataFrames
-    true_df = true_df.stack().stack()
-    coarse_df = coarse_df.stack().stack()
-    interp_df = interp_df.stack().stack()
+    true_df = true_dfs[df_index].stack().stack()
+    coarse_df = coarse_dfs[df_index].stack().stack()
+    interp_df = interp_dfs[df_index].stack().stack()
     # initialize data which will not be updated by coarsening loop
     true_axes = [level.values for level in true_df.index.levels]
     true_array = true_df.values.reshape(true_df.index.levshape)
@@ -1078,9 +1095,14 @@ def adaptive_coarsen(
     coarse_array = coarse_df.values.reshape(coarse_df.index.levshape)
     interp_array = interp_df.values.reshape(interp_df.index.levshape)
     # compute initial errors
-    residuals = interp_array - true_array
-    true_array_norm = np.linalg.norm(true_array.flatten(), ord=2)
-    global_err = np.linalg.norm(residuals.flatten(), ord=2) / true_array_norm
+    df_affected_sqr_residuals = np.square(interp_array - true_array)
+    global_err = (
+        np.sqrt(
+            np.sum(df_unaffected_sqr_residuals)
+            + np.sum(df_affected_sqr_residuals)
+        )
+        / total_true_array_norm
+    )
     # create mapping from coarse indices to corresponding true (fine) indices
     true_idx = [
         np.searchsorted(true_axis, coarse_axis)
@@ -1109,7 +1131,7 @@ def adaptive_coarsen(
                 i for i in range(coarse_array.ndim) if i != axis
             )
             axis_sqr_residuals = np.sum(
-                np.square(residuals), axis=inactive_axes
+                df_affected_sqr_residuals, axis=inactive_axes
             )
             resize_shapes = [
                 1 if a != axis else -1 for a in range(coarse_array.ndim)
@@ -1147,10 +1169,11 @@ def adaptive_coarsen(
                 )
                 global_err = (
                     np.sqrt(
-                        axis_unaffected_sqr_residuals.sum()
+                        df_unaffected_sqr_residuals.sum()
+                        + axis_unaffected_sqr_residuals.sum()
                         + axis_affected_sqr_residuals.sum()
                     )
-                    / true_array_norm
+                    / total_true_array_norm
                 )
                 abs_rel_errs = np.abs(affected_residuals / true_values)
                 abs_errs = np.abs(affected_residuals)
@@ -1211,7 +1234,11 @@ def adaptive_coarsen(
             max_abs_rel_residual = abs_rel_residuals[max_abs_rel_residual_idx]
             max_abs_residual = np.abs(residuals[max_abs_rel_residual_idx])
             global_err = (
-                np.linalg.norm(residuals.flatten(), ord=2) / true_array_norm
+                np.sqrt(
+                    df_unaffected_sqr_residuals.sum()
+                    + np.square(residuals).sum()
+                )
+                / total_true_array_norm
             )
             true_idx[selected_axis] = true_idx[selected_axis][keep_idx]
             diagnostics = OrderedDict()
@@ -1435,16 +1462,15 @@ def apply_approximations(
     print("\nadaptively coarsening...")
     coarsened_subsets = [
         adaptive_coarsen(
-            full_df,
-            initial_df,
+            subsets,
+            monotonic_subsets,
+            subset_idx,
             value_at_max_cdf=value_at_max_cdf,
             plotting=False,
         )
-        for full_df, initial_df in zip(subsets, monotonic_subsets)
+        for subset_idx in range(len(subsets))
     ]
-    print_errors(
-        full_df,
-        pd.concat(coarsened_subsets, axis="columns"))
+    print_errors(full_df, pd.concat(coarsened_subsets, axis="columns"))
 
 
 if __name__ == "__main__":
