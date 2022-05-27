@@ -18,7 +18,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import re
 from collections import OrderedDict
+from itertools import chain, product
 from multiprocessing import Pool
+from scipy.interpolate import RegularGridInterpolator
 from tqdm import tqdm
 from typing import Literal
 
@@ -1030,7 +1032,6 @@ def adaptive_coarsen(
     true_dfs: list[pd.DataFrame],
     coarse_dfs: list[pd.DataFrame],
     df_index: int,
-    value_at_max_cdf: float,
     rel_frobenius_norm_tol: float = 9.87e-4,
     rel_linf_norm_tol: float = 1e-2,
     plotting: bool = False,
@@ -1053,9 +1054,6 @@ def adaptive_coarsen(
         DataFrames to be used as starting point for grid coarsening
     df_index
         Index of DataFrame to adaptively coarsen
-    value_at_max_cdf
-        Used to interpolate missing values in initial_df and compute initial
-        errors
     plotting
         Plot visualization of removed gridpoints
 
@@ -1064,7 +1062,7 @@ def adaptive_coarsen(
     DataFrame with least important gridpoints removed
     """
     interp_dfs = [
-        interpolate_cdfs(coarse_df, true_df.index, value_at_max_cdf)
+        interpolate_df(coarse_df, true_df)
         for true_df, coarse_df in zip(true_dfs, coarse_dfs)
     ]
     # flatten input DataFrames
@@ -1337,44 +1335,39 @@ def remove_nonmonotonic_cdfs(
     return df
 
 
-def interpolate_cdfs(
-    df: pd.DataFrame,
-    cdfs: pd.Index,
-    value_at_max_cdf: float,
+def interpolate_df(
+    coarse_df: pd.DataFrame,
+    fine_df: pd.DataFrame,
 ) -> pd.DataFrame:
     """
-    Linearly interpolates missing CDF values
+    Linearly interpolate missing values from finer grid
 
     Parameters
     ----------
-    df
-        DataFrame whose missing CDF values will be linearly interpolated
-    cdfs
-        Complete set of CDF values which will be included in returned DataFrame
-    value_at_max_cdf
-        In some cases, the last CDF value is not monotonic so it will be
-        removed. This sets what the correct value at the last CDF value will be
-
-    Returns
-    -------
-    DataFrame with all values from `cdfs` present
+    coarse_df
+        DataFrame whose missing values will be linearly interpolated
+    fine_df
+        DataFrame whose index and columns will be used to points to interpolate
+        if they do not appear in `coarse_df`. It will also be used to obtain
+        the value at max CDF if not present in `coarse_df`.
     """
-    df = pd.concat(
-        (
-            df,
-            pd.DataFrame(
-                np.nan, index=cdfs.difference(df.index), columns=df.columns
-            ),
+    coarse_flattened = coarse_df.stack().stack()
+    coarse_array = coarse_flattened.values.reshape(
+        coarse_flattened.index.levshape
+    )
+    coarse_axes = [level.values for level in coarse_flattened.index.levels]
+    fine_flattened = fine_df.stack().stack()
+    fine_axes = [level.values for level in fine_flattened.index.levels]
+    interped = RegularGridInterpolator(coarse_axes, coarse_array)(
+        np.fromiter(chain(*product(*fine_axes)), float).reshape(
+            fine_flattened.index.levshape + (-1,)
         )
     )
-    end_included = 1 in df.index
-    if not end_included:
-        df.loc[1] = value_at_max_cdf
-    df = pd.DataFrame(df.sort_index().interpolate(method="index"))
-    if end_included:
-        return df
-    else:
-        return df.iloc[:-1]
+    return (
+        pd.Series(interped.flatten(), index=fine_flattened.index)
+        .unstack()
+        .unstack()
+    )
 
 
 def print_errors(reference_df: pd.DataFrame, test_df: pd.DataFrame):
@@ -1421,7 +1414,6 @@ def apply_approximations(
     split_on: Literal["E", "beta"],
     splits: list[int],
     ranks: list[int],
-    value_at_max_cdf: float,
 ):
     """
     Applies a sequence of approximations to a CDF DataFrame
@@ -1436,9 +1428,6 @@ def apply_approximations(
         Indices of `split_on` where splits will be made
     ranks
         Rank of each subset when performing SVD
-    value_at_max_cdf
-        In some cases, the last CDF value is not monotonic so it will be
-        removed. This sets what the correct value at the last CDF value will be
     """
     # split DataFrame along columns at indices at selected level of MultiIndex
     boundaries = np.concatenate(
@@ -1469,10 +1458,11 @@ def apply_approximations(
         full_df,
         pd.concat(
             [
-                interpolate_cdfs(
-                    subset, full_df.index, value_at_max_cdf=value_at_max_cdf
+                interpolate_df(
+                    monotonic_subset,
+                    subset,
                 )
-                for subset in monotonic_subsets
+                for monotonic_subset, subset in zip(monotonic_subsets, subsets)
             ],
             axis="columns",
         ),
@@ -1484,7 +1474,6 @@ def apply_approximations(
             subsets,
             monotonic_subsets,
             subset_idx,
-            value_at_max_cdf=value_at_max_cdf,
             plotting=False,
         )
         for subset_idx in range(len(subsets))
@@ -1494,25 +1483,25 @@ def apply_approximations(
 
 if __name__ == "__main__":
     prefix = "~/Developer/minimc/data/tsl/endfb8-fullorder-cdfrows/"
+    beta_cdf_df = reconstruct_from_svd_dfs(
+        pd.read_hdf(prefix + "beta_endfb8_CDF_coeffs.hdf5"),
+        pd.read_hdf(prefix + "beta_endfb8_S_coeffs.hdf5"),
+        pd.read_hdf(prefix + "beta_endfb8_E_T_coeffs.hdf5"),
+    )
     apply_approximations(
-        reconstruct_from_svd_dfs(
-            pd.read_hdf(prefix + "beta_endfb8_CDF_coeffs.hdf5"),
-            pd.read_hdf(prefix + "beta_endfb8_S_coeffs.hdf5"),
-            pd.read_hdf(prefix + "beta_endfb8_E_T_coeffs.hdf5"),
-        ),
+        beta_cdf_df,
         split_on="E",
         splits=[400],
         ranks=[21, 15],
-        value_at_max_cdf=20,
     )
+    alpha_cdf_df = reconstruct_from_svd_dfs(
+        pd.read_hdf(prefix + "alpha_endfb8_CDF_coeffs.hdf5"),
+        pd.read_hdf(prefix + "alpha_endfb8_S_coeffs.hdf5"),
+        pd.read_hdf(prefix + "alpha_endfb8_beta_T_coeffs.hdf5"),
+    )
+    # TODO: include 0 and 1 when generating alpha CDF table
+    alpha_cdf_df.loc[1] = 1636.7475317348378
+    alpha_cdf_df = alpha_cdf_df.sort_index()
     apply_approximations(
-        reconstruct_from_svd_dfs(
-            pd.read_hdf(prefix + "alpha_endfb8_CDF_coeffs.hdf5"),
-            pd.read_hdf(prefix + "alpha_endfb8_S_coeffs.hdf5"),
-            pd.read_hdf(prefix + "alpha_endfb8_beta_T_coeffs.hdf5"),
-        ),
-        split_on="beta",
-        splits=[200],
-        ranks=[28, 37],
-        value_at_max_cdf=1636.7475317348378,
+        alpha_cdf_df, split_on="beta", splits=[200], ranks=[28, 37]
     )
