@@ -1032,7 +1032,7 @@ def adaptive_coarsen(
     true_dfs: list[pd.DataFrame],
     coarse_dfs: list[pd.DataFrame],
     df_index: int,
-    rel_frobenius_norm_tol: float = 9.87e-4,
+    rel_frobenius_norm_tol: float = 1e-3,
     rel_linf_norm_tol: float = 1e-2,
     plotting: bool = False,
 ) -> pd.DataFrame:
