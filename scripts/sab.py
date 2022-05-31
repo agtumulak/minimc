@@ -1033,14 +1033,14 @@ def adaptive_coarsen(
     coarse_dfs: list[pd.DataFrame],
     df_index: int,
     rel_frobenius_norm_tol: float = 1e-3,
-    rel_linf_norm_tol: float = 1e-2,
+    abs_linf_norm_tol: float = 1.,
     plotting: bool = False,
 ) -> pd.DataFrame:
     """
     Adaptively removes points from a DataFrame using a greedy algorithm that
     minimizes the global (frobenius) and local (linf) error introduced by
     linear interpolation. Stops when `rel_frobenius_norm_tol` or
-    `rel_linf_norm_tol` is exceeded.
+    `abs_linf_norm_tol` is exceeded.
 
     This function assumes that each `true_df` and `coarse_df` have the same
     columns but may have different indices. This is because this function is
@@ -1099,9 +1099,6 @@ def adaptive_coarsen(
         / total_true_array_l2_norm
     )
     # get contribution to relative l-inf error from each subset
-    total_true_array_linf_norm = np.max(
-        np.abs(pd.concat(true_dfs, axis="columns").values)
-    )
     df_max_abs_residuals = np.fromiter(
         (
             np.max(np.abs(interp_df.values - true_df.values))
@@ -1113,11 +1110,8 @@ def adaptive_coarsen(
         np.delete(df_max_abs_residuals, df_index)
     )
     affected_df_residuals = interp_array - true_array
-    prev_rel_linf_norm = (
-        np.max(
-            (unaffected_dfs_max_abs_residuals, np.max(affected_df_residuals))
-        )
-        / total_true_array_linf_norm
+    prev_abs_linf_norm = np.max(
+        (unaffected_dfs_max_abs_residuals, np.max(affected_df_residuals))
     )
     # compute initial errors
     # create mapping from coarse indices to corresponding true (fine) indices
@@ -1180,7 +1174,7 @@ def adaptive_coarsen(
                 )
                 # get residuals between interpolated points and true values
                 true_values = true_array.take(interped_true_idx, axis=axis)
-                affected_residuals = interped - true_values
+                affected_residuals = np.abs(interped - true_values)
                 axis_affected_sqr_residuals = np.sum(
                     np.square(affected_residuals), axis=inactive_axes
                 )
@@ -1192,17 +1186,14 @@ def adaptive_coarsen(
                     )
                     / total_true_array_l2_norm
                 )
-                rel_linf_norm = np.max(
-                    (
-                        prev_rel_linf_norm,
-                        np.max(affected_residuals) / total_true_array_linf_norm,
-                    )
+                abs_linf_norm = np.max(
+                    (prev_abs_linf_norm, np.max(affected_residuals))
                 )
                 # reject this coarse gridpoint if global error is exceeded
                 if rel_frobenius_norm > rel_frobenius_norm_tol:
                     continue
                 # reject this coarse gridpoint if local error is exceeded
-                elif rel_linf_norm > rel_linf_norm_tol:
+                elif abs_linf_norm > abs_linf_norm_tol:
                     continue
                 # if removing this gridpoint doesn't improve on the candidate
                 # gridpoint, skip it
@@ -1213,7 +1204,7 @@ def adaptive_coarsen(
                     selected_axis = axis
                     selected_idx = coarse_idx
                     selected_rel_frobenius_norm = rel_frobenius_norm
-                    selected_rel_linf_norm = rel_linf_norm
+                    selected_abs_linf_norm = abs_linf_norm
                     selected_interped = interped
                     selected_interped_true_idx = interped_true_idx
         if selected_axis is None:
@@ -1254,8 +1245,8 @@ def adaptive_coarsen(
                 "removed index".rjust(14)
             ] = f"{true_idx[selected_axis][selected_idx]:14}"
             diagnostics[
-                "rel. l-inf norm error".rjust(22)
-            ] = f"{selected_rel_linf_norm:22.8E}"
+                "abs. l-inf norm error".rjust(22)
+            ] = f"{selected_abs_linf_norm:22.8E}"
             diagnostics[
                 "rel. frobenius norm error".rjust(26)
             ] = f"{selected_rel_frobenius_norm:26.8E}"
@@ -1274,7 +1265,7 @@ def adaptive_coarsen(
             # update mapping from coarse to true axes
             true_idx[selected_axis] = true_idx[selected_axis][keep_idx]
             # update previous iteration l-inf norm
-            prev_rel_linf_norm = selected_rel_linf_norm
+            prev_abs_linf_norm = selected_abs_linf_norm
     # return interpolated coarsened DataFrame
     return pd.DataFrame(
         pd.Series(
@@ -1414,6 +1405,7 @@ def apply_approximations(
     split_on: Literal["E", "beta"],
     splits: list[int],
     ranks: list[int],
+    abs_linf_norm_tol: float = 0.01,
 ):
     """
     Applies a sequence of approximations to a CDF DataFrame
@@ -1475,6 +1467,7 @@ def apply_approximations(
             monotonic_subsets,
             subset_idx,
             plotting=False,
+            abs_linf_norm_tol=abs_linf_norm_tol,
         )
         for subset_idx in range(len(subsets))
     ]
@@ -1493,6 +1486,7 @@ if __name__ == "__main__":
         split_on="E",
         splits=[400],
         ranks=[21, 15],
+        abs_linf_norm_tol=1.0,
     )
     alpha_cdf_df = reconstruct_from_svd_dfs(
         pd.read_hdf(prefix + "alpha_endfb8_CDF_coeffs.hdf5"),
@@ -1503,5 +1497,9 @@ if __name__ == "__main__":
     alpha_cdf_df.loc[1] = 1636.7475317348378
     alpha_cdf_df = alpha_cdf_df.sort_index()
     apply_approximations(
-        alpha_cdf_df, split_on="beta", splits=[200], ranks=[28, 37]
+        alpha_cdf_df,
+        split_on="beta",
+        splits=[200],
+        ranks=[28, 37],
+        abs_linf_norm_tol=1.0,
     )
