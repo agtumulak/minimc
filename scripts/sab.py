@@ -1136,7 +1136,7 @@ def adaptive_coarsen(
         ax.set_title(r"$\beta$ at 450K")
         figure.show()
     elapsed = 0
-    while rel_frobenius_norm < rel_frobenius_norm_tol:
+    while True:
         # identify least important gridpoint
         selected_axis, selected_idx = None, None
         selected_rel_frobenius_norm = np.inf
