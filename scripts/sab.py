@@ -1130,7 +1130,7 @@ def adaptive_coarsen(
         figure, ax = plt.subplots()
         fig = plt.figure()
         ax = fig.gca()
-        im = ax.imshow(true_array[:, 8, :], aspect="auto")
+        im = ax.imshow(np.log(np.abs(true_array[:, 8, :])), aspect="auto")
         ax.set_xlabel("Energy Index")
         ax.set_ylabel("CDF  Index")
         ax.set_title(r"$\beta$ at 450K")
