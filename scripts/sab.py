@@ -1042,10 +1042,6 @@ def adaptive_coarsen(
     linear interpolation. Stops when `rel_frobenius_norm_tol` or
     `abs_linf_norm_tol` is exceeded.
 
-    This function assumes that each `true_df` and `coarse_df` have the same
-    columns but may have different indices. This is because this function is
-    meant to be used after nonmonotonic CDF values have been removed.
-
     Parameters
     ----------
     true_dfs
