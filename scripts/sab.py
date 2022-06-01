@@ -1031,15 +1031,13 @@ def alpha_functional_expansion(sab_df, selected_betas, n_cdfs=1000, order=None):
 def adaptive_coarsen(
     true_dfs: list[pd.DataFrame],
     coarse_dfs: list[pd.DataFrame],
-    df_index: int,
     rel_frobenius_norm_tol: float = 1e-3,
-    abs_linf_norm_tol: float = 1.,
-    plotting: bool = False,
-) -> pd.DataFrame:
+    abs_linf_norm_tol: float = 1.0,
+) -> list[pd.DataFrame]:
     """
-    Adaptively removes points from a DataFrame using a greedy algorithm that
-    minimizes the global (frobenius) and local (linf) error introduced by
-    linear interpolation. Stops when `rel_frobenius_norm_tol` or
+    Adaptively removes points from a list of DataFrames using a greedy
+    algorithm that minimizes the global (frobenius) and local (linf) error
+    introduced by linear interpolation. Stops when `rel_frobenius_norm_tol` or
     `abs_linf_norm_tol` is exceeded.
 
     Parameters
@@ -1048,207 +1046,204 @@ def adaptive_coarsen(
         Reference DataFrames to be used for error comparison
     coarse_df
         DataFrames to be used as starting point for grid coarsening
-    df_index
-        Index of DataFrame to adaptively coarsen
+    rel_frobenius_norm_tol
+        Maximum allowed frobenius norm of residuals across all DataFrames
+        before coarsening stops. Norm is normalized by the frobenius norm of
+        `true_dfs`.
+    abs_linf_norm_tol
+        Maximum allowed absolute l-infinity norm of residuals across all
+        DataFrames before coarsening stops.
     plotting
         Plot visualization of removed gridpoints
 
     Returns
     -------
-    DataFrame with least important gridpoints removed
+    List of DataFrames with least important gridpoints removed
     """
+    # linearly interpolate coarse_dfs so that axes match with true_dfs
     interp_dfs = [
         interpolate_df(coarse_df, true_df)
         for true_df, coarse_df in zip(true_dfs, coarse_dfs)
     ]
-    # flatten input DataFrames
-    true_df = true_dfs[df_index].stack().stack()
-    coarse_df = coarse_dfs[df_index].stack().stack()
-    interp_df = interp_dfs[df_index].stack().stack()
-    # initialize data which will not be updated by coarsening loop
-    true_axes = [level.values for level in true_df.index.levels]
-    true_array = true_df.values.reshape(true_df.index.levshape)
-    # initialize data which will be updated by coarsening loop
-    coarse_axes = [level.values for level in coarse_df.index.levels]
-    coarse_array = coarse_df.values.reshape(coarse_df.index.levshape)
-    interp_array = interp_df.values.reshape(interp_df.index.levshape)
-    # get contribution to l2 norm of residuals from each subset and compute
-    # initial l2 norm of residuals
-    total_true_array_l2_norm = np.linalg.norm(
-        pd.concat(true_dfs, axis="columns").values.flatten(), ord=2
+    # convert each DataFrame into Series
+    (true_seriess, coarse_seriess, interp_seriess) = (
+        [df.stack().stack() for df in dfs]
+        for dfs in (true_dfs, coarse_dfs, interp_dfs)
     )
-    df_sum_sqr_residuals = np.fromiter(
-        (
-            np.sum(np.square(interp_df.values - true_df.values))
-            for true_df, interp_df in zip(true_dfs, interp_dfs)
-        ),
-        float,
+    # convert each Series into NDAarray and list of axis values
+    (
+        (true_arrays, true_axess),
+        (coarse_arrays, coarse_axess),
+        (interp_arrays, interp_axess),
+    ) = (
+        [
+            [
+                series.values.reshape(series.index.levshape)
+                for series in seriess
+            ],
+            [
+                [level.values for level in series.index.levels]
+                for series in seriess
+            ],
+        ]
+        for seriess in (true_seriess, coarse_seriess, interp_seriess)
     )
-    unaffected_dfs_sum_sqr_residuals = np.sum(
-        np.delete(df_sum_sqr_residuals, df_index)
-    )
-    affected_df_sqr_residuals = np.square(interp_array - true_array)
-    rel_frobenius_norm = (
-        np.sqrt(
-            unaffected_dfs_sum_sqr_residuals + np.sum(affected_df_sqr_residuals)
-        )
-        / total_true_array_l2_norm
-    )
-    # get contribution to relative l-inf error from each subset
-    df_max_abs_residuals = np.fromiter(
-        (
-            np.max(np.abs(interp_df.values - true_df.values))
-            for true_df, interp_df in zip(true_dfs, interp_dfs)
-        ),
-        float,
-    )
-    unaffected_dfs_max_abs_residuals = np.max(
-        np.delete(df_max_abs_residuals, df_index)
-    )
-    affected_df_residuals = interp_array - true_array
-    prev_abs_linf_norm = np.max(
-        (unaffected_dfs_max_abs_residuals, np.max(affected_df_residuals))
-    )
-    # compute initial errors
     # create mapping from coarse indices to corresponding true (fine) indices
-    true_idx = [
-        np.searchsorted(true_axis, coarse_axis)
-        for true_axis, coarse_axis in zip(true_axes, coarse_axes)
+    coarse_true_idx_map = [
+        [
+            np.array(np.searchsorted(true_axis, coarse_axis))
+            for true_axis, coarse_axis in zip(true_axes, coarse_axes)
+        ]
+        for true_axes, coarse_axes in zip(true_axess, coarse_axess)
     ]
-    # prepare figure
-    if plotting:
-        figure, ax = plt.subplots()
-        fig = plt.figure()
-        ax = fig.gca()
-        im = ax.imshow(np.log(np.abs(true_array[:, 8, :])), aspect="auto")
-        ax.set_xlabel("Energy Index")
-        ax.set_ylabel("CDF  Index")
-        ax.set_title(r"$\beta$ at 450K")
-        figure.show()
+    # compute normalizing factor for l2 norm of true_array
+    true_l2_norm = np.sqrt(
+        sum(np.sum(np.square(true_array)) for true_array in true_arrays)
+    )
     elapsed = 0
     while True:
-        # identify least important gridpoint
-        selected_axis, selected_idx = None, None
-        selected_rel_frobenius_norm = np.inf
-        for axis in range(coarse_array.ndim):
-            true_axis = true_axes[axis]
-            axis_true_idx = true_idx[axis]
-            # get contribution of each axis gridpoint to total error
-            inactive_axes = tuple(
-                i for i in range(coarse_array.ndim) if i != axis
+        # after looping through each possible gridpoint, best_idx will either
+        # be a tuple of (subset_idx, axis_idx, coarse_idx) or None
+        best_idx = None
+        best_rel_frobenius_norm = np.inf
+        best_abs_linf_norm = np.inf
+        best_interped = None
+        best_interped_true_idxs = None
+
+        subset_idxs = range(len(coarse_axess))
+        residuals = [
+            interp_arrays[idx] - true_arrays[idx] for idx in subset_idxs
+        ]
+        subset_sum_sqr_residuals = np.array(
+            [np.sum(np.square(residuals[idx])) for idx in subset_idxs]
+        )
+        subset_max_abs_residuals = np.array(
+            [np.max(np.abs(residuals[idx])) for idx in subset_idxs]
+        )
+        for subset_idx in subset_idxs:
+            inactive_subset_idxs = np.array(
+                [idx for idx in subset_idxs if idx != subset_idx]
             )
-            axis_sqr_residuals = np.sum(
-                affected_df_sqr_residuals, axis=inactive_axes
+            subset_coarse_true_idx_map = coarse_true_idx_map[subset_idx]
+            subset_residuals = residuals[subset_idx]
+            true_axes = true_axess[subset_idx]
+            subset_interp_array = interp_arrays[subset_idx]
+            true_array = true_arrays[subset_idx]
+            sum_subset_sum_sqr_residuals = np.sum(
+                subset_sum_sqr_residuals[inactive_subset_idxs]
             )
-            resize_shapes = [
-                1 if a != axis else -1 for a in range(coarse_array.ndim)
-            ]
-            for coarse_idx in range(1, coarse_array.shape[axis] - 1):
-                # get the true axis indices that will be used as the left/right
-                # boundaries for the interpolated points
-                left_true_idx = axis_true_idx[coarse_idx - 1]
-                right_true_idx = axis_true_idx[coarse_idx + 1]
-                # get fine axis indices for new points that have to be
-                # interpolated
-                interped_true_idx = np.arange(left_true_idx + 1, right_true_idx)
-                # compute the interpolation factor for axis points that will be
-                # interpolated
-                interp_factor = (
-                    (true_axis[interped_true_idx] - true_axis[left_true_idx])
-                    / (true_axis[right_true_idx] - true_axis[left_true_idx])
-                ).reshape(resize_shapes)
-                # get the previous iteration's interpolated values that will be
-                # used as the left/right faces for the interpolated points
-                left_face = interp_array.take([left_true_idx], axis=axis)
-                right_face = interp_array.take([right_true_idx], axis=axis)
-                # interpolated points
-                interped = left_face + interp_factor * (right_face - left_face)
-                # get error contribution from points which are unaffected by
-                # removing gridpoint at coarse_idx
-                axis_unaffected_sqr_residuals = np.delete(
-                    axis_sqr_residuals, interped_true_idx
+            max_subset_max_abs_residuals = max(subset_max_abs_residuals)
+
+            axis_idxs = range(len(coarse_axess[subset_idx]))
+            for axis_idx in axis_idxs:
+                inactive_axes_idxs = tuple(
+                    (idx for idx in axis_idxs if idx != axis_idx)
                 )
-                # get residuals between interpolated points and true values
-                true_values = true_array.take(interped_true_idx, axis=axis)
-                affected_residuals = np.abs(interped - true_values)
-                axis_affected_sqr_residuals = np.sum(
-                    np.square(affected_residuals), axis=inactive_axes
+                axis_coarse_true_idx_map = subset_coarse_true_idx_map[axis_idx]
+                axis_sum_sqr_residuals = np.sum(
+                    np.square(subset_residuals), axis=inactive_axes_idxs
                 )
-                rel_frobenius_norm = (
-                    np.sqrt(
-                        unaffected_dfs_sum_sqr_residuals
-                        + axis_unaffected_sqr_residuals.sum()
-                        + axis_affected_sqr_residuals.sum()
+                true_axis = true_axes[axis_idx]
+                resize_shapes = [1 if a != axis_idx else -1 for a in axis_idxs]
+
+                coarse_idxs = range(
+                    1, len(coarse_axess[subset_idx][axis_idx]) - 1
+                )
+                for coarse_idx in coarse_idxs:
+                    # get the true axis indices that will be used as the left/
+                    # right boundaries for the interpolated points
+                    left_true_idx = axis_coarse_true_idx_map[coarse_idx - 1]
+                    right_true_idx = axis_coarse_true_idx_map[coarse_idx + 1]
+                    # get fine axis indices for new points that have to be
+                    # interpolated
+                    interp_true_idxs = np.arange(
+                        left_true_idx + 1, right_true_idx
                     )
-                    / total_true_array_l2_norm
-                )
-                abs_linf_norm = np.max(
-                    (prev_abs_linf_norm, np.max(affected_residuals))
-                )
-                # reject this coarse gridpoint if global error is exceeded
-                if rel_frobenius_norm > rel_frobenius_norm_tol:
-                    continue
-                # reject this coarse gridpoint if local error is exceeded
-                elif abs_linf_norm > abs_linf_norm_tol:
-                    continue
-                # if removing this gridpoint doesn't improve on the candidate
-                # gridpoint, skip it
-                elif rel_frobenius_norm > selected_rel_frobenius_norm:
-                    continue
-                # update
-                else:
-                    selected_axis = axis
-                    selected_idx = coarse_idx
-                    selected_rel_frobenius_norm = rel_frobenius_norm
-                    selected_abs_linf_norm = abs_linf_norm
-                    selected_interped = interped
-                    selected_interped_true_idx = interped_true_idx
-        if selected_axis is None:
-            break
-        else:
-            # update figure
-            if plotting:
-                if selected_axis == 0:
-                    im.axes.axhline(
-                        true_idx[selected_axis][selected_idx],
-                        color="k",
-                        linewidth=0.5,
+                    # compute the interpolation factor for indices on the true
+                    # axis that will be interpolated
+                    interp_factor = (
+                        (true_axis[interp_true_idxs] - true_axis[left_true_idx])
+                        / (true_axis[right_true_idx] - true_axis[left_true_idx])
+                    ).reshape(resize_shapes)
+                    # get the previous iteration's interpolated values to use
+                    # use as the left/right faces for the interpolated points
+                    left_face = subset_interp_array.take(
+                        [left_true_idx], axis=axis_idx
                     )
-                elif selected_axis == 2:
-                    im.axes.axvline(
-                        true_idx[selected_axis][selected_idx],
-                        color="k",
-                        linewidth=0.5,
+                    right_face = subset_interp_array.take(
+                        [right_true_idx], axis=axis_idx
                     )
-                plt.pause(0.1)
-                fig.canvas.draw()
-            # array of indices to keep
-            keep_idx = np.delete(
-                np.arange(coarse_axes[selected_axis].size), selected_idx
-            )
+                    # interpolated points
+                    interp_vals = left_face + interp_factor * (
+                        right_face - left_face
+                    )
+                    # compute the residuals affected
+                    true_vals = np.take(
+                        true_array, interp_true_idxs, axis=axis_idx
+                    )
+                    affected_residuals = interp_vals - true_vals
+                    # add up all contributions to l2 norm of residuals
+                    total_sum_sqr_residual = np.sqrt(
+                        sum_subset_sum_sqr_residuals
+                        + np.sum(
+                            np.delete(axis_sum_sqr_residuals, interp_true_idxs)
+                        )
+                        + np.sum(np.square(affected_residuals))
+                    )
+                    # add up all contributions to linf norm of residuals
+                    total_max_abs_residual = max(
+                        max_subset_max_abs_residuals,
+                        np.max(np.abs(affected_residuals)),
+                    )
+                    # determine if current gridpoint is best
+                    rel_frobenius_norm = total_sum_sqr_residual / true_l2_norm
+                    abs_linf_norm = total_max_abs_residual
+                    is_better = (
+                        rel_frobenius_norm < best_rel_frobenius_norm
+                        and rel_frobenius_norm < rel_frobenius_norm_tol
+                        and abs_linf_norm < abs_linf_norm_tol
+                    )
+                    if is_better:
+                        best_idx = (subset_idx, axis_idx, coarse_idx)
+                        best_rel_frobenius_norm = rel_frobenius_norm
+                        best_abs_linf_norm = abs_linf_norm
+                        best_interped = interp_vals
+                        best_interped_true_idxs = interp_true_idxs
+        if not best_idx is None:
+            subset_idx, axis_idx, coarse_idx = best_idx
             # update coarse axes/array
-            coarse_axes[selected_axis] = coarse_axes[selected_axis][keep_idx]
-            coarse_array = coarse_array.take(keep_idx, axis=selected_axis)
-            # update interpolated array
+            keep_idx = np.delete(
+                np.arange(coarse_axess[subset_idx][axis_idx].size), coarse_idx
+            )
+            coarse_axess[subset_idx][axis_idx] = coarse_axess[subset_idx][
+                axis_idx
+            ][keep_idx]
+            coarse_arrays[subset_idx] = coarse_arrays[subset_idx].take(
+                keep_idx, axis=axis_idx
+            )
+            # update interp axes/array
             # https://stackoverflow.com/a/42657219/5101335
-            idx = [slice(None)] * interp_array.ndim
-            idx[selected_axis] = selected_interped_true_idx
-            interp_array[tuple(idx)] = selected_interped
+            idx = [slice(None)] * interp_arrays[subset_idx].ndim
+            idx[axis_idx] = best_interped_true_idxs
+            interp_arrays[subset_idx][tuple(idx)] = best_interped
             # print diagnostics
             diagnostics = OrderedDict()
-            diagnostics["removed axis".rjust(13)] = f"{selected_axis:13}"
+            diagnostics["subset idx".rjust(12)] = f"{subset_idx:12}"
+            diagnostics["axis idx".rjust(10)] = f"{axis_idx:10}"
             diagnostics[
-                "removed index".rjust(14)
-            ] = f"{true_idx[selected_axis][selected_idx]:14}"
+                "fine idx".rjust(10)
+            ] = f"{coarse_true_idx_map[subset_idx][axis_idx][coarse_idx]:10}"
             diagnostics[
-                "abs. l-inf norm error".rjust(22)
-            ] = f"{selected_abs_linf_norm:22.8E}"
+                "abs. l-inf norm residuals".rjust(27)
+            ] = f"{best_abs_linf_norm:27.8E}"
             diagnostics[
-                "rel. frobenius norm error".rjust(26)
-            ] = f"{selected_rel_frobenius_norm:26.8E}"
+                "rel. frobenius norm residuals".rjust(31)
+            ] = f"{best_rel_frobenius_norm:31.8E}"
             diagnostics[
-                "coarse axes shape".rjust(18)
-            ] = f"{coarse_array.shape}".rjust(18)
+                "coarse axes shapes".rjust(35)
+            ] = f"{[coarse_array.shape for coarse_array in coarse_arrays]}".rjust(
+                35
+            )
             if elapsed % 25 == 0:
                 hlines = "".join(
                     ("-" * len(s.strip())).rjust(len(s))
@@ -1259,20 +1254,25 @@ def adaptive_coarsen(
             print("".join(diagnostics.values()))
             elapsed += 1
             # update mapping from coarse to true axes
-            true_idx[selected_axis] = true_idx[selected_axis][keep_idx]
-            # update previous iteration l-inf norm
-            prev_abs_linf_norm = selected_abs_linf_norm
-    # return interpolated coarsened DataFrame
-    return pd.DataFrame(
-        pd.Series(
-            interp_array.flatten(),
-            index=pd.MultiIndex.from_product(
-                true_axes, names=true_df.index.names
-            ),
+            coarse_true_idx_map[subset_idx][axis_idx] = coarse_true_idx_map[
+                subset_idx
+            ][axis_idx][keep_idx]
+        else:
+            break
+    # return interpolated coarsened DataFrames
+    return [
+        pd.DataFrame(
+            pd.Series(
+                interp_array.flatten(),
+                index=pd.MultiIndex.from_product(
+                    interp_axes, names=true_dfs[0].stack().stack().index.names
+                ),
+            )
+            .unstack()
+            .unstack()
         )
-        .unstack()
-        .unstack()
-    )
+        for interp_array, interp_axes in zip(interp_arrays, interp_axess)
+    ]
 
 
 def truncate(df: pd.DataFrame, rank: int) -> pd.DataFrame:
@@ -1457,16 +1457,9 @@ def apply_approximations(
     )
     # adaptively coarsen each subset
     print("\nadaptively coarsening...")
-    coarsened_subsets = [
-        adaptive_coarsen(
-            subsets,
-            monotonic_subsets,
-            subset_idx,
-            plotting=False,
-            abs_linf_norm_tol=abs_linf_norm_tol,
-        )
-        for subset_idx in range(len(subsets))
-    ]
+    coarsened_subsets = adaptive_coarsen(
+        subsets, monotonic_subsets, abs_linf_norm_tol=abs_linf_norm_tol
+    )
     print_errors(full_df, pd.concat(coarsened_subsets, axis="columns"))
 
 
@@ -1482,7 +1475,7 @@ if __name__ == "__main__":
         split_on="E",
         splits=[400],
         ranks=[21, 15],
-        abs_linf_norm_tol=1.0,
+        abs_linf_norm_tol=0.5,
     )
     alpha_cdf_df = reconstruct_from_svd_dfs(
         pd.read_hdf(prefix + "alpha_endfb8_CDF_coeffs.hdf5"),
