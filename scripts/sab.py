@@ -1302,13 +1302,15 @@ def truncate(df: pd.DataFrame, rank: int) -> pd.DataFrame:
 
 
 def remove_nonmonotonic_cdfs(
-    df: pd.DataFrame,
+    df: pd.DataFrame, show_removed=False
 ) -> pd.DataFrame:
     """
     Parameters
     ----------
     df
         DataFrame which may contain nonmonotonic CDF
+    show_removed
+        If True, returns a DataFrame which shows which cdf values were removed
 
     Returns
     -------
@@ -1317,11 +1319,20 @@ def remove_nonmonotonic_cdfs(
     # a monotonic entry is one which is greater than or equal to all entries
     # that appeared previously
     monotonic_nondecreasing = (df >= np.maximum.accumulate(df)).all(axis=1)
-    # return monotonic CDF
-    df = df.loc[monotonic_nondecreasing]
-    # check monoticity
-    assert (df.diff().iloc[1:] > 0).all().all()
-    return df
+    if show_removed:
+        return ~pd.concat(
+            [
+                pd.Series(monotonic_nondecreasing, name=col_name)
+                for col_name in df.columns
+            ],
+            axis="columns",
+        )
+    else:
+        # return monotonic CDF
+        df = df.loc[monotonic_nondecreasing]
+        # check monoticity
+        assert (df.diff().iloc[1:] > 0).all().all()
+        return df
 
 
 def interpolate_df(
@@ -1399,7 +1410,11 @@ def reconstruct_from_svd_dfs(
 
 
 def inspect_visually(
-    true_df: pd.DataFrame, truncated_df: pd.DataFrame, value_name: str
+    true_df: pd.DataFrame,
+    truncated_df: pd.DataFrame,
+    monotonic_df: pd.DataFrame,
+    removed_nonmonotonic_df: pd.DataFrame,
+    value_name: str,
 ) -> None:
     """
     Display interactive dashboard for inspecting reference and truncated
@@ -1410,7 +1425,12 @@ def inspect_visually(
     true_df
         Reference DataFrame
     truncated_df
-        Approximated DataFrame which to be compared against reference DataFrame
+        Low rank approximation of original DataFrame
+    monotonic_df
+        DataFrame with monotonic nondecreasing CDF values
+    removed_nonmonotonic_df
+        Contains information about which CDF values were removed due to
+        nonmonoticity in any column
     value_name
         Name of quantity being compared. Not provided in the DataFrames so it
         must be passed explicitly to have proper plot labels.
@@ -1440,6 +1460,13 @@ def inspect_visually(
                 linestyle="dashed",
                 label="truncated",
             )
+            monotonic_s = monotonic_df.iloc[:, round(event.xdata)]
+            ax.plot(
+                monotonic_s,
+                range(len(monotonic_s)),
+                linestyle="dotted",
+                label="monotonic",
+            )
             ax.legend()
             ax.set_xlim(right=true_s.max())
             ax.set_ylim(bottom=0)
@@ -1452,16 +1479,8 @@ def inspect_visually(
             ax.grid()
             plt.draw()
 
-    # plot true values
-    ax = axs[0, 0]
-    pcm = ax.imshow(true_df, interpolation="none", aspect="auto")
-    ax.set_ylabel("CDF Index")
-    ax.set_xlabel(f"{col_names[0]}, {col_names[1]} Index")
-    ax.set_title(f"{value_name}")
-    fig.colorbar(pcm, ax=ax)
-
     # plot log(abs(true values))
-    ax = axs[0, 1]
+    ax = axs[0, 0]
     pcm = ax.imshow(
         np.log10(np.abs(true_df)), interpolation="none", aspect="auto"
     )
@@ -1471,7 +1490,7 @@ def inspect_visually(
     fig.colorbar(pcm, ax=ax)
 
     # plot nonmonotonic values
-    ax = axs[0, 2]
+    ax = axs[0, 1]
     ax.imshow(
         truncated_df.diff() < 0,
         aspect="auto",
@@ -1481,18 +1500,29 @@ def inspect_visually(
     ax.set_xlabel(f"{col_names[0]}, {col_names[1]} Index")
     ax.set_title(f"nonmonotonic entries after SVD")
 
+    # plot points that would be removed
+    ax = axs[0, 2]
+    ax.imshow(removed_nonmonotonic_df, aspect="auto", cmap="gray")
+    ax.set_ylabel("CDF Index")
+    ax.set_xlabel(f"{col_names[0]}, {col_names[1]} Index")
+    ax.set_title(f"Removed CDF values")
+
     # plot absolute error
     ax = axs[1, 0]
     cmap = cm.get_cmap("viridis").with_extremes(over="red")
-    log_abs_err = np.log10(np.abs(true_df - truncated_df))
+    log_abs_err = np.log10(np.abs(true_df - monotonic_df))
     worst_idx = np.unravel_index(np.argmax(log_abs_err), log_abs_err.shape)
     pcm = ax.imshow(
-        log_abs_err, interpolation="none", aspect="auto", cmap=cmap, vmax=-1.5
+        log_abs_err,
+        interpolation="none",
+        aspect="auto",
+        cmap=cmap,
+        vmax=np.log10(1),
     )
     ax.set_ylabel("CDF Index")
     ax.set_xlabel(f"{col_names[0]}, {col_names[1]} Index")
     ax.set_title(
-        f"log abs. err. "
+        f"log10 abs. err. "
         f"(worst: {log_abs_err.iloc[worst_idx]:.3f} at {worst_idx})"
     )
     fig.colorbar(pcm, ax=ax, extend="max")
@@ -1500,7 +1530,7 @@ def inspect_visually(
     # plot relative error
     ax = axs[1, 1]
     cmap = cm.get_cmap("viridis").with_extremes(over="red")
-    log_abs_rel_err = np.log10(np.abs((true_df - truncated_df) / true_df))
+    log_abs_rel_err = np.log10(np.abs((true_df - monotonic_df) / true_df))
     worst_idx = np.unravel_index(
         np.argmax(log_abs_rel_err), log_abs_rel_err.shape
     )
@@ -1509,12 +1539,12 @@ def inspect_visually(
         interpolation="none",
         aspect="auto",
         cmap=cmap,
-        vmax=0.5,
+        vmax=0.0,
     )
     ax.set_ylabel("CDF Index")
     ax.set_xlabel(f"{col_names[0]}, {col_names[1]} Index")
     ax.set_title(
-        f"log abs. rel. err. "
+        f"log10 abs. rel. err. "
         f"(worst: {log_abs_rel_err.iloc[worst_idx]:.1f} at {worst_idx}"
     )
     fig.colorbar(pcm, ax=ax, extend="max")
