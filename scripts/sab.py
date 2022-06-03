@@ -1397,7 +1397,7 @@ def reconstruct_from_svd_dfs(
 
 
 def apply_approximations(
-    full_df: pd.DataFrame,
+    true_df: pd.DataFrame,
     split_on: Literal["E", "beta"],
     splits: list[int],
     ranks: list[int],
@@ -1408,7 +1408,7 @@ def apply_approximations(
 
     Parameters
     ----------
-    full_df
+    true_df
         DataFrame which will be approximated
     split_on
         Name of the column Index level where the splits will occur
@@ -1419,13 +1419,13 @@ def apply_approximations(
     """
     # split DataFrame along columns at indices at selected level of MultiIndex
     boundaries = np.concatenate(
-        ([0], full_df.columns.unique(split_on)[splits], [np.inf])
+        ([0], true_df.columns.unique(split_on)[splits], [np.inf])
     )
     subsets = [
-        full_df.loc[
+        true_df.loc[
             :,
-            (left_boundary <= full_df.columns.get_level_values(split_on))
-            & (full_df.columns.get_level_values(split_on) < right_boundary),
+            (left_boundary <= true_df.columns.get_level_values(split_on))
+            & (true_df.columns.get_level_values(split_on) < right_boundary),
         ]
         for left_boundary, right_boundary in zip(
             boundaries[:-1], boundaries[1:]
@@ -1436,31 +1436,30 @@ def apply_approximations(
     truncated_subsets = [
         truncate(subset, rank) for subset, rank in zip(subsets, ranks)
     ]
-    print_errors(full_df, pd.concat(truncated_subsets, axis="columns"))
+    truncated_df = pd.concat(truncated_subsets, axis="columns")
+    print_errors(true_df, truncated_df)
     # remove nonmonotonic CDF points from each subset
     print("\nremoving nonmonotonic CDFs...")
     monotonic_subsets = [
         remove_nonmonotonic_cdfs(subset) for subset in truncated_subsets
     ]
-    print_errors(
-        full_df,
-        pd.concat(
-            [
-                interpolate_df(
-                    monotonic_subset,
-                    subset,
-                )
-                for monotonic_subset, subset in zip(monotonic_subsets, subsets)
-            ],
-            axis="columns",
-        ),
+    monotonic_df = pd.concat(
+        [
+            interpolate_df(
+                monotonic_subset,
+                subset,
+            )
+            for monotonic_subset, subset in zip(monotonic_subsets, subsets)
+        ],
+        axis="columns",
     )
+    print_errors(true_df, monotonic_df)
     # adaptively coarsen each subset
     print("\nadaptively coarsening...")
     coarsened_subsets = adaptive_coarsen(
         subsets, monotonic_subsets, abs_linf_norm_tol=abs_linf_norm_tol
     )
-    print_errors(full_df, pd.concat(coarsened_subsets, axis="columns"))
+    print_errors(true_df, pd.concat(coarsened_subsets, axis="columns"))
 
 
 if __name__ == "__main__":
