@@ -19,6 +19,8 @@ import matplotlib.pyplot as plt
 import re
 from collections import OrderedDict
 from itertools import chain, product
+from matplotlib.backend_bases import MouseButton
+from matplotlib import cm
 from multiprocessing import Pool
 from scipy.interpolate import RegularGridInterpolator
 from tqdm import tqdm
@@ -1396,6 +1398,132 @@ def reconstruct_from_svd_dfs(
     return U @ S @ V.T
 
 
+def inspect_visually(
+    true_df: pd.DataFrame, truncated_df: pd.DataFrame, value_name: str
+) -> None:
+    """
+    Display interactive dashboard for inspecting reference and truncated
+    DataFrames
+
+    Parameters
+    ----------
+    true_df
+        Reference DataFrame
+    truncated_df
+        Approximated DataFrame which to be compared against reference DataFrame
+    value_name
+        Name of quantity being compared. Not provided in the DataFrames so it
+        must be passed explicitly to have proper plot labels.
+    """
+    col_names = true_df.columns.names
+    fig, axs = plt.subplots(2, 3)
+
+    def on_click(event):
+        if (
+            event.inaxes
+            and event.inaxes != event.canvas.figure.axes[5]
+            and event.button is MouseButton.LEFT
+        ):
+            ax = event.canvas.figure.axes[5]
+            ax.clear()
+            true_s = true_df.iloc[:, round(event.xdata)]
+            ax.plot(
+                true_s,
+                range(len(true_s)),
+                linestyle="solid",
+                label="true",
+            )
+            truncated_s = truncated_df.iloc[:, round(event.xdata)]
+            ax.plot(
+                truncated_s,
+                range(len(truncated_s)),
+                linestyle="dashed",
+                label="truncated",
+            )
+            ax.legend()
+            ax.set_xlim(right=true_s.max())
+            ax.set_ylim(bottom=0)
+            ax.set_xlabel(f"{value_name}")
+            ax.set_ylabel("CDF Index")
+            ax.set_title(
+                f"{col_names[0]}={true_s.name[0]:5.3E}, "
+                f"{col_names[1]}={true_s.name[1]}"
+            )
+            ax.grid()
+            plt.draw()
+
+    # plot true values
+    ax = axs[0, 0]
+    pcm = ax.imshow(true_df, interpolation="none", aspect="auto")
+    ax.set_ylabel("CDF Index")
+    ax.set_xlabel(f"{col_names[0]}, {col_names[1]} Index")
+    ax.set_title(f"{value_name}")
+    fig.colorbar(pcm, ax=ax)
+
+    # plot log(abs(true values))
+    ax = axs[0, 1]
+    pcm = ax.imshow(
+        np.log10(np.abs(true_df)), interpolation="none", aspect="auto"
+    )
+    ax.set_ylabel("CDF Index")
+    ax.set_xlabel(f"{col_names[0]}, {col_names[1]} Index")
+    ax.set_title(f"log10(abs({value_name}))")
+    fig.colorbar(pcm, ax=ax)
+
+    # plot nonmonotonic values
+    ax = axs[0, 2]
+    ax.imshow(
+        truncated_df.diff() < 0,
+        aspect="auto",
+        cmap="gray",
+    )
+    ax.set_ylabel("CDF Index")
+    ax.set_xlabel(f"{col_names[0]}, {col_names[1]} Index")
+    ax.set_title(f"nonmonotonic entries after SVD")
+
+    # plot absolute error
+    ax = axs[1, 0]
+    cmap = cm.get_cmap("viridis").with_extremes(over="red")
+    log_abs_err = np.log10(np.abs(true_df - truncated_df))
+    worst_idx = np.unravel_index(np.argmax(log_abs_err), log_abs_err.shape)
+    pcm = ax.imshow(
+        log_abs_err, interpolation="none", aspect="auto", cmap=cmap, vmax=-1.5
+    )
+    ax.set_ylabel("CDF Index")
+    ax.set_xlabel(f"{col_names[0]}, {col_names[1]} Index")
+    ax.set_title(
+        f"log abs. err. "
+        f"(worst: {log_abs_err.iloc[worst_idx]:.3f} at {worst_idx})"
+    )
+    fig.colorbar(pcm, ax=ax, extend="max")
+
+    # plot relative error
+    ax = axs[1, 1]
+    cmap = cm.get_cmap("viridis").with_extremes(over="red")
+    log_abs_rel_err = np.log10(np.abs((true_df - truncated_df) / true_df))
+    worst_idx = np.unravel_index(
+        np.argmax(log_abs_rel_err), log_abs_rel_err.shape
+    )
+    pcm = ax.imshow(
+        log_abs_rel_err,
+        interpolation="none",
+        aspect="auto",
+        cmap=cmap,
+        vmax=0.5,
+    )
+    ax.set_ylabel("CDF Index")
+    ax.set_xlabel(f"{col_names[0]}, {col_names[1]} Index")
+    ax.set_title(
+        f"log abs. rel. err. "
+        f"(worst: {log_abs_rel_err.iloc[worst_idx]:.1f} at {worst_idx}"
+    )
+    fig.colorbar(pcm, ax=ax, extend="max")
+
+    # plot
+    plt.connect("button_press_event", on_click)
+    plt.show()
+
+
 def apply_approximations(
     true_df: pd.DataFrame,
     split_on: Literal["E", "beta"],
@@ -1438,6 +1566,7 @@ def apply_approximations(
     ]
     truncated_df = pd.concat(truncated_subsets, axis="columns")
     print_errors(true_df, truncated_df)
+    inspect_visually(true_df, truncated_df, "beta")
     # remove nonmonotonic CDF points from each subset
     print("\nremoving nonmonotonic CDFs...")
     monotonic_subsets = [
