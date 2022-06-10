@@ -1533,7 +1533,7 @@ def apply_approximations(
     split_on: Literal["E", "beta"],
     splits: list[int],
     ranks: list[int],
-) -> pd.DataFrame:
+) -> list[pd.DataFrame]:
     """
     Applies a sequence of approximations to a CDF DataFrame
 
