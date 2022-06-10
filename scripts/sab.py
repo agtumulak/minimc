@@ -841,38 +841,17 @@ def beta_functional_expansion(
         for T, beta_cdf in zip(df_Ts, x_E):
             beta_df.loc[:, (E, T)] = np.interp(F, beta_cdf, beta_cdf.index)
     # perform proper orthogonal decomposition
-    beta_df_pod_form = beta_df
-    U, S, Vt = np.linalg.svd(beta_df_pod_form, full_matrices=False)
-    order = S.size if order is None else order
-    U_df = pd.DataFrame(
-        {"coefficient": U[:, :order].flatten()},
-        index=pd.MultiIndex.from_product(
-            [F, range(order)], names=["CDF", "order"]
-        ),
-    )
-    S_df = pd.DataFrame(
-        {"coefficient": S[:order]},
-        index=pd.MultiIndex.from_product([range(order)], names=["order"]),
-    )
-    V_df = pd.DataFrame(
-        {"coefficient": Vt.T[:, :order].flatten()},
-        index=pd.MultiIndex.from_product(
-            [Es, df_Ts, range(order)], names=["E", "T", "order"]
-        ),
-    )
+    U_df, S_df, V_df = to_svd_dfs(beta_df, order)
+    order = S_df.size if order is None else order
     # set energy units to MeV
     V_df.index = V_df.index.set_levels(
         V_df.index.unique(level="E") * 1e-6, level="E"
     )
     # reconstruct
-    beta_df_reconstructed = pd.DataFrame(
-        U[:, :order] @ np.diag(S[:order]) @ Vt[:order, :],
-        index=beta_df_pod_form.index,
-        columns=beta_df_pod_form.columns,
-    )
+    beta_df_reconstructed = reconstruct_from_svd_dfs(U_df, S_df, V_df)
     # check that CDFS are monotonic for certain T values
     print(
-        f"RMSE: {np.sqrt(((beta_df_reconstructed - beta_df_pod_form)**2).mean().mean())}"
+        f"RMSE: {np.sqrt(((beta_df_reconstructed - beta_df)**2).mean().mean())}"
     )
     is_monotonic = beta_df_reconstructed.apply(lambda s: s.is_monotonic)
     print(
@@ -1589,6 +1568,46 @@ def apply_approximations(
     print("\nadaptively coarsening...")
     coarsened_subsets = adaptive_coarsen(subsets, monotonic_subsets)
     return coarsened_subsets
+
+
+def to_svd_dfs(
+    df: pd.DataFrame, order: int | None = None
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """
+    Perform Singular Value Decomposition on DataFrame and return factorization
+    as separate DataFrames
+
+    Parameters
+    ----------
+    df
+        Original DataFrame to decompose using singular value dcomposition
+    order
+        Order to truncate singular value decomposition
+    """
+    U, S, Vt = np.linalg.svd(df, full_matrices=False)
+    order = S.size if order is None else order
+    U_df = pd.DataFrame(
+        {"coefficient": U[:, :order].flatten()},
+        index=pd.MultiIndex.from_product(
+            [df.index, range(order)], names=["CDF", "order"]
+        ),
+    )
+    S_df = pd.DataFrame(
+        {"coefficient": S[:order]},
+        index=pd.MultiIndex.from_product([range(order)], names=["order"]),
+    )
+    V_df = pd.DataFrame(
+        {"coefficient": Vt[:order,:].T.flatten()},
+        index=pd.MultiIndex.from_product(
+            [df.columns.unique(0), df.columns.unique(1), range(order)],
+            names=[
+                df.columns.unique(0).name,
+                df.columns.unique(1).name,
+                "order",
+            ],
+        ),
+    )
+    return U_df, S_df, V_df
 
 
 if __name__ == "__main__":
