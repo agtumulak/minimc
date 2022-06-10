@@ -1376,9 +1376,9 @@ def print_errors(reference_df: pd.DataFrame, test_df: pd.DataFrame):
         reference_df, ord="fro"
     )
     print(f"relative frobenius: {rel_frobenius_norm}")
-    # print out normalized l-inf error for DataFrame
-    rel_linf_norm = residuals.abs().max().max() / reference_df.abs().max().max()
-    print(f"relative l-inf norm: {rel_linf_norm}")
+    # print out absolute l-inf error for DataFrame
+    abs_linf_norm = residuals.abs().max().max()
+    print(f"absolute l-inf norm: {abs_linf_norm}")
 
 
 def reconstruct_from_svd_dfs(
