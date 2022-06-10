@@ -1258,21 +1258,27 @@ def adaptive_coarsen(
                 subset_idx
             ][axis_idx][keep_idx]
         else:
-            break
-    # return interpolated coarsened DataFrames
-    return [
+            user_input = input("Tolerance reached. Set new tolerance?: ")
+            try:
+                rel_frobenius_norm_tol = float(user_input)
+            except ValueError:
+                print("Not a float. Terminating adaptive coarsening.")
+                break
+    # return coarsened DataFrames
+    coarse_dfs = [
         pd.DataFrame(
             pd.Series(
-                interp_array.flatten(),
+                coarse_array.flatten(),
                 index=pd.MultiIndex.from_product(
-                    interp_axes, names=true_dfs[0].stack().stack().index.names
+                    coarse_axes, names=true_dfs[0].stack().stack().index.names
                 ),
             )
             .unstack()
             .unstack()
         )
-        for interp_array, interp_axes in zip(interp_arrays, interp_axess)
+        for coarse_array, coarse_axes in zip(coarse_arrays, coarse_axess)
     ]
+    return coarse_dfs
 
 
 def truncate(df: pd.DataFrame, rank: int) -> pd.DataFrame:
@@ -1564,7 +1570,6 @@ def apply_approximations(
     ]
     truncated_df = pd.concat(truncated_subsets, axis="columns")
     print_errors(true_df, truncated_df)
-    inspect_visually(true_df, truncated_df, "beta")
     # remove nonmonotonic CDF points from each subset
     print("\nremoving nonmonotonic CDFs...")
     monotonic_subsets = [
