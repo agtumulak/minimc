@@ -1533,8 +1533,7 @@ def apply_approximations(
     split_on: Literal["E", "beta"],
     splits: list[int],
     ranks: list[int],
-    abs_linf_norm_tol: float = 0.01,
-):
+) -> pd.DataFrame:
     """
     Applies a sequence of approximations to a CDF DataFrame
 
@@ -1588,10 +1587,8 @@ def apply_approximations(
     print_errors(true_df, monotonic_df)
     # adaptively coarsen each subset
     print("\nadaptively coarsening...")
-    coarsened_subsets = adaptive_coarsen(
-        subsets, monotonic_subsets, abs_linf_norm_tol=abs_linf_norm_tol
-    )
-    print_errors(true_df, pd.concat(coarsened_subsets, axis="columns"))
+    coarsened_subsets = adaptive_coarsen(subsets, monotonic_subsets)
+    return coarsened_subsets
 
 
 if __name__ == "__main__":
@@ -1606,7 +1603,6 @@ if __name__ == "__main__":
         split_on="E",
         splits=[400],
         ranks=[21, 15],
-        abs_linf_norm_tol=0.5,
     )
     alpha_cdf_df = reconstruct_from_svd_dfs(
         pd.read_hdf(prefix + "alpha_endfb8_CDF_coeffs.hdf5"),
@@ -1621,5 +1617,4 @@ if __name__ == "__main__":
         split_on="beta",
         splits=[200],
         ranks=[28, 37],
-        abs_linf_norm_tol=1.0,
     )
