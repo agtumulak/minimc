@@ -1076,7 +1076,7 @@ def adaptive_coarsen(
     (
         (true_arrays, true_axess),
         (coarse_arrays, coarse_axess),
-        (interp_arrays, interp_axess),
+        (interp_arrays, _),
     ) = (
         [
             [
@@ -1230,8 +1230,6 @@ def adaptive_coarsen(
             interp_arrays[subset_idx][tuple(idx)] = best_interped
             # print diagnostics
             diagnostics = OrderedDict()
-            diagnostics["subset idx".rjust(12)] = f"{subset_idx:12}"
-            diagnostics["axis idx".rjust(10)] = f"{axis_idx:10}"
             diagnostics[
                 "fine idx".rjust(10)
             ] = f"{coarse_true_idx_map[subset_idx][axis_idx][coarse_idx]:10}"
@@ -1242,9 +1240,9 @@ def adaptive_coarsen(
                 "rel. frobenius norm residuals".rjust(31)
             ] = f"{best_rel_frobenius_norm:31.8E}"
             diagnostics[
-                "coarse axes shapes".rjust(35)
+                "coarse axes shapes".rjust(70)
             ] = f"{[coarse_array.shape for coarse_array in coarse_arrays]}".rjust(
-                35
+                70
             )
             if elapsed % 25 == 0:
                 hlines = "".join(
