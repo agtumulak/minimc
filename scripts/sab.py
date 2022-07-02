@@ -734,6 +734,10 @@ def marginalize(s, axis="beta"):
         followed by alpha.
     axis : {'alpha', 'beta'}, optional
         The axis of the resulting univariate PDF
+
+    Todo
+    ----
+    Fix issue where values probability mass near edges is dropped/ignored
     """
     return s.groupby(axis).apply(
         lambda s: np.trapz(s.values, s.index.droplevel(axis))
