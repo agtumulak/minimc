@@ -1601,7 +1601,7 @@ def to_svd_dfs(
         index=pd.MultiIndex.from_product([range(order)], names=["order"]),
     )
     V_df = pd.DataFrame(
-        {"coefficient": Vt[:order,:].T.flatten()},
+        {"coefficient": Vt[:order, :].T.flatten()},
         index=pd.MultiIndex.from_product(
             [df.columns.unique(0), df.columns.unique(1), range(order)],
             names=[
