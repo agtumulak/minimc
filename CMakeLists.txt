@@ -88,7 +88,7 @@ ExternalProject_Add(
   BINARY_DIR ${PUGI_BINARY_DIR}
   INSTALL_DIR ${PUGI_INSTALL_DIR}
   GIT_REPOSITORY https://github.com/zeux/pugixml.git
-  GIT_TAG v1.11
+  GIT_TAG v1.12.1
   UPDATE_COMMAND ""
   CMAKE_ARGS
     -DBUILD_SHARED_LIBS:BOOL=OFF
