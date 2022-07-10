@@ -3,7 +3,9 @@
 #include "Statistics.hpp"
 #include "World.hpp"
 #include "XMLDocument.hpp"
-#include "catch2/catch.hpp"
+#include "catch2/catch_test_macros.hpp"
+#include "catch2/matchers/catch_matchers.hpp"
+#include "catch2/matchers/catch_matchers_floating_point.hpp"
 
 #include <cmath>
 #include <cstddef>
@@ -16,8 +18,9 @@ TEST_CASE("point source leakage probability") {
   const auto estimated_leakage_rate =
       f.Solve().FindEstimatorByName("leakage").GetScore(0, samples);
   auto expected_leakage_rate = std::exp(-1);
-  REQUIRE(
-      estimated_leakage_rate ==
-      Approx(expected_leakage_rate)
-          .epsilon(epsilon::Bernoulli(expected_leakage_rate, samples)));
+  REQUIRE_THAT(
+      estimated_leakage_rate,
+      Catch::Matchers::WithinRel(
+          expected_leakage_rate,
+          epsilon::Bernoulli(expected_leakage_rate, samples)));
 }

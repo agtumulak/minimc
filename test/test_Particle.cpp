@@ -3,9 +3,12 @@
 #include "Point.hpp"
 #include "World.hpp"
 #include "XMLDocument.hpp"
-#include "catch2/catch.hpp"
+#include "catch2/catch_test_macros.hpp"
+#include "catch2/matchers/catch_matchers.hpp"
+#include "catch2/matchers/catch_matchers_exception.hpp"
 
 #include <variant>
+#include <stdexcept>
 
 TEST_CASE("Energy and Type constructor") {
   Particle p{Point{}, Direction{1, 0, 0}, Group{42}, Particle::Type::photon, 1};
@@ -24,7 +27,9 @@ TEST_CASE("Particle Cell can be assigned") {
   XMLDocument doc{"multigroup.xml"};
   const auto w{World{doc.root}};
   Particle p{Point{}, Direction{1, 0, 0}, Group{1}, Particle::Type::neutron, 1};
-  REQUIRE_THROWS_WITH(p.GetCell(), "Particle does not belong to a Cell");
+  REQUIRE_THROWS_MATCHES(
+      p.GetCell(), std::runtime_error,
+      Catch::Matchers::Message("Particle does not belong to a Cell"));
   p.SetCell(w.cells.front());
   REQUIRE(p.GetCell() == w.cells.front());
 }

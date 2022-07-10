@@ -5,7 +5,9 @@
 #include "Point.hpp"
 #include "World.hpp"
 #include "XMLDocument.hpp"
-#include "catch2/catch.hpp"
+#include "catch2/catch_test_macros.hpp"
+#include "catch2/matchers/catch_matchers.hpp"
+#include "catch2/matchers/catch_matchers_floating_point.hpp"
 
 TEST_CASE("Cell is constructed properly") {
   XMLDocument doc{"multigroup.xml"};
@@ -21,6 +23,6 @@ TEST_CASE("Cell is constructed properly") {
     const auto& [surface, distance] =
         inner_shell.NearestSurface(Point{1.5, 0, 0}, Direction{1, 0, 0});
     REQUIRE(surface->name == "middle shell");
-    REQUIRE(distance == Approx(0.5));
+    REQUIRE_THAT(distance, Catch::Matchers::WithinRel(0.5));
   }
 }

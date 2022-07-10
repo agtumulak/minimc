@@ -1,7 +1,7 @@
 #include "FixedSource.hpp"
 #include "World.hpp"
 #include "XMLDocument.hpp"
-#include "catch2/catch.hpp"
+#include "catch2/catch_test_macros.hpp"
 
 TEST_CASE("thermal scattering") {
   XMLDocument doc{"test_ThermalScattering.xml"};

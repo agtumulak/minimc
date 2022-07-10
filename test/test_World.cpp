@@ -1,9 +1,8 @@
 #include "CSGSurface.hpp"
+#include "Point.hpp"
 #include "World.hpp"
 #include "XMLDocument.hpp"
-#include "catch2/catch.hpp"
-
-#include <algorithm>
+#include "catch2/catch_test_macros.hpp"
 
 TEST_CASE("construct a World") {
   XMLDocument doc{"multigroup.xml"};
@@ -39,12 +38,12 @@ TEST_CASE("World is constructed properly") {
       [](const auto& pair) { return pair.first->name == "inner sphere"; });
   REQUIRE(pit_outer_sphere.first == inner_shell_inner_sphere.first);
 
-  SECTION("FindCellContaining() finds correct Cell containing Point"){
-    REQUIRE(w.FindCellContaining(Point{0,0,0}) == pit);
-    REQUIRE(w.FindCellContaining(Point{0.5,0,0}) == pit);
-    REQUIRE(w.FindCellContaining(Point{1,0,0}) == inner_shell);
-    REQUIRE(w.FindCellContaining(Point{1.5,0,0}) == inner_shell);
-    REQUIRE(w.FindCellContaining(Point{2,0,0}) == outer_shell);
-    REQUIRE(w.FindCellContaining(Point{2.5,0,0}) == outer_shell);
+  SECTION("FindCellContaining() finds correct Cell containing Point") {
+    REQUIRE(w.FindCellContaining(Point{0, 0, 0}) == pit);
+    REQUIRE(w.FindCellContaining(Point{0.5, 0, 0}) == pit);
+    REQUIRE(w.FindCellContaining(Point{1, 0, 0}) == inner_shell);
+    REQUIRE(w.FindCellContaining(Point{1.5, 0, 0}) == inner_shell);
+    REQUIRE(w.FindCellContaining(Point{2, 0, 0}) == outer_shell);
+    REQUIRE(w.FindCellContaining(Point{2.5, 0, 0}) == outer_shell);
   }
 }

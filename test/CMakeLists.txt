@@ -1,9 +1,9 @@
-# https://github.com/catchorg/Catch2/blob/devel/docs/cmake-integration.md#cmake-target
+# https://github.com/catchorg/Catch2/blob/devel/docs/cmake-integration.md#cmake-targets
 Include(FetchContent)
 FetchContent_Declare(
   catch_download
   GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-  GIT_TAG v2.13.3
+  GIT_TAG v3.0.1
   )
 FetchContent_MakeAvailable(catch_download)
 
@@ -21,9 +21,8 @@ set(UNIT_TEST_SOURCES
   test_XMLDocument.cpp
   test_World.cpp
   )
-# https://github.com/catchorg/Catch2/blob/devel/docs/slow-compiles.md
-add_executable(all_tests catch_main.cpp ${UNIT_TEST_SOURCES})
-target_link_libraries(all_tests Catch2::Catch2 minimc)
+add_executable(all_tests ${UNIT_TEST_SOURCES})
+target_link_libraries(all_tests PRIVATE Catch2::Catch2WithMain minimc)
 
 # add new unit test input files here
 set(UNIT_TEST_INPUTS
