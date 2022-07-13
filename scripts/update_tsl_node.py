@@ -3,7 +3,7 @@
 import subprocess
 import pandas as pd
 import tempfile
-from pyminimc import util
+from pyminimc import util, pdf
 import xml.etree.ElementTree as ET
 
 from os.path import join
@@ -37,11 +37,9 @@ tsl_node_path = "nuclides/continuous/nuclide/neutron/scatter/tsl"
 if (tsl_node := tree.find(tsl_node_path)) is None:
     raise RuntimeError(f"node not found: {tsl_node_path}")
 
-with (
-    tempfile.TemporaryDirectory() as tmpdir,
-    tempfile.NamedTemporaryFile(dir=tmpdir) as modified_inputfile,
-):
+with tempfile.TemporaryDirectory() as tmpdir:
     print(f"Working in temporary directory: {tmpdir}")
+    # modify input file
     for name, V_attribute in zip(["alpha", "beta"], ["beta_T", "E_T"]):
         partitions_node_name = f"{name}_partitions"
         if (partitions_node := tsl_node.find(partitions_node_name)) is not None:
@@ -64,11 +62,29 @@ with (
                 partition_node.set(attribute, df_path)
             partitions_node.append(partition_node)
         tsl_node.append(partitions_node)
-    tree.write(modified_inputfile)
-    modified_inputfile.flush()  # stackoverflow.com/a/9422590/5101335
-    subprocess.run(
-        [
-            "/Users/atumulak/Developer/minimc/build/src/runminimc",
-            modified_inputfile.name,
-        ]
-    )
+    with tempfile.NamedTemporaryFile(dir=tmpdir) as modified_inputfile:
+        tree.write(modified_inputfile)
+        modified_inputfile.flush()  # stackoverflow.com/a/9422590/5101335
+        # run minimc and parse output
+        subprocess.run(
+            [
+                "/Users/atumulak/Developer/minimc/build/src/runminimc",
+                modified_inputfile.name,
+            ]
+        )
+        energy_node_path = "problemtype/fixedsource/energy/constant"
+        if (energy_node := tree.find(energy_node_path)) is None or (
+            energy := energy_node.get("energy")
+        ) is None:
+            raise RuntimeError(f"missing node or attribute: {energy_node_path}")
+        temperature_node_path = "temperature/constant"
+        if (temperature_node := tree.find(temperature_node_path)) is None or (
+            temperature := temperature_node.get("c")
+        ) is None:
+            raise RuntimeError(
+                f"missing node or attribute: {temperature_node_path}"
+            )
+        minimc_df = pdf.get_pdf_minimc(
+            join(tmpdir, "minimc.out"), 1e6 * float(energy), float(temperature)
+        )
+        series = util.marginalize(minimc_df)
