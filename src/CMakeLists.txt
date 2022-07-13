@@ -68,7 +68,8 @@ target_compile_options(minimc PUBLIC
   $<$<AND:$<CONFIG:Release>,$<CXX_COMPILER_ID:Clang,GNU>>:-O3>)
 target_link_options(minimc PUBLIC
   $<$<AND:$<CONFIG:Debug>,$<BOOL:${APPLE}>>:-fprofile-instr-generate>)
-target_link_libraries(minimc xerces pugixml hdf5_cpp)
+# https://pybind11.readthedocs.io/en/stable/compiling.html#advanced-interface-library-targets
+target_link_libraries(minimc xerces pugixml hdf5_cpp pybind11::embed)
 set_target_properties(minimc PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
   )

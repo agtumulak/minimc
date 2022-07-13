@@ -147,6 +147,31 @@ set_target_properties(hdf5_cpp PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${HDF5_INCLUDE_DIR})
 target_link_libraries(hdf5_cpp INTERFACE hdf5)
 
+# add pybind11
+Include(FetchContent)
+FetchContent_Declare(
+  pybind11_download
+  GIT_REPOSITORY https://github.com/pybind/pybind11.git
+  GIT_TAG v2.9.2
+  )
+FetchContent_MakeAvailable(pybind11_download)
+
+
+set(Python_EXECUTABLE "/Users/atumulak/.local/share/virtualenvs/pyminimc-tdgjIrhJ/bin/python")
+set(Python_INCLUDE_DIRS "/opt/homebrew/opt/python@3.10/Frameworks/Python.framework/Versions/3.10/include/python3.10")
+set(Python_LIBRARY "/Users/atumulak/.local/share/virtualenvs/pyminimc-tdgjIrhJ/lib")
+
+# https://pybind11.readthedocs.io/en/stable/compiling.html#findpython-mode
+find_package(Python COMPONENTS Interpreter Development REQUIRED)
+# https://pybind11.readthedocs.io/en/latest/compiling.html#building-with-cmake
+add_subdirectory(${pybind11_SOURCE_DIR})
+
+
+message(${Python_INCLUDE_DIRS})
+message(${Python_LIBRARIES})
+message(${Python_LIBRARY_DIRS})
+message(${Python_RUNTIME_LIBRARY_DIRS})
+
 add_subdirectory(src)
 add_subdirectory(test)
 add_subdirectory(doc)
