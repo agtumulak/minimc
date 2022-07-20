@@ -83,7 +83,7 @@ size_t LinspaceBins::GetIndex(const Real& v) const noexcept {
 
 std::string LinspaceBins::to_string() const noexcept {
   std::stringstream sstream;
-  for (size_t i = 0; i < n_bins - 2; i++) {
+  for (size_t i = 0; i < n_bins - 1; i++) {
     sstream << std::scientific << lower_bound + i * bin_width << ", ";
   }
   return sstream.str();
@@ -124,7 +124,7 @@ size_t LogspaceBins::GetIndex(const Real& v) const noexcept {
 
 std::string LogspaceBins::to_string() const noexcept {
   std::stringstream sstream;
-  for (size_t i = 0; i < n_bins - 2; i++) {
+  for (size_t i = 0; i < n_bins - 1; i++) {
     sstream << std::scientific
             << std::pow(base, log_lower_bound + i * log_bin_width) << ", ";
   }
