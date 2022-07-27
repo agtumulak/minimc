@@ -31,7 +31,7 @@ EstimatorSet FixedSource::Solve() {
   for (auto& worker_estimator_set : worker_estimator_sets) {
     solver_estimator_set += worker_estimator_set.get();
   }
-  std::cout << '\r' << "Done!          " << std::endl;
+  std::cout << '\r' << "Done!                   " << std::endl;
   return solver_estimator_set;
 }
 

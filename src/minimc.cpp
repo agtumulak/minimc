@@ -14,10 +14,13 @@ int main(int argc, char* argv[]) {
   }
   const std::filesystem::path input_filepath{argv[1]};
   auto driver = Driver::Create(input_filepath);
-  std::ofstream output_file {input_filepath.parent_path() / "minimc.out"};
+  auto output_filepath = input_filepath;
+  std::ofstream output_file {output_filepath.replace_extension(".out")};
   const auto& result = driver->Solve();
   output_file << driver->batchsize << std::endl;
   output_file << result.to_string();
   output_file.close();
+  std::cout << "Output written to "
+            << std::filesystem::absolute(output_filepath) << std::endl;
   return 0;
 }
