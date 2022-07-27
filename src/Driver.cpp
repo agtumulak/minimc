@@ -37,14 +37,15 @@ Driver::Driver(const pugi::xml_node& root)
     : world{root}, perturbations{root.child("perturbations"), world},
       batchsize(
           std::stoi(root.child("general").child("histories").child_value())),
-      init_estimator_set{
-          root.child("estimators"), world, perturbations,
-          static_cast<Real>(batchsize)},
-      threads{std::stoul(root.child("general").child("threads").child_value())},
       seed(std::stoi(
           root.child("general").child("seed")
               ? root.child("general").child("seed").child_value()
-              : "1")) {
+              : "1")),
+      init_estimator_set{
+          root.child("estimators"), world, perturbations,
+          static_cast<Real>(batchsize)},
+      threads{
+          std::stoul(root.child("general").child("threads").child_value())} {
   // All Particle objects will use the selected TransportMethod
   Particle::transport_method = TransportMethod::Create(root, world);
 }

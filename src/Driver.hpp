@@ -37,10 +37,10 @@ protected:
   const PerturbationSet perturbations;
   /// @brief Total histories for fixed-source; cycle weight for k-eigenvalue
   const RNG::result_type batchsize;
+  /// @brief Histories are assigned a seed in [seed, seed + batchsize)
+  const RNG::result_type seed;
   /// @brief Initial value of an EstimatorSet used to initialize workers
   const EstimatorSet init_estimator_set;
   /// @brief Number of threads dedicated to particle transport
   const size_t threads;
-  /// @brief Histories are assigned a seed in [seed, seed + batchsize)
-  const RNG::result_type seed;
 };
