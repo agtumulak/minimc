@@ -17,7 +17,8 @@
 
 std::unique_ptr<Driver>
 Driver::Create(const std::filesystem::path& xml_filepath) {
-  // limit the lifetime of the XMLDocument to input parsing time
+  // Bind the lifetime of the XMLDocument (which may be large) to the scope of
+  // this factory function
   auto doc = std::make_unique<XMLDocument>(xml_filepath);
   const std::string problem_type =
       doc->root.child("problemtype").first_child().name();
