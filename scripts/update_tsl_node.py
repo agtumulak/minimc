@@ -1,37 +1,42 @@
 #!/usr/bin/env python
 
-import subprocess
 import pandas as pd
+import subprocess
 import tempfile
-from pyminimc import util, pdf
 import xml.etree.ElementTree as ET
-
+from matplotlib import pyplot as plt
 from os.path import join
+from pyminimc import util, estimator
 
+
+mcnp = estimator.MCNP(
+    "/Users/atumulak/Developer/mcnp6-runs/single_zone/single_zone.mctal"
+)
+mcnp.plot("energy")
 
 # read coarsened DataFrames
 alpha_beta_partitions = {
     "alpha_partitions": [
         pd.DataFrame(
             pd.read_hdf(
-                f"/Users/atumulak/Developer/minimc/data/tsl/endfb8/dfs/alpha_{i}.hdf5"
+                f"/Users/atumulak/Developer/minimc/data/tsl/endfb8/dfs/alpha_full.hdf5"
             )
         )
-        for i in range(4)
+        for i in range(1)
     ],
     "beta_partitions": [
         pd.DataFrame(
             pd.read_hdf(
-                f"/Users/atumulak/Developer/minimc/data/tsl/endfb8/dfs/beta_{i}.hdf5"
+                f"/Users/atumulak/Developer/minimc/data/tsl/endfb8/dfs/beta_full.hdf5"
             )
         )
-        for i in range(4)
+        for i in range(1)
     ],
 }
 
 
 # load input file to be modified
-inputfilepath = "/Users/atumulak/Developer/minimc/benchmarks/broomstick.xml"
+inputfilepath = "/Users/atumulak/Developer/minimc/benchmarks/single_zone.xml"
 tree = ET.parse(inputfilepath)
 tsl_node_path = "nuclides/continuous/nuclide/neutron/scatter/tsl"
 if (tsl_node := tree.find(tsl_node_path)) is None:
@@ -53,7 +58,8 @@ with tempfile.TemporaryDirectory() as tmpdir:
         ):
             partition_node = ET.Element("partition")
             for attribute, df in zip(
-                ["CDF", "S", V_attribute], util.to_svd_dfs(full_df)
+                ["CDF", "S", V_attribute],
+                util.to_svd_dfs(full_df, order=10),
             ):
                 df_path = join(tmpdir, f"{name}_{i}_{attribute}.hdf5")
                 # save to temporary directory
@@ -62,7 +68,7 @@ with tempfile.TemporaryDirectory() as tmpdir:
                 partition_node.set(attribute, df_path)
             partitions_node.append(partition_node)
         tsl_node.append(partitions_node)
-    with tempfile.NamedTemporaryFile(dir=tmpdir) as modified_inputfile:
+    with open(join(tmpdir, "minimc.inp"), "wb") as modified_inputfile:
         tree.write(modified_inputfile)
         modified_inputfile.flush()  # stackoverflow.com/a/9422590/5101335
         # run minimc and parse output
@@ -77,6 +83,8 @@ with tempfile.TemporaryDirectory() as tmpdir:
             energy := energy_node.get("energy")
         ) is None:
             raise RuntimeError(f"missing node or attribute: {energy_node_path}")
+        else:
+            energy = float(energy)
         temperature_node_path = "temperature/constant"
         if (temperature_node := tree.find(temperature_node_path)) is None or (
             temperature := temperature_node.get("c")
@@ -84,7 +92,10 @@ with tempfile.TemporaryDirectory() as tmpdir:
             raise RuntimeError(
                 f"missing node or attribute: {temperature_node_path}"
             )
-        minimc_df = pdf.get_pdf_minimc(
-            join(tmpdir, "minimc.out"), 1e6 * float(energy), float(temperature)
-        )
-        series = util.marginalize(minimc_df)
+        else:
+            temperature = float(temperature)
+        minimc = estimator.MiniMC(join(tmpdir, "minimc.out"))
+        minimc.plot("energy")
+
+plt.legend()
+plt.show()
