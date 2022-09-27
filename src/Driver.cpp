@@ -17,7 +17,8 @@
 
 std::unique_ptr<Driver>
 Driver::Create(const std::filesystem::path& xml_filepath) {
-  // limit the lifetime of the XMLDocument to input parsing time
+  // Bind the lifetime of the XMLDocument (which may be large) to the scope of
+  // this factory function
   auto doc = std::make_unique<XMLDocument>(xml_filepath);
   const std::string problem_type =
       doc->root.child("problemtype").first_child().name();
@@ -37,14 +38,15 @@ Driver::Driver(const pugi::xml_node& root)
     : world{root}, perturbations{root.child("perturbations"), world},
       batchsize(
           std::stoi(root.child("general").child("histories").child_value())),
-      init_estimator_set{
-          root.child("estimators"), world, perturbations,
-          static_cast<Real>(batchsize)},
-      threads{std::stoul(root.child("general").child("threads").child_value())},
       seed(std::stoi(
           root.child("general").child("seed")
               ? root.child("general").child("seed").child_value()
-              : "1")) {
+              : "1")),
+      init_estimator_set{
+          root.child("estimators"), world, perturbations,
+          static_cast<Real>(batchsize)},
+      threads{
+          std::stoul(root.child("general").child("threads").child_value())} {
   // All Particle objects will use the selected TransportMethod
   Particle::transport_method = TransportMethod::Create(root, world);
 }

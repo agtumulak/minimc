@@ -4,27 +4,40 @@
 #include "Point.hpp"
 #include "World.hpp"
 #include "XMLDocument.hpp"
-#include "catch2/catch.hpp"
+#include "catch2/catch_test_macros.hpp"
+#include "catch2/matchers/catch_matchers.hpp"
+#include "catch2/matchers/catch_matchers_exception.hpp"
+#include "catch2/matchers/catch_matchers_floating_point.hpp"
+
+#include <stdexcept>
 
 TEST_CASE("nonexistent nuclide name throws exception") {
-  REQUIRE_THROWS_WITH(
+  REQUIRE_THROWS_MATCHES(
       World{XMLDocument{"multigroup_nonexistent_nuclide.xml"}.root},
-      "Nuclide node \"nonexistent\" not found. Must be one of: "
-      "[\"nuclide A\", \"nuclide B\", ]");
+      std::runtime_error,
+      Catch::Matchers::Message(
+          "Nuclide node \"nonexistent\" not found. Must be one of: "
+          "[\"nuclide A\", \"nuclide B\", ]"));
 }
 
 TEST_CASE("malformed multigroup data for Nuclide throws exception") {
-  REQUIRE_THROWS_WITH(
+  REQUIRE_THROWS_MATCHES(
       World{XMLDocument{"multigroup_malformed_capture.xml"}.root},
-      "/minimc/nuclides/multigroup/nuclide/neutron/capture: Expected 2 entries "
-      "but got 3");
-  REQUIRE_THROWS_WITH(
+      std::runtime_error,
+      Catch::Matchers::Message("/minimc/nuclides/multigroup/nuclide/neutron/"
+                               "capture: Expected 2 entries "
+                               "but got 3"));
+  REQUIRE_THROWS_MATCHES(
       World{XMLDocument{"multigroup_malformed_scatter.xml"}.root},
-      "/minimc/nuclides/multigroup/nuclide/neutron/scatter: Expected 4 entries "
-      "but got 5");
-  REQUIRE_THROWS_WITH(
+      std::runtime_error,
+      Catch::Matchers::Message("/minimc/nuclides/multigroup/nuclide/neutron/"
+                               "scatter: Expected 4 entries "
+                               "but got 5"));
+  REQUIRE_THROWS_MATCHES(
       World{XMLDocument{"multigroup_missing_particle_data.xml"}.root},
-      "/minimc/nuclides/multigroup/nuclide: \"neutron\" node not found");
+      std::runtime_error,
+      Catch::Matchers::Message(
+          "/minimc/nuclides/multigroup/nuclide: \"neutron\" node not found"));
 }
 
 TEST_CASE("Nuclide member methods work properly") {
@@ -80,12 +93,16 @@ TEST_CASE("Nuclide member methods work properly") {
             .select_node(
                 "/minimc/nuclides/continuous/nuclide[@name='uranium235']")
             .node()};
-    REQUIRE_THROWS_WITH(
+    REQUIRE_THROWS_MATCHES(
         World{XMLDocument{"continuous_invalid_nuclide_data_path.xml"}.root},
-        "File not found: /not/real");
+        std::runtime_error,
+        Catch::Matchers::Message("File not found: /not/real"));
 
-    REQUIRE(hydrogen.GetTotal(neutron) == Approx(20.74794504));
-    REQUIRE(oxygen.GetTotal(neutron) == Approx(3.796959472 ));
-    REQUIRE(uranium235.GetTotal(neutron) == Approx(92.35753856));
+    REQUIRE_THAT(
+        hydrogen.GetTotal(neutron), Catch::Matchers::WithinRel(20.74794504));
+    REQUIRE_THAT(
+        oxygen.GetTotal(neutron), Catch::Matchers::WithinRel(3.796959472));
+    REQUIRE_THAT(
+        uranium235.GetTotal(neutron), Catch::Matchers::WithinRel(92.35753856));
   }
 }

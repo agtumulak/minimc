@@ -35,12 +35,17 @@ protected:
   /// @brief All perturbations whose effect on one or more Estimator objects is
   ///        being estimated
   const PerturbationSet perturbations;
+
+public:
   /// @brief Total histories for fixed-source; cycle weight for k-eigenvalue
+  ///        (C++ Core Guidelines C.131)
   const RNG::result_type batchsize;
+
+protected:
+  /// @brief Histories are assigned a seed in [seed, seed + batchsize)
+  const RNG::result_type seed;
   /// @brief Initial value of an EstimatorSet used to initialize workers
   const EstimatorSet init_estimator_set;
   /// @brief Number of threads dedicated to particle transport
   const size_t threads;
-  /// @brief Histories are assigned a seed in [seed, seed + batchsize)
-  const RNG::result_type seed;
 };
