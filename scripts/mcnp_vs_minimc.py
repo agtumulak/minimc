@@ -5,11 +5,13 @@ from matplotlib import pyplot as plt
 from pyminimc import util, estimator
 
 
-mcnp = estimator.MCNP(
-    "/Users/atumulak/Developer/mcnp6-runs/single_zone/single_zone.mctal"
+mcnp = (
+    estimator.MCNP(
+        "/Users/atumulak/Developer/mcnp6-runs/single_zone/single_zone.mctal"
+    )
+    .marginalize("energy")
+    .plot(label="MCNP")
 )
-mcnp.plot("energy")
-
 
 util.run_minimc_with_tsl(
     "/Users/atumulak/Developer/minimc/build/src/runminimc",
@@ -30,7 +32,7 @@ util.run_minimc_with_tsl(
         )
         for i in range(4)
     ],
-).plot("energy")
+).marginalize("energy").plot(label="MiniMC")
 
 plt.legend()
 plt.show()
