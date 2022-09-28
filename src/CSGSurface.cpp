@@ -77,11 +77,11 @@ Real CSGSurface::SolveQuadratic(Real a, Real b, Real c) noexcept {
   }
   // avoid catastrophic cancellation by using different expressions
   const Real lesser{
-      b > 0 ? (-b - std::sqrtf(discriminant)) / (2 * a)
-            : (2 * c) / (-b + std::sqrtf(discriminant))};
+      b > 0 ? (-b - std::sqrt(discriminant)) / (2 * a)
+            : (2 * c) / (-b + std::sqrt(discriminant))};
   const Real greater{
-      b > 0 ? (2 * c) / (-b - std::sqrtf(discriminant))
-            : (-b + std::sqrtf(discriminant)) / (2 * a)};
+      b > 0 ? (2 * c) / (-b - std::sqrt(discriminant))
+            : (-b + std::sqrt(discriminant)) / (2 * a)};
   if (lesser > 0) {
     // Outside sphere; headed towards sphere
     return lesser;
