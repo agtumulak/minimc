@@ -145,7 +145,7 @@ add_library(hdf5_cpp STATIC IMPORTED)
 set_target_properties(hdf5_cpp PROPERTIES
   IMPORTED_LOCATION ${HDF5_STATIC_LIBRARY_PREFIX}hdf5_cpp${HDF5_STATIC_LIBRARY_SUFFIX}
   INTERFACE_INCLUDE_DIRECTORIES ${HDF5_INCLUDE_DIR})
-target_link_libraries(hdf5_cpp INTERFACE hdf5)
+target_link_libraries(hdf5_cpp INTERFACE hdf5 ${CMAKE_DL_LIBS}) # https://stackoverflow.com/a/56842079/5101335
 
 add_subdirectory(src)
 add_subdirectory(test)
