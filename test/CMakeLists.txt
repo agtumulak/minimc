@@ -24,26 +24,67 @@ set(UNIT_TEST_SOURCES
 add_executable(all_tests ${UNIT_TEST_SOURCES})
 target_link_libraries(all_tests PRIVATE Catch2::Catch2WithMain minimc)
 
-# add new unit test input files here
+# Add unit test input files here
+# Prefixes are stripped so duplicate filenames must not appear
 set(UNIT_TEST_INPUTS
-  continuous.xml
-  continuous_invalid_nuclide_data_path.xml
-  minimc.xsd
-  minimc_basictypes.xsd
-  multigroup.xml
-  multigroup_malformed_capture.xml
-  multigroup_malformed_scatter.xml
-  multigroup_missing_particle_data.xml
-  multigroup_nonexistent_nuclide.xml
-  point_source_leakage.xml
-  test_HDF5_valid.hdf5
-  test_HDF5_invalid.hdf5
-  test_ThermalScattering.xml
-  test_XMLDocument.xsd
-  test_XMLDocument_valid.xml
-  test_XMLDocument_invalid.xml
+  data/endfb8/n-H1_0-total.hdf5
+  data/endfb8/n-H1_0-gamma.hdf5
+  data/endfb8/n-H1_0-elastic.hdf5
+  data/endfb8/n-O16_0-total.hdf5
+  data/endfb8/n-O16_0-gamma.hdf5
+  data/endfb8/n-O16_0-elastic.hdf5
+  data/endfb8/n-U235_0-total.hdf5
+  data/endfb8/n-U235_0-gamma.hdf5
+  data/endfb8/n-U235_0-elastic.hdf5
+  data/endfb8/n-U235_0-fission.hdf5
+  data/endfb8/n-U235_0-nubar.hdf5
+  data/tsl/endfb8/majorant_endfb8_safety_factor_1.05.hdf5
+  data/tsl/endfb8/scatter_xs_endfb8_T_coeffs.hdf5
+  data/tsl/endfb8/scatter_xs_endfb8_S_coeffs.hdf5
+  data/tsl/endfb8/scatter_xs_endfb8_E_coeffs.hdf5
+  data/tsl/endfb8/beta_endfb8_0_CDF_coeffs.hdf5
+  data/tsl/endfb8/beta_endfb8_1_CDF_coeffs.hdf5
+  data/tsl/endfb8/beta_endfb8_2_CDF_coeffs.hdf5
+  data/tsl/endfb8/beta_endfb8_3_CDF_coeffs.hdf5
+  data/tsl/endfb8/beta_endfb8_0_S_coeffs.hdf5
+  data/tsl/endfb8/beta_endfb8_1_S_coeffs.hdf5
+  data/tsl/endfb8/beta_endfb8_2_S_coeffs.hdf5
+  data/tsl/endfb8/beta_endfb8_3_S_coeffs.hdf5
+  data/tsl/endfb8/beta_endfb8_0_E_T_coeffs.hdf5
+  data/tsl/endfb8/beta_endfb8_1_E_T_coeffs.hdf5
+  data/tsl/endfb8/beta_endfb8_2_E_T_coeffs.hdf5
+  data/tsl/endfb8/beta_endfb8_3_E_T_coeffs.hdf5
+  data/tsl/endfb8/alpha_endfb8_0_CDF_coeffs.hdf5
+  data/tsl/endfb8/alpha_endfb8_1_CDF_coeffs.hdf5
+  data/tsl/endfb8/alpha_endfb8_2_CDF_coeffs.hdf5
+  data/tsl/endfb8/alpha_endfb8_3_CDF_coeffs.hdf5
+  data/tsl/endfb8/alpha_endfb8_0_S_coeffs.hdf5
+  data/tsl/endfb8/alpha_endfb8_1_S_coeffs.hdf5
+  data/tsl/endfb8/alpha_endfb8_2_S_coeffs.hdf5
+  data/tsl/endfb8/alpha_endfb8_3_S_coeffs.hdf5
+  data/tsl/endfb8/alpha_endfb8_0_beta_T_coeffs.hdf5
+  data/tsl/endfb8/alpha_endfb8_1_beta_T_coeffs.hdf5
+  data/tsl/endfb8/alpha_endfb8_2_beta_T_coeffs.hdf5
+  data/tsl/endfb8/alpha_endfb8_3_beta_T_coeffs.hdf5
+  test/continuous.xml
+  test/continuous_invalid_nuclide_data_path.xml
+  test/minimc.xsd
+  test/minimc_basictypes.xsd
+  test/multigroup.xml
+  test/multigroup_malformed_capture.xml
+  test/multigroup_malformed_scatter.xml
+  test/multigroup_missing_particle_data.xml
+  test/multigroup_nonexistent_nuclide.xml
+  test/point_source_leakage.xml
+  test/test_HDF5_valid.hdf5
+  test/test_HDF5_invalid.hdf5
+  test/test_ThermalScattering.xml
+  test/test_XMLDocument.xsd
+  test/test_XMLDocument_valid.xml
+  test/test_XMLDocument_invalid.xml
   )
-list(TRANSFORM UNIT_TEST_INPUTS PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/)
+
+list(TRANSFORM UNIT_TEST_INPUTS PREPEND ${CMAKE_SOURCE_DIR}/)
 add_custom_target(
   copy_xml_inputs ALL
   COMMAND ${CMAKE_COMMAND} -E copy_if_different ${UNIT_TEST_INPUTS} ${CMAKE_CURRENT_BINARY_DIR}

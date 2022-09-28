@@ -11,32 +11,32 @@
   <continuous>
     <nuclide name="hydrogen" awr="0.999167339">
       <neutron>
-        <total file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-total.hdf5" temperature="293.6"/>
-        <capture file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-gamma.hdf5" temperature="293.6"/>
+        <total file="n-H1_0-total.hdf5" temperature="293.6"/>
+        <capture file="n-H1_0-gamma.hdf5" temperature="293.6"/>
         <scatter>
-          <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-elastic.hdf5" temperature="293.6"/>
+          <xs file="n-H1_0-elastic.hdf5" temperature="293.6"/>
         </scatter>
       </neutron>
     </nuclide>
     <nuclide name="oxygen" awr="15.8575107">
       <neutron>
-        <total file="/Users/atumulak/Developer/minimc/data/endfb8/n-O16_0-total.hdf5" temperature="293.6"/>
-        <capture file="/Users/atumulak/Developer/minimc/data/endfb8/n-O16_0-gamma.hdf5" temperature="293.6"/>
+        <total file="n-O16_0-total.hdf5" temperature="293.6"/>
+        <capture file="n-O16_0-gamma.hdf5" temperature="293.6"/>
         <scatter>
-          <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-O16_0-elastic.hdf5" temperature="293.6"/>
+          <xs file="n-O16_0-elastic.hdf5" temperature="293.6"/>
         </scatter>
       </neutron>
     </nuclide>
     <nuclide name="uranium235" awr="233.024791">
       <neutron>
-        <total file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-total.hdf5" temperature="293.6"/>
-        <capture file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-gamma.hdf5" temperature="293.6"/>
+        <total file="n-U235_0-total.hdf5" temperature="293.6"/>
+        <capture file="n-U235_0-gamma.hdf5" temperature="293.6"/>
         <scatter>
-          <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-elastic.hdf5" temperature="293.6"/>
+          <xs file="n-U235_0-elastic.hdf5" temperature="293.6"/>
         </scatter>
         <fission>
-          <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-fission.hdf5" temperature="293.6"/>
-          <nubar file="/Users/atumulak/Developer/minimc/data/endfb8/n-U235_0-nubar.hdf5" temperature="293.6"/>
+          <xs file="n-U235_0-fission.hdf5" temperature="293.6"/>
+          <nubar file="n-U235_0-nubar.hdf5" temperature="293.6"/>
         </fission>
       </neutron>
     </nuclide>
