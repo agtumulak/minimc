@@ -19,6 +19,7 @@ endif()
 
 # platform-dependent setup
 if (MSVC AND (CMAKE_BUILD_TYPE MATCHES "Debug"))
+  add_compile_definitions(_USE_MATH_DEFINES) # https://stackoverflow.com/a/63810121/5101335
   set(CMAKE_DEBUG_POSTFIX "D")
 endif()
 
