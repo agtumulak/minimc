@@ -4,6 +4,8 @@
 #include "XMLDocument.hpp"
 #include "catch2/catch_test_macros.hpp"
 
+#include <algorithm>
+
 TEST_CASE("construct a World") {
   XMLDocument doc{"multigroup.xml"};
   REQUIRE_NOTHROW(World{doc.root});

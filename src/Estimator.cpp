@@ -6,6 +6,7 @@
 #include "World.hpp"
 #include "pugixml.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <numeric>
 #include <ostream>
