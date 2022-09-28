@@ -5,11 +5,6 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        include:
-          - os: ubuntu-latest
-            cc_compiler: gcc-10
-            cxx_compiler: g++-10
-          - os: windows-latest
     runs-on: ${{matrix.os}}
     steps:
     - uses: actions/checkout@v2

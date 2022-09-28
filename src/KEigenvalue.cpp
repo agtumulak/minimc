@@ -58,6 +58,7 @@ EstimatorSet KEigenvalue::Solve() {
     // // swap fission and source bank
     // std::swap(cycle_outcome.banked, source_bank);
   }
+  return solver_estimators;
 }
 
 //// private

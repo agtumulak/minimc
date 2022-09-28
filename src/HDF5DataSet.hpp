@@ -88,10 +88,10 @@ private:
   ReadPandasAxis(const std::filesystem::path& hdf5_filepath) {
     if (!std::filesystem::exists(hdf5_filepath)) {
       throw std::runtime_error(
-          std::string{"File not found: "} + hdf5_filepath.c_str());
+          std::string{"File not found: "} + hdf5_filepath.string());
     }
     std::array<std::vector<double>, D> result;
-    const H5::H5File file{hdf5_filepath, H5F_ACC_RDONLY};
+    const H5::H5File file(hdf5_filepath.string(), H5F_ACC_RDONLY);
     // Read number of levels in pandas MultiIndex
     const auto pandas_group = file.openGroup("/pandas");
     size_t levels;
@@ -99,8 +99,8 @@ private:
         .read(H5::PredType::NATIVE_ULLONG, &levels);
     if (levels != D) {
       throw std::runtime_error(
-          std::string{hdf5_filepath.c_str()} + ": Expected " +
-          std::to_string(D) + " dimensions, but got " + std::to_string(levels));
+          hdf5_filepath.string() + ": Expected " + std::to_string(D) +
+          " dimensions, but got " + std::to_string(levels));
     }
     // Read each axis into result
     for (size_t i = 0; i < D; i++) {
@@ -118,7 +118,7 @@ private:
   static std::vector<double>
   ReadPandasValues(const std::filesystem::path& hdf5_filepath) {
     std::vector<double> result;
-    const H5::H5File file{hdf5_filepath, H5F_ACC_RDONLY};
+    const H5::H5File file(hdf5_filepath.string(), H5F_ACC_RDONLY);
     // Read elements into result
     const auto block_dataset =
         file.openGroup("/pandas").openDataSet("block0_values");

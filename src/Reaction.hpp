@@ -1,6 +1,6 @@
 #pragma once
 
-#include <iosfwd>
+#include <string>
 
 /// @brief All possible (mutually exclusive, so no total) reactions regardless
 ///        of incident particle type

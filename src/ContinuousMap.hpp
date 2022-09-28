@@ -18,7 +18,7 @@ public:
   /// @tparam Args Type of inner keys
   /// @todo Support other interpolation methods
   template <typename... Args>
-  decltype(auto) at(const Key k, Args... inner_keys) const noexcept {
+  T at(const Key k, Args... inner_keys) const noexcept {
     const auto it_hi = elements.upper_bound(k);
     if constexpr (sizeof...(Args) == 0){
       // base case
