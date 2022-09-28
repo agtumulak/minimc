@@ -5,6 +5,7 @@
 #include "catch2/catch_test_macros.hpp"
 
 #include <algorithm>
+#include <iostream>
 
 TEST_CASE("construct a World") {
   XMLDocument doc{"multigroup.xml"};
@@ -32,13 +33,15 @@ TEST_CASE("World is constructed properly") {
   REQUIRE(pit.material != inner_shell.material);
 
   // test dependence of multiple Cell objects on the same CSGSurface
-  const auto& pit_outer_sphere = *std::find_if(
+  const auto& pit_outer_sphere_it = std::find_if(
       pit.surface_senses.cbegin(), pit.surface_senses.cend(),
-      [](const auto& pair) { return pair.first->name == "inner sphere"; });
-  const auto& inner_shell_inner_sphere = *std::find_if(
+      [](const auto& pair) { return pair.first->name == "inner shell"; });
+  REQUIRE(pit_outer_sphere_it != pit.surface_senses.cend());
+  const auto& inner_shell_inner_sphere_it = std::find_if(
       inner_shell.surface_senses.cbegin(), inner_shell.surface_senses.cend(),
-      [](const auto& pair) { return pair.first->name == "inner sphere"; });
-  REQUIRE(pit_outer_sphere.first == inner_shell_inner_sphere.first);
+      [](const auto& pair) { return pair.first->name == "inner shell"; });
+  REQUIRE(inner_shell_inner_sphere_it != inner_shell.surface_senses.cend());
+  REQUIRE(pit_outer_sphere_it->first == inner_shell_inner_sphere_it->first);
 
   SECTION("FindCellContaining() finds correct Cell containing Point") {
     REQUIRE(w.FindCellContaining(Point{0, 0, 0}) == pit);

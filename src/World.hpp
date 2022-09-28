@@ -69,14 +69,14 @@ private:
       const std::vector<std::shared_ptr<const CSGSurface>>& all_surfaces,
       const std::vector<std::shared_ptr<const Material>>& all_materials,
       const std::shared_ptr<const ScalarField> temperature) noexcept;
+
+public:
   // All unique (polymorphic) CSGSurface objects shared among Cell objects
   const std::vector<std::shared_ptr<const CSGSurface>> surfaces;
   // All unique Nuclide objects shared among Material objects
   const std::vector<std::shared_ptr<const Nuclide>> nuclides;
   // All unique Material objects shared among Cell objects
   const std::vector<std::shared_ptr<const Material>> materials;
-
-public:
   /// @brief Global temperature field, if present
   const std::shared_ptr<const ScalarField> temperature;
   /// @brief Cells that appear in the World (C++ Core Guidelines C.131)
