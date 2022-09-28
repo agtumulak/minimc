@@ -5,7 +5,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
-- Replace minimc script with pyminimc submodule
+
+## [0.5.0] - 2022-09-27
+- Implemented Estimator file output
+- Replace minimc script with pyminimc package as submodule
+- Replaced thermal scattering law data with partitioned datasets
+- Added useful extensions from doxygen-awesome-css for documentation
+- Added scripts for comparing adaptive coarsening tolerance against energy
+  spectrum error with respect to MCNP results
+- Migrated to Catch2 v3 for unit testing
+- Migrated to git-lfs for HDF5 files
 
 ## [0.4.0] - 2022-06-12
 - Implemented pipeline for partitioning, removing nonmonotonic CDFs, and
@@ -59,7 +68,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Code is documented with Doxygen
 - Continuous integration is performed with GitHub Actions
 
-[Unreleased]: https://github.com/agtumulak/minimc/compare/v0.4.0...develop
+[Unreleased]: https://github.com/agtumulak/minimc/compare/v0.5.0...develop
+[0.5.0]: https://github.com/agtumulak/minimc/releases/tag/v0.5.0
 [0.4.0]: https://github.com/agtumulak/minimc/releases/tag/v0.4.0
 [0.3.0]: https://github.com/agtumulak/minimc/releases/tag/v0.3.0
 [0.2.0]: https://github.com/agtumulak/minimc/releases/tag/v0.2.0

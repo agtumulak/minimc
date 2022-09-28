@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-project(minimc VERSION 0.4.0)
+project(minimc VERSION 0.5.0)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 17)
 
