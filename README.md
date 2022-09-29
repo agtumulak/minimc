@@ -1,6 +1,8 @@
 # minimc
 A Simple k-Eigenvalue Monte Carlo Code
 
+![develop](https://github.com/agtumulak/minimc/actions/workflows/cmake.yml/badge.svg)
+
 ## ANS 2022
 A Continuous-Temperature Thermal Scattering Treatment Using Proper Orthogonal
 Decomposition
