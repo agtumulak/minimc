@@ -1,0 +1,4 @@
+<map id="Estimator" name="Estimator">
+<area shape="rect" id="node1" title="Contains scores, multipliers, and sensitivities for a quantity of interest." alt="" coords="5,79,84,104"/>
+<area shape="rect" id="node2" href="$class_scorable.html" title="Serves as base class for Estimator and Sensitivity." alt="" coords="8,5,81,31"/>
+</map>

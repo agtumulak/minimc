@@ -1,0 +1,6 @@
+<map id="ContinuousCapture" name="ContinuousCapture">
+<area shape="rect" id="node1" title="Contains data required to perform a capture interaction." alt="" coords="53,271,188,296"/>
+<area shape="rect" id="node2" href="$class_continuous_reaction.html" title="Abstract interface for reactions which update the state of a Particle." alt="" coords="51,196,191,221"/>
+<area shape="rect" id="node3" href="$struct_continuous_evaluation.html" title="Encapsulates all cross section data as well as associated metadata." alt="" coords="46,108,195,133"/>
+<area shape="rect" id="node4" href="$class_continuous_map.html" title=" " alt="" coords="5,5,236,45"/>
+</map>

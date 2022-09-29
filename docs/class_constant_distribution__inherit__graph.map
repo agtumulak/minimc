@@ -1,0 +1,4 @@
+<map id="ConstantDistribution&lt; T &gt;" name="ConstantDistribution&lt; T &gt;">
+<area shape="rect" id="node1" title="Distribution that always returns the same value." alt="" coords="5,79,179,104"/>
+<area shape="rect" id="node2" href="$class_distribution.html" title="Template for distributions which can be sampled with an RNG." alt="" coords="32,5,152,31"/>
+</map>

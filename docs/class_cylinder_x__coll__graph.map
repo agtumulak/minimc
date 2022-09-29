@@ -1,0 +1,4 @@
+<map id="CylinderX" name="CylinderX">
+<area shape="rect" id="node1" title="Infinitely long cylinder coaxial with the x&#45;axis." alt="" coords="14,79,93,104"/>
+<area shape="rect" id="node2" href="$class_c_s_g_surface.html" title="A surface to be used in constructive solid geometry." alt="" coords="5,5,101,31"/>
+</map>

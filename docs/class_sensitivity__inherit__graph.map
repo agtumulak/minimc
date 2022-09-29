@@ -1,0 +1,5 @@
+<map id="Sensitivity" name="Sensitivity">
+<area shape="rect" id="node1" title="Estimates the sensitivity of an Estimator with respect to a Perturbation." alt="" coords="50,79,133,104"/>
+<area shape="rect" id="node3" href="$class_current_total_cross_section_sensitivity.html" title="Estimates the sensitivity of a CurrentEstimator with respect to a TotalCrossSectionPerturbation." alt="" coords="5,152,177,192"/>
+<area shape="rect" id="node2" href="$class_scorable.html" title="Serves as base class for Estimator and Sensitivity." alt="" coords="55,5,128,31"/>
+</map>

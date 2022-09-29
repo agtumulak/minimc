@@ -1,0 +1,5 @@
+<map id="AlphaFirstPartitionFirstSingularValueSensitivity" name="AlphaFirstPartitionFirstSingularValueSensitivity">
+<area shape="rect" id="node1" title="Estimates the sensitivity of a CurrentEstimator with respect to the first singular value of the first..." alt="" coords="5,152,168,192"/>
+<area shape="rect" id="node2" href="$class_sensitivity.html" title="Estimates the sensitivity of an Estimator with respect to a Perturbation." alt="" coords="45,79,128,104"/>
+<area shape="rect" id="node3" href="$class_scorable.html" title="Serves as base class for Estimator and Sensitivity." alt="" coords="50,5,123,31"/>
+</map>

@@ -1,0 +1,7 @@
+<map id="Scorable" name="Scorable">
+<area shape="rect" id="node1" title="Serves as base class for Estimator and Sensitivity." alt="" coords="113,5,187,31"/>
+<area shape="rect" id="node2" href="$class_estimator.html" title="Contains scores, multipliers, and sensitivities for a quantity of interest." alt="" coords="59,79,137,104"/>
+<area shape="rect" id="node4" href="$class_sensitivity.html" title="Estimates the sensitivity of an Estimator with respect to a Perturbation." alt="" coords="178,79,261,104"/>
+<area shape="rect" id="node3" href="$class_current_estimator.html" title="Scores when a Particle crosses a given CSGSurface." alt="" coords="5,159,127,185"/>
+<area shape="rect" id="node5" href="$class_current_total_cross_section_sensitivity.html" title="Estimates the sensitivity of a CurrentEstimator with respect to a TotalCrossSectionPerturbation." alt="" coords="151,152,323,192"/>
+</map>

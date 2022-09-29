@@ -1,0 +1,4 @@
+<map id="ScorableProxy" name="ScorableProxy">
+<area shape="rect" id="node1" title="A lightweight object for accumulating scores for a single history." alt="" coords="8,5,115,31"/>
+<area shape="rect" id="node2" href="$class_estimator_proxy.html" title="A lightweight object for accumulating Estimator scores for a single history." alt="" coords="5,79,117,104"/>
+</map>

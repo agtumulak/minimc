@@ -1,0 +1,6 @@
+<map id="CSGSurface" name="CSGSurface">
+<area shape="rect" id="node1" title="A surface to be used in constructive solid geometry." alt="" coords="93,5,189,31"/>
+<area shape="rect" id="node2" href="$class_cylinder_x.html" title="Infinitely long cylinder coaxial with the x&#45;axis." alt="" coords="5,79,84,104"/>
+<area shape="rect" id="node3" href="$class_plane_x.html" title="Plane perpendicular to the x&#45;axis." alt="" coords="109,79,173,104"/>
+<area shape="rect" id="node4" href="$class_sphere.html" title="A sphere. What else has to be said?" alt="" coords="197,79,260,104"/>
+</map>

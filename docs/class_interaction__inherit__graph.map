@@ -1,0 +1,5 @@
+<map id="Interaction" name="Interaction">
+<area shape="rect" id="node1" title="Models the interaction between a Particle and a Nuclide." alt="" coords="63,5,145,31"/>
+<area shape="rect" id="node2" href="$class_continuous.html" title="Contains cross sections which are indexed by continuous energy values." alt="" coords="5,79,93,104"/>
+<area shape="rect" id="node3" href="$class_multigroup.html" title="Contains cross sections which are indexed by discrete energy groups." alt="" coords="117,79,200,104"/>
+</map>

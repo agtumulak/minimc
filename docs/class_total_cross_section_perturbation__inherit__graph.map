@@ -1,0 +1,4 @@
+<map id="TotalCrossSectionPerturbation" name="TotalCrossSectionPerturbation">
+<area shape="rect" id="node1" title="Models a perturbation in a Nuclide total cross section ." alt="" coords="5,79,204,104"/>
+<area shape="rect" id="node2" href="$class_perturbation.html" title="Models a change in a system parameter." alt="" coords="59,5,151,31"/>
+</map>

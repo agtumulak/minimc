@@ -1,0 +1,5 @@
+<map id="ContinuousReaction" name="ContinuousReaction">
+<area shape="rect" id="node1" title="Abstract interface for reactions which update the state of a Particle." alt="" coords="51,196,191,221"/>
+<area shape="rect" id="node2" href="$struct_continuous_evaluation.html" title="Encapsulates all cross section data as well as associated metadata." alt="" coords="46,108,195,133"/>
+<area shape="rect" id="node3" href="$class_continuous_map.html" title=" " alt="" coords="5,5,236,45"/>
+</map>

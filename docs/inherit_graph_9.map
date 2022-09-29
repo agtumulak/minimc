@@ -1,0 +1,5 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="$class_distribution.html" title=" " alt="" coords="5,31,169,56"/>
+<area shape="rect" id="node2" href="$class_isotropic_distribution.html" title="Returns a point isotropically sampled on the unit sphere." alt="" coords="217,5,356,31"/>
+<area shape="rect" id="node3" href="$class_isotropic_flux.html" title="Returns an isotropic flux with respect to a given Direction." alt="" coords="238,55,335,80"/>
+</map>

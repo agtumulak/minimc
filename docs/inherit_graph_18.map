@@ -1,0 +1,5 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="$class_interaction.html" title="Models the interaction between a Particle and a Nuclide." alt="" coords="5,31,88,56"/>
+<area shape="rect" id="node2" href="$class_continuous.html" title="Contains cross sections which are indexed by continuous energy values." alt="" coords="136,5,224,31"/>
+<area shape="rect" id="node3" href="$class_multigroup.html" title="Contains cross sections which are indexed by discrete energy groups." alt="" coords="139,55,221,80"/>
+</map>

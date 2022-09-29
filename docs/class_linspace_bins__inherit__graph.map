@@ -1,0 +1,4 @@
+<map id="LinspaceBins" name="LinspaceBins">
+<area shape="rect" id="node1" title="A Bin with equally&#45;spaced bin boundaries." alt="" coords="5,79,105,104"/>
+<area shape="rect" id="node2" href="$class_bins.html" title="Partitions &#160;according to user&#45;specified boundaries." alt="" coords="31,5,79,31"/>
+</map>

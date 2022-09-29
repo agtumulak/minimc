@@ -1,0 +1,4 @@
+<map id="PlaneX" name="PlaneX">
+<area shape="rect" id="node1" title="Plane perpendicular to the x&#45;axis." alt="" coords="21,79,85,104"/>
+<area shape="rect" id="node2" href="$class_c_s_g_surface.html" title="A surface to be used in constructive solid geometry." alt="" coords="5,5,101,31"/>
+</map>

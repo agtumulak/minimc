@@ -1,0 +1,6 @@
+<map id="Sensitivity" name="Sensitivity">
+<area shape="rect" id="node1" title="Estimates the sensitivity of an Estimator with respect to a Perturbation." alt="" coords="62,168,145,193"/>
+<area shape="rect" id="node2" href="$class_scorable.html" title="Serves as base class for Estimator and Sensitivity." alt="" coords="5,5,79,31"/>
+<area shape="rect" id="node3" href="$class_estimator.html" title="Contains scores, multipliers, and sensitivities for a quantity of interest." alt="" coords="64,80,143,105"/>
+<area shape="rect" id="node4" href="$class_perturbation.html" title="Models a change in a system parameter." alt="" coords="167,80,259,105"/>
+</map>

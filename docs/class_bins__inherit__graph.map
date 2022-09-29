@@ -1,0 +1,7 @@
+<map id="Bins" name="Bins">
+<area shape="rect" id="node1" title="Partitions &#160;according to user&#45;specified boundaries." alt="" coords="221,5,269,31"/>
+<area shape="rect" id="node2" href="$class_boundary_bins.html" title="A Bin with explicitly specified bin boundaries." alt="" coords="5,79,108,104"/>
+<area shape="rect" id="node3" href="$class_linspace_bins.html" title="A Bin with equally&#45;spaced bin boundaries." alt="" coords="132,79,232,104"/>
+<area shape="rect" id="node4" href="$class_logspace_bins.html" title="A Bin with logarithmically&#45;spaced bin boundaries." alt="" coords="257,79,361,104"/>
+<area shape="rect" id="node5" href="$class_no_bins.html" title="A Bin where there are no bins." alt="" coords="385,79,451,104"/>
+</map>

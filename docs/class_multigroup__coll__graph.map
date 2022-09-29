@@ -1,0 +1,4 @@
+<map id="Multigroup" name="Multigroup">
+<area shape="rect" id="node1" title="Contains cross sections which are indexed by discrete energy groups." alt="" coords="5,79,88,104"/>
+<area shape="rect" id="node2" href="$class_interaction.html" title="Models the interaction between a Particle and a Nuclide." alt="" coords="5,5,88,31"/>
+</map>

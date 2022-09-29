@@ -1,0 +1,6 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="$class_continuous_reaction.html" title="Abstract interface for reactions which update the state of a Particle." alt="" coords="5,55,145,80"/>
+<area shape="rect" id="node2" href="$class_continuous_capture.html" title="Contains data required to perform a capture interaction." alt="" coords="193,5,328,31"/>
+<area shape="rect" id="node3" href="$class_continuous_fission.html" title="Contains data required to perform a fission interaction." alt="" coords="195,55,326,80"/>
+<area shape="rect" id="node4" href="$class_continuous_scatter.html" title="Contains data required to perform a scatter interaction." alt="" coords="195,104,326,129"/>
+</map>

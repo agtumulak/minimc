@@ -1,0 +1,4 @@
+<map id="LinearField" name="LinearField">
+<area shape="rect" id="node1" title="A field where the value is only a linear function of Point." alt="" coords="6,79,91,104"/>
+<area shape="rect" id="node2" href="$class_scalar_field.html" title="Abstract interface for all scalar fields." alt="" coords="5,5,92,31"/>
+</map>

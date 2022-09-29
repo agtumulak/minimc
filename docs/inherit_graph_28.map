@@ -1,0 +1,5 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="$class_scalar_field.html" title="Abstract interface for all scalar fields." alt="" coords="5,31,92,56"/>
+<area shape="rect" id="node2" href="$class_constant_field.html" title="A field where the value is independent of the Point." alt="" coords="140,5,243,31"/>
+<area shape="rect" id="node3" href="$class_linear_field.html" title="A field where the value is only a linear function of Point." alt="" coords="149,55,234,80"/>
+</map>

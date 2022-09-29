@@ -1,0 +1,5 @@
+<map id="CurrentEstimator" name="CurrentEstimator">
+<area shape="rect" id="node1" title="Scores when a Particle crosses a given CSGSurface." alt="" coords="5,152,127,177"/>
+<area shape="rect" id="node2" href="$class_estimator.html" title="Contains scores, multipliers, and sensitivities for a quantity of interest." alt="" coords="27,79,105,104"/>
+<area shape="rect" id="node3" href="$class_scorable.html" title="Serves as base class for Estimator and Sensitivity." alt="" coords="29,5,103,31"/>
+</map>

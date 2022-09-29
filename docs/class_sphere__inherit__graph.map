@@ -1,0 +1,4 @@
+<map id="Sphere" name="Sphere">
+<area shape="rect" id="node1" title="A sphere. What else has to be said?" alt="" coords="22,79,85,104"/>
+<area shape="rect" id="node2" href="$class_c_s_g_surface.html" title="A surface to be used in constructive solid geometry." alt="" coords="5,5,101,31"/>
+</map>
