@@ -96,7 +96,7 @@ private:
     const auto pandas_group = file.openGroup("/pandas");
     size_t levels;
     pandas_group.openAttribute("axis1_nlevels")
-        .read(H5::PredType::NATIVE_ULONG, &levels);
+        .read(H5::PredType::NATIVE_ULLONG, &levels);
     if (levels != D) {
       throw std::runtime_error(
           std::string{hdf5_filepath.c_str()} + ": Expected " +
