@@ -18,9 +18,8 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 
 # platform-dependent setup
-if (MSVC AND (CMAKE_BUILD_TYPE MATCHES "Debug"))
+if (MSVC)
   add_compile_definitions(_USE_MATH_DEFINES) # https://stackoverflow.com/a/63810121/5101335
-  set(CMAKE_DEBUG_POSTFIX "D")
 endif()
 
 include(ExternalProject)
@@ -31,7 +30,11 @@ set(XERCES_BINARY_DIR ${XERCES_PREFIX}/build)
 set(XERCES_INSTALL_DIR ${XERCES_PREFIX}/install)
 # logic to determine where static library will be found
 if (MSVC)
-  set(XERCES_SUFFIX "_3${CMAKE_DEBUG_POSTFIX}")
+  if (CMAKE_BUILD_TYPE MATCHES "Debug")
+    set(XERCES_SUFFIX "_3D")
+  else()
+    set(XERCES_SUFFIX "_3")
+  endif()
 endif()
 set(XERCES_LIB ${XERCES_INSTALL_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}xerces-c${XERCES_SUFFIX}${CMAKE_STATIC_LIBRARY_SUFFIX})
 if (UNIX)
@@ -111,6 +114,20 @@ set_target_properties(pugixml PROPERTIES
 set(HDF5_PREFIX ${CMAKE_BINARY_DIR}/hdf5)
 set(HDF5_BINARY_DIR ${HDF5_PREFIX}/build)
 set(HDF5_INSTALL_DIR ${HDF5_PREFIX}/install)
+# logic to determine where static libraries will be found
+if (MSVC)
+  set(HDF5_PREFIX "lib")
+  if (CMAKE_BUILD_TYPE MATCHES "Debug")
+    set(HDF5_SUFFIX _D${CMAKE_STATIC_LIBRARY_SUFFIX})
+  endif()
+else()
+  set(HDF5_PREFIX ${CMAKE_STATIC_LIBRARY_PREFIX})
+  if (CMAKE_BUILD_TYPE MATCHES "Debug")
+    set(HDF5_SUFFIX _debug${CMAKE_STATIC_LIBRARY_SUFFIX})
+  endif()
+endif()
+set(HDF5_LIB ${HDF5_INSTALL_DIR}/lib/${HDF5_PREFIX}hdf5${HDF5_SUFFIX})
+set(HDF5_CPP_LIB ${HDF5_INSTALL_DIR}/lib/${HDF5_PREFIX}hdf5_cpp${HDF5_SUFFIX})
 if (UNIX)
   # since hddf5 is an external library, we do not care about compiler warnings
   set(UNIX_HDF5_CMAKE_ARGS -DCMAKE_CXX_FLAGS="-w")
@@ -131,24 +148,20 @@ ExternalProject_Add(
     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
     -DCMAKE_INSTALL_PREFIX=${HDF5_INSTALL_DIR} # https://stackoverflow.com/a/32287517/5101335
     ${UNIX_XERCES_CMAKE_ARGS}
+  BUILD_BYPRODUCTS ${HDF5_LIB} ${HDF5_CPP_LIB}
   )
 set(HDF5_INCLUDE_DIR ${HDF5_INSTALL_DIR}/include)
 file(MAKE_DIRECTORY ${HDF5_INCLUDE_DIR})
-# logic to determine where static library will be found
-if (CMAKE_BUILD_TYPE MATCHES "Debug")
-  set(HDF5_SUFFIX "_debug")
-endif()
-set(HDF5_STATIC_LIBRARY_PREFIX ${HDF5_INSTALL_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX})
-set(HDF5_STATIC_LIBRARY_SUFFIX ${HDF5_SUFFIX}${CMAKE_STATIC_LIBRARY_SUFFIX})
+
 add_library(hdf5 STATIC IMPORTED)
 add_dependencies(hdf5 hdf5_download)
 set_target_properties(hdf5 PROPERTIES
-  IMPORTED_LOCATION ${HDF5_STATIC_LIBRARY_PREFIX}hdf5${HDF5_STATIC_LIBRARY_SUFFIX}
+  IMPORTED_LOCATION ${HDF5_LIB}
   INTERFACE_INCLUDE_DIRECTORIES ${HDF5_INCLUDE_DIR})
 add_library(hdf5_cpp STATIC IMPORTED)
 add_dependencies(hdf5_cpp hdf5_download)
 set_target_properties(hdf5_cpp PROPERTIES
-  IMPORTED_LOCATION ${HDF5_STATIC_LIBRARY_PREFIX}hdf5_cpp${HDF5_STATIC_LIBRARY_SUFFIX}
+  IMPORTED_LOCATION ${HDF5_CPP_LIB}
   INTERFACE_INCLUDE_DIRECTORIES ${HDF5_INCLUDE_DIR})
 target_link_libraries(hdf5_cpp INTERFACE hdf5 ${CMAKE_DL_LIBS}) # https://stackoverflow.com/a/56842079/5101335
 
