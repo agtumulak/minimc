@@ -60,6 +60,7 @@ ExternalProject_Add(
   BUILD_BYPRODUCTS ${XERCES_LIB}
   )
 add_library(xerces STATIC IMPORTED)
+add_dependencies(xerces xerces_download)
 set(XERCES_INCLUDE_DIR ${XERCES_INSTALL_DIR}/include)
 file(MAKE_DIRECTORY ${XERCES_INCLUDE_DIR})
 set_target_properties(xerces PROPERTIES
@@ -99,6 +100,7 @@ ExternalProject_Add(
   BUILD_BYPRODUCTS ${PUGI_LIB}
   )
 add_library(pugixml STATIC IMPORTED)
+add_dependencies(pugixml pugixml_download)
 set(PUGI_INCLUDE_DIR ${PUGI_INSTALL_DIR}/include)
 file(MAKE_DIRECTORY ${PUGI_INCLUDE_DIR})
 set_target_properties(pugixml PROPERTIES
@@ -139,10 +141,12 @@ endif()
 set(HDF5_STATIC_LIBRARY_PREFIX ${HDF5_INSTALL_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX})
 set(HDF5_STATIC_LIBRARY_SUFFIX ${HDF5_SUFFIX}${CMAKE_STATIC_LIBRARY_SUFFIX})
 add_library(hdf5 STATIC IMPORTED)
+add_dependencies(hdf5 hdf5_download)
 set_target_properties(hdf5 PROPERTIES
   IMPORTED_LOCATION ${HDF5_STATIC_LIBRARY_PREFIX}hdf5${HDF5_STATIC_LIBRARY_SUFFIX}
   INTERFACE_INCLUDE_DIRECTORIES ${HDF5_INCLUDE_DIR})
 add_library(hdf5_cpp STATIC IMPORTED)
+add_dependencies(hdf5_cpp hdf5_download)
 set_target_properties(hdf5_cpp PROPERTIES
   IMPORTED_LOCATION ${HDF5_STATIC_LIBRARY_PREFIX}hdf5_cpp${HDF5_STATIC_LIBRARY_SUFFIX}
   INTERFACE_INCLUDE_DIRECTORIES ${HDF5_INCLUDE_DIR})

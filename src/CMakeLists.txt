@@ -64,14 +64,13 @@ set(MINIMC_SOURCES
   )
 
 add_library(minimc ${MINIMC_SOURCES})
-add_dependencies(minimc xerces_download pugixml_download hdf5_download)
 target_include_directories(minimc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_options(minimc PUBLIC
   $<$<AND:$<CONFIG:Debug>,$<BOOL:${APPLE}>>:-fprofile-instr-generate -fcoverage-mapping -O0 -Wall -Wextra -Wdocumentation>
   $<$<AND:$<CONFIG:Release>,$<CXX_COMPILER_ID:Clang,GNU>>:-O3>)
 target_link_options(minimc PUBLIC
   $<$<AND:$<CONFIG:Debug>,$<BOOL:${APPLE}>>:-fprofile-instr-generate>)
-target_link_libraries(minimc xerces pugixml hdf5_cpp Threads::Threads)
+target_link_libraries(minimc PUBLIC xerces pugixml hdf5_cpp Threads::Threads)
 set_target_properties(minimc PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
   )
