@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.5.1] - 2022-09-29
+- Reintroduce cross platform compatibility betweeen LLVM, GCC, and MSVC
+
 ## [0.5.0] - 2022-09-27
 - Implemented Estimator file output
 - Replace minimc script with pyminimc package as submodule
@@ -68,7 +71,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Code is documented with Doxygen
 - Continuous integration is performed with GitHub Actions
 
-[Unreleased]: https://github.com/agtumulak/minimc/compare/v0.5.0...develop
+[Unreleased]: https://github.com/agtumulak/minimc/compare/v0.5.1...develop
+[0.5.1]: https://github.com/agtumulak/minimc/releases/tag/v0.5.1
 [0.5.0]: https://github.com/agtumulak/minimc/releases/tag/v0.5.0
 [0.4.0]: https://github.com/agtumulak/minimc/releases/tag/v0.4.0
 [0.3.0]: https://github.com/agtumulak/minimc/releases/tag/v0.3.0
