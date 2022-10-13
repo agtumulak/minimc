@@ -6,20 +6,20 @@
 
 @section estimators_phase_space Phase Space
 
-All particle transport occurs inside a multidimensional <em> phase space </em>
-which is characterized by a position @f$ \boldsymbol{x} @f$,
-direction-of-flight@f$ \hat{\boldsymbol{\Omega}} @f$, energy @f$ E @f$, time
-@f$ t @f$, and reaction label @f$ r @f$. Together, these form a random vector
-@f$ X @f$ for which one realization looks like
+All steady-state particle transport occurs inside a multidimensional <em> phase
+space </em> which is characterized by a position @f$ \boldsymbol{x} @f$,
+direction-of-flight@f$ \hat{\boldsymbol{\Omega}} @f$, energy @f$ E @f$, and
+reaction label @f$ r @f$. Together, these form a random vector @f$ X @f$ for
+which one realization looks like
 @f[
   x_{i} =
   \begin{bmatrix}
     \boldsymbol{x}_{i} \\
     \hat{\boldsymbol{\Omega}}_{i} \\
     E_{i} \\
-    t_{i} \\
     r_{i}
   \end{bmatrix}
+  \,\mathrm{.}
 @f]
 A realization of @f$ X_{i} @f$ (here denoted @f$ x_{i}) @f$ and a
 realizaton of position (here denoted @f$ \boldsymbol{x}_{i} @f$) must not be
@@ -40,6 +40,26 @@ Material::GetMicroscopicTotal accepts a `const` Particle reference as a
 parameter to look up relevant cross sections. Two notable exceptions, the
 Interaction class and the TransportMethod class, use non-`const` Particle
 arguments but still update a Particle state using its public methods.
+
+@section estimators_estimation Estimation
+
+An <em> Estimator </em> @f$ S: \Omega \rightarrow \mathbb{R} @f$ is a random
+variable which maps from a history @f$ \omega \in \Omega @f$ to a
+<em> score </em> @f$ s \in \mathbb{R} @f$. The expected value of an estimator
+is given by
+@f{equation}{
+  \label{eq:estimator-expected-value}
+  \mathbb{E} \left[ S \right]
+  = \int_{\Omega} S\left( \omega \right) p_{\Omega}(\omega) \mathrm{d}\omega
+    \,\mathrm{.}
+@f}
+When only @f$ N @f$ sampled values from @f$ \Omega @f$ are available, an
+estimate of the expected value is given by
+@f[
+  \mathbb{E} \left[ S \right]
+  \approx \sum_{n=1}^{N} S\left( \omega_{n} \right) \frac{1}{N}
+  \,\mathrm{.}
+@f]
 
 @section estimators_scoring_functions Scoring Functions
 
@@ -65,5 +85,751 @@ total scatter rate. Another scoring function is
 @f]
 which scores @f$ \Sigma^{-1}_{t}(x_{i}) @f$ whenever a Particle collides. Using
 this scoring funtion results in an estimator for the scalar flux.
+
+@section estimators_dos Differential Operator Sampling
+
+When a perturbation to a Monte Carlo problem is introduced, the expected value
+of an Estimator @f$ \mathbb{E} [S] @f$ will generally change. Examples of
+perturbations include shifts in a geometric configuration or changes in a
+Nuclide cross section, to name a few.
+
+If a system parameter is parameterized by @f$ \lambda @f$, the change in the
+expected value can be expressed as
+@f[
+  \frac{\mathrm{d} \mathbb{E} \left[ S \right]}{\mathrm{d}\lambda}
+  = \int_{\Omega}
+      \left[
+        \frac{1}{S\left( \omega \right)}
+        \frac{\mathrm{d}S\left( \omega \right)}{\mathrm{d}\lambda}
+        +
+        \frac{1}{p_{\Omega}(\omega)}
+        \frac{\mathrm{d}p_{\Omega}(\omega)}{\mathrm{d}\lambda}
+      \right]
+      S\left( \omega \right) p_{\Omega}(\omega) \mathrm{d}\omega
+    \,\mathrm{.}
+@f]
+
+This form is identical to @f$ \eqref{eq:estimator-expected-value} @f$ if one
+makes the substitution
+@f[
+  S\left( \omega \right)
+  \rightarrow
+  \left[
+    \frac{1}{S\left( \omega \right)}
+    \frac{\mathrm{d}S\left( \omega \right)}{\mathrm{d}\lambda}
+    +
+    \frac{1}{p_{\Omega}(\omega)}
+    \frac{\mathrm{d}p_{\Omega}(\omega)}{\mathrm{d}\lambda}
+  \right]
+  S\left( \omega \right)
+  \,\mathrm{.}
+@f]
+
+The first term in the square bracketes is called the <em>direct effect</em>
+and the second term is called the <em>indirect effect</em>.
+
+@subsection estimators_dos_direct Direct Effect
+
+The direct effect
+@f[
+  \frac{1}{S\left( \omega \right)}
+  \frac{\mathrm{d}S\left( \omega \right)}{\mathrm{d}\lambda}
+@f]
+reflects the change in how @f$ S @f$ maps from the history space @f$ \Omega @f$
+to the score space @f$ \mathbb{R} @f$. It must be provided as a function
+depending on the particular type of perturbation.
+
+@subsection estimators_dos_indirect Indirect Effect
+
+The indirect effect
+@f[
+  \frac{1}{p_{\Omega}(\omega)}
+  \frac{\mathrm{d}p_{\Omega}(\omega)}{\mathrm{d}\lambda}
+@f]
+reflects the change in the probability of sampling a history @f$ \omega @f$. If
+@f$ \omega = \left( x_{0}, x_{1}, x_{2}, \ldots \right) @f$  is Markovian, the
+probability of sampling a history can be expressed
+@f[
+  p_{\Omega}(\omega)
+  =
+  p_{X_{0}} \left( x_{0} \right)
+  p_{X_{1} \mid X_{0}} \left( x_{1} \mid x_{0} \right)
+  p_{X_{2} \mid X_{1}} \left( x_{2} \mid x_{1} \right)
+  \ldots
+@f]
+so repeated application of the product rule gives for the indirect effect
+@f[
+  \frac
+    {\frac{\mathrm{d}}{\mathrm{d}\lambda} p_{\Omega}(\omega)}
+    {p_{\Omega}(\omega)}
+  =
+  \frac
+    {\frac{\mathrm{d}}{\mathrm{d}\lambda} p_{X_{0}}(x_{0})}
+    {p_{X_{0}}(x_{0})}
+  +
+  \frac
+    {\frac{\mathrm{d}}{\mathrm{d}\lambda} p_{X_{1} \mid X_{0}}(x_{1} \mid x_{0})}
+    {p_{X_{1} \mid X_{0}}(x_{1} \mid x_{0})}
+  +
+  \frac
+    {\frac{\mathrm{d}}{\mathrm{d}\lambda} p_{X_{2} \mid X_{1}}(x_{2} \mid x_{1})}
+    {p_{X_{2} \mid X_{1}}(x_{2} \mid x_{1})}
+  +
+  \ldots
+@f]
+The transition probabilities are typically decomposed
+@f{equation}{
+  \label{eq:transmission-emergence-kernel}
+  p_{X_{i+1} \mid X_{i}} \left( x_{i+1} \middle| x_{i} \right)
+  =
+  \underbrace{
+    p \left(
+        \hat{\boldsymbol{\Omega}}_{i+1},
+        E_{i+1},
+        r_{i+1}
+      \middle|
+        \boldsymbol{x}_{i+1}
+        \hat{\boldsymbol{\Omega}}_{i},
+        E_{i},
+        r_{i}
+      \right)
+  }_{\mathcal{E}_{i}}
+  \underbrace{
+    p
+      \left(
+        \boldsymbol{x}_{i+1}
+      \middle|
+        \boldsymbol{x}_{i},
+        \hat{\boldsymbol{\Omega}}_{i},
+        E_{i},
+        r_{i}
+      \right)
+  }_{\mathcal{T}_{i}}
+@f}
+where the <em>transmission kernel</em> @f$ \mathcal{T}_{i} @f$ gives the
+probability that a particle at @f$ x_{i} @f$ will stream then immediately
+collide at @f$ \boldsymbol{x}_{i+1} @f$ and the <em>emergence kernel</em> @f$
+\mathcal{E}_{i} @f$ gives the conditional probability that a particle which
+collided @f$ \boldsymbol{x}_{i+1} @f$ will emerge with direction @f$
+\hat{\boldsymbol{\Omega}}_{i+1} @f$, and energy @f$ E_{i+1} @f$, having
+undergone reaction @f$ r_{i+1} @f$. The indirect effect at step @f$ i @f$ is
+therefore
+@f{equation}{
+  \label{eq:step-i-indirect-effect}
+  \frac
+    {\frac{\mathrm{d}}{\mathrm{d}\lambda} p_{X_{i+1} \mid X_{i}}(x_{i+1} \mid x_{i})}
+    {p_{X_{i+1} \mid X_{i}}(x_{i+1} \mid x_{i})}
+  =
+  \frac
+    { \frac{\mathrm{d}}{\mathrm{d}\lambda} \mathcal{T_{i}} }
+    { \mathcal{T_{i}} }
+  +
+  \frac
+    { \frac{\mathrm{d}}{\mathrm{d}\lambda} \mathcal{E_{i}} }
+    { \mathcal{E_{i}} }
+  \mathrm{.}
+@f}
+The first term on the righthand side is implemented by Perturbation::Stream and
+the second term on the righthand side is implemented by Perturbation::Scatter.
+
+@subsection estimators_dos_pod_tnsl Thermal Neutron Scattering Law
+
+When using partitioned thermal neutron scattering law data compressed using
+proper orthogonal decomposition, the parameters to be perturbed are @f$ u_{mr}
+@f$, @f$ \sigma_{r} @f$, or @f$ v_{nr} @f$. The following discussion considers
+perturbations of parameters that are used to sample @f$ \alpha @f$.
+
+Given a sampled value of @f$ \beta @f$, a target temperature @f$ T @f$, and
+uniformly sampled @f$ \xi \in \left[ 0, 1 \right) @f$, the sampling scheme
+(based on ENDF Law 4) first identifies indices @f$ k^{\prime} @f$, @f$
+l^{\prime} @f$, and @f$ m^{\prime} @f$ such that
+@f[
+  \begin{alignat*}{3}
+    & \beta_{k^{\prime}-1}
+    && \leq \lvert \beta \rvert
+    && < \beta_{k^{\prime}} \,\mathrm{,}\quad
+    && k^{\prime} \in \left\{ 1, \ldots, k \right\}
+    \\
+    & T_{l^{\prime} - 1}
+    && \leq T
+    && < T_{l^{\prime}} \,\mathrm{,}\quad
+    && l^{\prime} \in \left\{ 1, \ldots, l \right\}
+    \\
+    & \hat{H}_{m^{\prime}-1}
+    && \leq \xi
+    && < \hat{H}_{m^{\prime}} \,\mathrm{,}\quad
+    && m^{\prime} \in \left\{ 1, \ldots, m \right\}
+  \end{alignat*}
+@f]
+are satisfied. Then, @f$ \tilde{k} @f$ is randomly assigned to either @f$
+k^{\prime} - 1 @f$ or @f$ k^{\prime} @f$. Defining the flattened index
+@f[
+  n^{\prime} \equiv \left( \tilde{k} - 1 \right) l + l^{\prime}
+@f]
+and interpolation fractions
+@f[
+  f_{T}
+  =
+  \frac
+    {T - T_{l^{\prime} - 1}}
+    {T_{l^{\prime}} - T_{l^{\prime} - 1}}
+  \quad\mathrm{and}\quad
+  f_{\hat{H}}
+  =
+  \frac
+    {\xi - \hat{H}_{m^{\prime} - 1}}
+    {\hat{H}_{m^{\prime}} - \hat{H}_{m^{\prime} - 1}}
+  \,\mathrm{,}
+@f]
+the sampled value of @f$ \alpha @f$ is obtained through bilinear interpolation
+in temperature and CDF:
+@f[
+  \alpha_{\tilde{k}}
+  =
+  \begin{bmatrix}
+    1-f_{\hat{H}} & f_{\hat{H}}
+  \end{bmatrix}
+  \begin{bmatrix}
+    \alpha_{m^{\prime} - 1, n^{\prime} - 1} & \alpha_{m^{\prime} - 1, n^{\prime}} \\
+    \alpha_{m^{\prime}, n^{\prime} - 1}     & \alpha_{m^{\prime}, n^{\prime}}
+  \end{bmatrix}
+  \begin{bmatrix}
+    1-f_{T} \\
+    f_{T}
+  \end{bmatrix}
+  \equiv
+  \vec{f}_{\hat{H}}^{T} A_{m^{\prime}n^{\prime}} \vec{f}_{T}
+@f]
+where @f$ A_{m^{\prime}n^{\prime}} @f$ is a @f$ 2 \times 2 @f$ matrix dependent
+on @f$ m^{\prime} @f$ and @f$ n^{\prime} @f$ and should not be mistaken for a
+single element. Linear interpolation in CDF implies that the PDF is a histogram
+@f[
+  p\left( \alpha_{\tilde{k}} \right)
+  =
+  \frac
+    {\Delta \hat{H}}
+    {\Delta \alpha}
+  =
+  \frac
+    {\hat{H}_{m^{\prime}} - \hat{H}_{m^{\prime}-1}}
+    {
+      \vec{d}^{T}
+      A_{m^{\prime}n^{\prime}}
+      \vec{f}_{T}
+    }
+@f]
+where @f$ \vec{d}^{T} = \begin{bmatrix} -1 & +1 \end{bmatrix} @f$ is a row
+vector which takes the difference between the first and second elements of @f$
+A_{m^{\prime}n^{\prime}} \vec{f}_{T} @f$. Setting @f$ \lambda @f$ to any of @f$
+u_{m^{\prime}r^{\prime}} @f$, @f$ \sigma_{r^{\prime}} @f$, or @f$
+v_{n^{\prime}r^{\prime}} @f$ will only affect the terms inside @f$
+A_{m^{\prime}n^{\prime}} @f$ so the derivative becomes
+@f{equation}{
+  \label{eq:derivative-alpha-probability}
+  \frac
+    {\mathrm{d}p\left( \alpha_{\tilde{k}} \right)}
+    {\mathrm{d}\lambda}
+  =
+  -p\left( \alpha_{\tilde{k}} \right)
+  \frac
+    {
+      \vec{d}^{T}
+      \left(
+        \frac
+          {\mathrm{d}}
+          {\mathrm{d}\lambda}
+          A_{m^{\prime}n^{\prime}}
+      \right)
+      \vec{f}_{T}
+    }
+    {
+      \vec{d}^{T}
+      A_{m^{\prime}n^{\prime}}
+      \vec{f}_{T}
+    }
+  \,\textrm{.}
+@f}
+
+The last steps in sampling direction cosine @f$ \mu @f$ are unit base
+interpolation followed by conversion from dimensionless momentum transfer @f$
+\alpha @f$ to @f$ \mu @f$. Unit base interpolation is the transformation
+@f[
+  \alpha(\beta)
+  =
+  \alpha_{\min}(\beta)
+  +
+  \frac
+    {\alpha_{\tilde{k}} - \alpha_{\tilde{k}, \min}}
+    {\alpha_{\tilde{k}, \max} - \alpha_{\tilde{k}, \min}}
+  \left(
+    \alpha_{\max}(\beta) - \alpha_{\min}(\beta)
+  \right)
+@f]
+mapping @f$ \alpha_{\tilde{k}} \in \left[ \alpha_{\tilde{k}, \min},
+\alpha_{\tilde{k}, \max} \right] @f$ to @f$ \alpha \left( \beta \right) \in
+\left[ \alpha_{\min}(\beta), \alpha_{\max}(\beta) \right] @f$ so that the
+thresholds at the actual value of @f$ \beta @f$ are preserved. The
+transformation
+@f[
+  \mu
+  =
+  \frac
+    {E + E^{\prime} - \alpha A k_{\mathrm{B}} T}
+    {2 \sqrt{E E^{\prime}}}
+@f]
+maps from @f$ \alpha \left( \beta \right) \in \left[ \alpha_{\min}(\beta),
+\alpha_{\max}(\beta) \right] @f$ to @f$ \mu \in \left[ -1, +1 \right] @f$, the
+scattering cosine used in transport. Using appropriate Jacobians, the
+probability of sampling @f$ \mu @f$ is
+@f[
+  p \left( \mu \right)
+  =
+  p \left( \alpha_{\tilde{k}} \right)
+  \left|
+    \frac
+      {\mathrm{d} \alpha_{\tilde{k}}}
+      {\mathrm{d} \alpha \left( \beta \right)}
+  \right|
+  \left|
+    \frac
+      {\mathrm{d} \alpha \left( \beta \right)}
+      {\mathrm{d} \mu}
+  \right|
+  =
+  p \left( \alpha_{\tilde{k}} \right)
+  \frac
+    {\alpha_{\tilde{k}, \max} - \alpha_{\tilde{k}, \min}}
+    {\alpha_{\max}(\beta) - \alpha_{\min}(\beta)}
+  \frac
+    {2 \sqrt{E E^{\prime}}}
+    {A k_{\mathrm{B}} T}
+  \,\mathrm{.}
+@f]
+If the Jacobians are independent of the perturbed quantity @f$ \lambda @f$, we
+have
+@f[
+  \frac
+    {\mathrm{d} p \left( \mu \right)}
+    {\mathrm{d} \lambda}
+  =
+  \frac
+    {\mathrm{d} p \left( \alpha_{\tilde{k}} \right)}
+    {\mathrm{d} \lambda}
+  \left|
+    \frac
+      {\mathrm{d} \alpha_{\tilde{k}}}
+      {\mathrm{d} \alpha \left( \beta \right)}
+  \right|
+  \left|
+    \frac
+      {\mathrm{d} \alpha \left( \beta \right)}
+      {\mathrm{d} \mu}
+  \right|
+@f]
+so @f$ \eqref{eq:derivative-alpha-probability} @f$ can be expressed
+@f{equation}{
+  \label{eq:log-derivative-alpha-probability}
+  \frac
+    {1}
+    {p\left( \mu \right)}
+  \frac
+    {\mathrm{d}p\left( \mu \right)}
+    {\mathrm{d}\lambda}
+  =
+  \frac
+    {1}
+    {p\left( \alpha_{\tilde{k}} \right)}
+  \frac
+    {\mathrm{d}p\left( \alpha_{\tilde{k}} \right)}
+    {\mathrm{d}\lambda}
+  =
+  -
+  \frac
+    {
+      \vec{d}^{T}
+      \left(
+        \frac
+          {\mathrm{d}}
+          {\mathrm{d}\lambda}
+          A_{m^{\prime}n^{\prime}}
+      \right)
+      \vec{f}_{T}
+    }
+    {
+      \vec{d}^{T}
+      A_{m^{\prime}n^{\prime}}
+      \vec{f}_{T}
+    }
+  \,\mathrm{.}
+@f}
+The following discussions on perturbations in @f$ u_{mr} @f$, @f$ \sigma_{r}
+@f$, or @f$ v_{nr} @f$ will refer to the matrix in the numerator of @f$
+\eqref{eq:log-derivative-alpha-probability} @f$
+@f{equation}{
+  \label{eq:derivative-alpha-matrix}
+  \frac{\mathrm{d}}{\mathrm{d}\lambda}
+  A_{m^{\prime}n^{\prime}}
+  =
+  \begin{bmatrix}
+    \frac{\mathrm{d}}{\mathrm{d}\lambda}
+    \alpha_{m^{\prime}-1,n^{\prime}-1}
+    &
+    \frac{\mathrm{d}}{\mathrm{d}\lambda}
+    \alpha_{m^{\prime}-1,n^{\prime}}
+    \\
+    \frac{\mathrm{d}}{\mathrm{d}\lambda}
+    \alpha_{m^{\prime},n^{\prime}-1}
+    &
+    \frac{\mathrm{d}}{\mathrm{d}\lambda}
+    \alpha_{m^{\prime},n^{\prime}}
+  \end{bmatrix}
+@f}
+where each matrix element in @f$ \eqref{eq:derivative-alpha-matrix} @f$ is
+@f{equation}{
+  \label{eq:derivative-alpha}
+  \frac
+    {\mathrm{d}}
+    {\mathrm{d}\lambda}
+  \alpha_{m^{\prime}n^{\prime}}
+  =
+  \sum_{r^{\prime}=1}^{r}
+  \frac
+    {\mathrm{d}}
+    {\mathrm{d}\lambda}
+  u_{m^{\prime}r^{\prime}} \sigma_{r^{\prime}} v_{n^{\prime}r^{\prime}}
+  \,\mathrm{.}
+@f}
+
+@subsubsection estimators_dos_pod_tnsl_Σ Perturbing Σ
+
+Setting @f$ \lambda = \sigma_{r} @f$, @f$ \eqref{eq:derivative-alpha} @f$
+becomes
+@f[
+  \frac
+    {\mathrm{d}}
+    {\mathrm{d}\sigma_{r}}
+  \alpha_{m^{\prime}n^{\prime}}
+  =
+  \sum_{r^{\prime}=1}^{r}
+  \frac
+    {\mathrm{d}}
+    {\mathrm{d}\sigma_{r}}
+  u_{m^{\prime}r^{\prime}} \sigma_{r^{\prime}} v_{n^{\prime}r^{\prime}}
+  =
+  u_{m^{\prime}r^{\prime}}v_{n^{\prime}r^{\prime}}\delta_{r,r^{\prime}}
+  \,\textrm{.}
+@f]
+Defining
+@f[
+  \vec{u}_{m^{\prime}r}
+  \equiv
+  \begin{bmatrix}
+    u_{m^{\prime}-1,r} \\
+    u_{m^{\prime}, r}
+  \end{bmatrix}
+  \quad\mathrm{and}\quad
+  \vec{v}_{n^{\prime}r}
+  \equiv
+  \begin{bmatrix}
+    v_{n^{\prime}-1,r} \\
+    v_{n^{\prime}, r}
+  \end{bmatrix}
+  \,\mathrm{,}
+@f]
+@f$ \eqref{eq:derivative-alpha-matrix} @f$ becomes
+@f[
+  \frac{\mathrm{d}}{\mathrm{d}\sigma_{r}}
+  A_{m^{\prime}n^{\prime}}
+  =
+  \begin{bmatrix}
+    u_{m^{\prime}-1,r}v_{n^{\prime}-1,r}
+    &
+    u_{m^{\prime}-1,r}v_{n^{\prime},r}
+    \\
+    u_{m^{\prime},r}v_{n^{\prime}-1,r}
+    &
+    u_{m^{\prime},r}v_{n^{\prime},r}
+  \end{bmatrix}
+  =
+  \vec{u}_{m^{\prime}r} \vec{v}_{n^{\prime}r}^{T}
+@f]
+so @f$ \eqref{eq:log-derivative-alpha-probability} @f$ becomes
+@f[
+  \frac
+    {1}
+    {p\left( \mu \right)}
+  \frac
+    {\mathrm{d}p\left( \mu \right)}
+    {\mathrm{d}\sigma_{r}}
+  =
+  -
+  \frac
+    {\vec{d}^{T} \vec{u}_{m^{\prime}r} \vec{v}_{n^{\prime}r}^{T} \vec{f}_{T} }
+    {\vec{d}^{T} A_{m^{\prime}n^{\prime}} \vec{f}_{T} }
+  \,\mathrm{.}
+@f]
+
+@subsubsection estimators_dos_pod_tnsl_U Perturbing U
+
+Setting @f$ \lambda = u_{mr} @f$, @f$ \eqref{eq:derivative-alpha} @f$ becomes
+@f[
+  \frac
+    {\mathrm{d}}
+    {\mathrm{d}u_{mr}}
+  \alpha_{m^{\prime}n^{\prime}}
+  =
+  \sum_{r^{\prime}=1}^{r}
+  \frac
+    {\mathrm{d}}
+    {\mathrm{d}u_{mr}}
+  u_{m^{\prime}r^{\prime}} \sigma_{r^{\prime}} v_{n^{\prime}r^{\prime}}
+  =
+  \sigma_{r^{\prime}} v_{n^{\prime}r^{\prime}} \delta_{m,m^{\prime}} \delta_{r,r^{\prime}}
+  \,\textrm{.}
+@f]
+The only nonzero cases of @f$ \eqref{eq:derivative-alpha-matrix} @f$ that get
+used are
+@f{cases}{
+  \frac{\mathrm{d}}{\mathrm{d}u_{mr}}
+  A_{m,n}
+  =&
+  \begin{bmatrix}
+    0 & 0 \\
+    \sigma_{r} v_{n-1,r} &
+    \sigma_{r} v_{n,r}
+  \end{bmatrix}
+  \,\mathrm{,}
+  &
+  \hat{H}_{m-1} \leq \xi < \hat{H}_{m}
+  \\
+  \frac{\mathrm{d}}{\mathrm{d}u_{mr}}
+  A_{m+1,n}
+  =&
+  \begin{bmatrix}
+    \sigma_{r} v_{n-1,r} &
+    \sigma_{r} v_{n,r} \\
+    0 & 0
+  \end{bmatrix}
+  \,\mathrm{,}
+  &
+  \hat{H}_{m} \leq \xi < \hat{H}_{m+1}
+  \,\mathrm{.}
+@f}
+
+Recalling that @f$ \vec{d}^{T} = \begin{bmatrix} -1 & +1 \end{bmatrix} @f$, and
+defining
+@f[
+  C \left( \xi \right)
+  \equiv
+  \begin{cases}
+  +1 & \hat{H}_{m-1} \leq \xi < \hat{H}_{m} \\
+  -1 & \hat{H}_{m} \leq \xi < \hat{H}_{m+1} \\
+  0  & \mathrm{otherwise,}
+  \end{cases}
+@f]
+we have
+@f[
+  \vec{d}^{T}
+  \left( \frac{\mathrm{d}}{\mathrm{d}u_{mr}} A_{m^{\prime}n^{\prime}} \right)
+  =
+  C \left( \xi \right)
+  \sigma_{r}
+  \vec{v}_{n^{\prime}r}^{T}
+@f]
+so @f$ \eqref{eq:log-derivative-alpha-probability} @f$ becomes
+@f[
+  \frac
+    {1}
+    {p\left( \mu \right)}
+  \frac
+    {\mathrm{d}p\left( \mu \right)}
+    {\mathrm{d}u_{mr}}
+  =
+  -C \left( \xi \right)
+  \frac
+    {\sigma_{r} \vec{v}_{n^{\prime}r}^{T} \vec{f}_{T}}
+    {\vec{d}^{T} A_{m^{\prime}n^{\prime}} \vec{f}_{T}}
+  \,\textrm{.}
+@f]
+
+@subsubsection estimators_dos_pod_tnsl_V Perturbing V
+
+Setting @f$ \lambda = v_{nr} @f$, @f$ \eqref{eq:derivative-alpha} @f$ becomes
+@f[
+  \frac
+    {\mathrm{d}}
+    {\mathrm{d}v_{nr}}
+  \alpha_{m^{\prime}n^{\prime}}
+  =
+  \sum_{r^{\prime}=1}^{r}
+  \frac
+    {\mathrm{d}}
+    {\mathrm{d}v_{nr}}
+  u_{m^{\prime}r^{\prime}} \sigma_{r^{\prime}} v_{n^{\prime}r^{\prime}}
+  =
+  u_{m^{\prime}r^{\prime}} \sigma_{r^{\prime}} \delta_{r,r^{\prime}} \delta_{n,n^{\prime}}
+  \,\textrm{.}
+@f]
+
+The only nonzero cases of @f$ \eqref{eq:derivative-alpha-matrix} @f$ that get
+used are
+@f{cases}{
+  \frac{\mathrm{d}}{\mathrm{d}v_{nr}}
+  A_{m,n}
+  =&
+  \begin{bmatrix}
+    0 & u_{m-1,r} \sigma_{r} \\
+    0 & u_{m,r} \sigma_{r}
+  \end{bmatrix}
+  \,\mathrm{,}
+  &
+  T_{l^{\prime} - 1} \leq T < T_{l^{\prime}}
+  \\
+  \frac{\mathrm{d}}{\mathrm{d}v_{nr}}
+  A_{m,n+1}
+  =&
+  \begin{bmatrix}
+    u_{m-1,r} \sigma_{r} & 0 \\
+    u_{m,r} \sigma_{r} & 0
+  \end{bmatrix}
+  \,\mathrm{,}
+  &
+  T_{l^{\prime}} \leq T < T_{l^{\prime} + 1}
+@f}
+with the additional condition that @f$ n = \left( \tilde{k} - 1 \right) l +
+l^{\prime} @f$. In other words, the @f$ n @f$ index of the perturbed @f$ v_{nr}
+@f$ must also coincide with the randomly sampled @f$ \beta @f$ index @f$
+\tilde{k} @f$.
+
+Recalling that @f$ \vec{f_{T}}^{T} = \begin{bmatrix} 1-f_{T} & f_{T}
+\end{bmatrix} @f$, and defining
+@f[
+  B_{n^{\prime}} \left( T \right)
+  \equiv
+  \begin{cases}
+    f_{T} &
+    T_{l^{\prime} - 1} \leq T < T_{l^{\prime}}
+    \quad\mathrm{and}\quad
+    \left\lfloor \frac{n^{\prime} - 1}{l} \right\rfloor + 1 = \tilde{k}
+    \\
+    1-f_{T} &
+    T_{l^{\prime}} \leq T < T_{l^{\prime} + 1}
+    \quad\mathrm{and}\quad
+    \left\lfloor \frac{n^{\prime} - 1}{l} \right\rfloor + 1 = \tilde{k}
+    \\
+    0 & \mathrm{otherwise,}
+  \end{cases}
+@f]
+we have
+@f[
+  \left( \frac{\mathrm{d}}{\mathrm{d}v_{nr}} A_{m^{\prime}n^{\prime}} \right)
+  \vec{f}_{T}
+  =
+  B_{n^{\prime}} \left( T \right)
+  \sigma_{r}
+  \vec{u}_{m^{\prime}r}
+@f]
+so @f$ \eqref{eq:log-derivative-alpha-probability} @f$ becomes
+@f[
+  \frac
+    {1}
+    {p\left( \mu \right)}
+  \frac
+    {\mathrm{d}p\left( \mu \right)}
+    {\mathrm{d}v_{nr}}
+  =
+  -B_{n^{\prime}} \left( T \right)
+  \frac
+    {\sigma_{r} \vec{d}^{T} \vec{u}_{m^{\prime}r}}
+    {\vec{d}^{T} A_{m^{\prime}n^{\prime}} \vec{f}_{T}}
+  \,\textrm{.}
+@f]
+
+@subsubsection estimators_dos_pod_tnsl_implementation Implementation
+
+The total scattering cross section is unaffected by perturbing @f$ u_{mr} @f$,
+@f$ \sigma_{r} @f$, or @f$ v_{nr} @f$ so @f$ \left.
+\frac{\mathrm{d}\mathcal{T_{i}}}{\mathrm{d}\lambda} \middle/ \mathcal{T_{i}}
+\right. = 0 @f$.
+They do, however, affect the emergence
+kernel @f$ \eqref{eq:transmission-emergence-kernel} @f$ which can be decomposed
+@f{align*}{
+  &
+  p \left(
+      \hat{\boldsymbol{\Omega}}_{i+1},
+      E_{i+1},
+      r_{i+1}
+    \middle|
+      \boldsymbol{x}_{i+1}
+      \hat{\boldsymbol{\Omega}}_{i},
+      E_{i},
+      r_{i}
+    \right)
+  \\
+  =&
+  p \left(
+      \hat{\boldsymbol{\Omega}}_{i+1},
+    \middle|
+      \boldsymbol{x}_{i+1}
+      \hat{\boldsymbol{\Omega}}_{i},
+      E_{i+1},
+      r_{i+1}
+    \right)
+  p \left(
+      E_{i+1},
+    \middle|
+      \boldsymbol{x}_{i+1}
+      \hat{\boldsymbol{\Omega}}_{i},
+      E_{i},
+      r_{i+1}
+    \right)
+  p \left(
+      r_{i+1}
+    \middle|
+      \boldsymbol{x}_{i+1}
+      \hat{\boldsymbol{\Omega}}_{i},
+      E_{i},
+      r_{i}
+    \right)
+  \,\mathrm{.}
+@f}
+Since only parameters for @f$ \alpha @f$ are being considered, the only nonzero
+term on the righthand side is
+@f[
+  p
+  \left(
+    \hat{\boldsymbol{\Omega}}_{i+1},
+  \middle|
+    \boldsymbol{x}_{i+1}
+    \hat{\boldsymbol{\Omega}}_{i},
+    E_{i+1},
+    r_{i+1}
+  \right)
+  =
+  \frac{1}{2\pi}
+  p
+  \left(
+    \mu_{i+1}
+  \middle|
+    \boldsymbol{x}_{i+1}
+    E_{i+1},
+    r_{i+1}
+  \right)
+@f]
+so @f$ \eqref{eq:step-i-indirect-effect} @f$ for perturbing @f$ u_{mr} @f$, @f$
+\sigma_{r} @f$, or @f$ v_{nr} @f$ for @f$ \alpha @f$ is just
+@f[
+  \frac
+    {\frac{\mathrm{d}}{\mathrm{d}\lambda} p_{X_{i+1} \mid X_{i}}(x_{i+1} \mid x_{i})}
+    {p_{X_{i+1} \mid X_{i}}(x_{i+1} \mid x_{i})}
+  =
+  \frac
+    {1}
+    {p\left( \mu \right)}
+  \frac
+    {\mathrm{d}p\left( \mu \right)}
+    {\mathrm{d}\lambda}
+  \,\mathrm{.}
+@f]
 
 */
