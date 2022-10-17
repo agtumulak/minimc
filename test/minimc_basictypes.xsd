@@ -302,7 +302,7 @@
   <xs:choice minOccurs="1" maxOccurs="unbounded">
     <xs:element name="perturbation">
       <xs:complexType>
-        <xs:attribute name="name" type="xs:normalizedString"/>
+        <xs:attribute name="name" type="xs:normalizedString" use="required"/>
       </xs:complexType>
     </xs:element>
   </xs:choice>
