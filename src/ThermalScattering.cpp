@@ -22,16 +22,16 @@
 
 //// public
 
-ThermalScattering::ThermalScattering(const pugi::xml_node& tsl_node) noexcept
-    : majorant{HDF5DataSet<1>{tsl_node.attribute("majorant").as_string()}
+ThermalScattering::ThermalScattering(const pugi::xml_node& tnsl_node) noexcept
+    : majorant{HDF5DataSet<1>{tnsl_node.attribute("majorant").as_string()}
                    .ToContinuousMap()},
-      scatter_xs_T{tsl_node.attribute("total_T").as_string()},
-      scatter_xs_S{tsl_node.attribute("total_S").as_string()},
-      scatter_xs_E{tsl_node.attribute("total_E").as_string()},
+      scatter_xs_T{tnsl_node.attribute("total_T").as_string()},
+      scatter_xs_S{tnsl_node.attribute("total_S").as_string()},
+      scatter_xs_E{tnsl_node.attribute("total_E").as_string()},
       // IIFE
-      beta_partitions{[&tsl_node]() noexcept {
+      beta_partitions{[&tnsl_node]() noexcept {
         std::vector<BetaPartition> result;
-        for (const auto& partition_node : tsl_node.child("beta_partitions")) {
+        for (const auto& partition_node : tnsl_node.child("beta_partitions")) {
           result.emplace_back(partition_node);
         }
         return result;
@@ -62,9 +62,9 @@ ThermalScattering::ThermalScattering(const pugi::xml_node& tsl_node) noexcept
         return result;
       }()},
       // IIFE
-      alpha_partitions{[&tsl_node]() noexcept {
+      alpha_partitions{[&tnsl_node]() noexcept {
         std::vector<AlphaPartition> result;
-        for (const auto& partition_node : tsl_node.child("alpha_partitions")) {
+        for (const auto& partition_node : tnsl_node.child("alpha_partitions")) {
           result.emplace_back(partition_node);
         }
         return result;
@@ -94,9 +94,9 @@ ThermalScattering::ThermalScattering(const pugi::xml_node& tsl_node) noexcept
         }
         return result;
       }()},
-      beta_cutoff{tsl_node.attribute("beta_cutoff").as_double()},
-      alpha_cutoff{tsl_node.attribute("alpha_cutoff").as_double()},
-      awr{tsl_node.parent().parent().parent().attribute("awr").as_double()} {}
+      beta_cutoff{tnsl_node.attribute("beta_cutoff").as_double()},
+      alpha_cutoff{tnsl_node.attribute("alpha_cutoff").as_double()},
+      awr{tnsl_node.parent().parent().parent().attribute("awr").as_double()} {}
 
 bool ThermalScattering::IsValid(const Particle& p) const noexcept {
   const auto E = std::get<ContinuousEnergy>(p.GetEnergy());

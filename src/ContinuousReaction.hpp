@@ -82,9 +82,9 @@ public:
   MicroscopicCrossSection
   GetMajorant(const Particle& p) const noexcept override;
   /// @brief Returns appropriately-adjusted scattering cross section
-  /// @details Thermal scattering is assumed to encompass both elastic and
-  ///          inelastic scattering. Performs temperature adjustments from free
-  ///          gas or thermal scattering, if applicable.
+  /// @details Thermal neutron scattering is assumed to encompass both elastic
+  ///          and inelastic scattering. Performs temperature adjustments from
+  ///          free gas or thermal scattering, if applicable.
   MicroscopicCrossSection
   GetCrossSection(const Particle& p) const noexcept override;
   /// @brief Scatter the Particle
@@ -106,9 +106,9 @@ private:
   // Returns adjusted free gas scattering cross section for given temperature
   MicroscopicCrossSection
   GetFreeGasScatterAdjustment(const Particle& p, Temperature T) const noexcept;
-  // Neutron thermal scattering law S(a,b,T)
-  const std::optional<ThermalScattering> tsl;
-  // Atomic weight ratio of target, yes this is duplicated in tsl::awr
+  // Thermal neutron scattering law S(a,b,T)
+  const std::optional<ThermalScattering> tnsl;
+  // Atomic weight ratio of target, yes this is duplicated in tnsl::awr
   const Real awr;
 };
 

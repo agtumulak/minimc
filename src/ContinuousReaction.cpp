@@ -68,17 +68,17 @@ void ContinuousCapture::Interact(Particle& p) const noexcept {
 
 ContinuousScatter::ContinuousScatter(const pugi::xml_node& scatter_node)
     : ContinuousReaction{scatter_node.child("xs")},
-      tsl{ReadPandasSAB(scatter_node.child("tsl"))},
+      tnsl{ReadPandasSAB(scatter_node.child("tnsl"))},
       awr{scatter_node.parent().parent().attribute("awr").as_double()} {}
 
 bool ContinuousScatter::ModifiesTotal(const Particle& p) const noexcept {
-  return tsl.has_value() && tsl->IsValid(p);
+  return tnsl.has_value() && tnsl->IsValid(p);
 }
 
 MicroscopicCrossSection
 ContinuousScatter::GetMajorant(const Particle& p) const noexcept {
-  if (tsl.has_value() && tsl->IsValid(p)) {
-    return tsl->GetMajorant(p);
+  if (tnsl.has_value() && tnsl->IsValid(p)) {
+    return tnsl->GetMajorant(p);
   }
   else if (const auto T_max = p.GetCell().temperature->upper_bound;
            evaluation.IsValid(T_max)) {
@@ -98,8 +98,8 @@ ContinuousScatter::GetMajorant(const Particle& p) const noexcept {
 
 MicroscopicCrossSection
 ContinuousScatter::GetCrossSection(const Particle& p) const noexcept {
-  if (tsl.has_value() && tsl->IsValid(p)) {
-    return tsl->GetTotal(p);
+  if (tnsl.has_value() && tnsl->IsValid(p)) {
+    return tnsl->GetTotal(p);
   }
   else if (const auto T = p.GetCell().temperature->at(p.GetPosition());
            evaluation.IsValid(T)) {
@@ -119,8 +119,8 @@ ContinuousScatter::GetCrossSection(const Particle& p) const noexcept {
 
 void ContinuousScatter::Interact(Particle& p) const noexcept {
   p.event = Particle::Event::scatter;
-  if (tsl.has_value() && tsl->IsValid(p)) {
-    tsl->Scatter(p);
+  if (tnsl.has_value() && tnsl->IsValid(p)) {
+    tnsl->Scatter(p);
   }
   else {
     // Adapted from
@@ -192,17 +192,17 @@ void ContinuousScatter::Interact(Particle& p) const noexcept {
 //// private
 
 std::optional<ThermalScattering>
-ContinuousScatter::ReadPandasSAB(const pugi::xml_node& tsl_node) {
-  if (!tsl_node) {
+ContinuousScatter::ReadPandasSAB(const pugi::xml_node& tnsl_node) {
+  if (!tnsl_node) {
     return std::nullopt;
   }
-  if (Particle::ToType(tsl_node.parent().parent().name()) !=
+  if (Particle::ToType(tnsl_node.parent().parent().name()) !=
       Particle::Type::neutron) {
     throw std::runtime_error(
-        tsl_node.path() +
+        tnsl_node.path() +
         ": Only neutrons may have a thermal scattering library node");
   }
-  return ThermalScattering{tsl_node};
+  return ThermalScattering{tnsl_node};
 }
 
 bool ContinuousScatter::IsFreeGasScatteringValid(

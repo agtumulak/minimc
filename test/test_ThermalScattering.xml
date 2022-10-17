@@ -16,7 +16,7 @@
         <capture file="n-H1_0-gamma.hdf5" temperature="293.6"/>
         <scatter>
           <xs file="n-H1_0-elastic.hdf5" temperature="293.6"/>
-          <tsl
+          <tnsl
             majorant="majorant_endfb8_safety_factor_1.05.hdf5"
             total_T="scatter_xs_endfb8_T_coeffs.hdf5"
             total_S="scatter_xs_endfb8_S_coeffs.hdf5"
@@ -59,7 +59,7 @@
                 S="alpha_endfb8_3_S_coeffs.hdf5"
                 beta_T="alpha_endfb8_3_beta_T_coeffs.hdf5"/>
             </alpha_partitions>
-          </tsl>
+          </tnsl>
         </scatter>
       </neutron>
     </nuclide>

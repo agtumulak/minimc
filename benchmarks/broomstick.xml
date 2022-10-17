@@ -16,50 +16,50 @@
         <capture file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-gamma.hdf5" temperature="293.6"/>
         <scatter>
           <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-elastic.hdf5" temperature="293.6"/>
-          <tsl
-            majorant="/Users/atumulak/Developer/minimc/data/tsl/endfb8/majorant_endfb8_safety_factor_1.05.hdf5"
-            total_T="/Users/atumulak/Developer/minimc/data/tsl/endfb8/scatter_xs_endfb8_T_coeffs.hdf5"
-            total_S="/Users/atumulak/Developer/minimc/data/tsl/endfb8/scatter_xs_endfb8_S_coeffs.hdf5"
-            total_E="/Users/atumulak/Developer/minimc/data/tsl/endfb8/scatter_xs_endfb8_E_coeffs.hdf5"
+          <tnsl
+            majorant="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/majorant_endfb8_safety_factor_1.05.hdf5"
+            total_T="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/scatter_xs_endfb8_T_coeffs.hdf5"
+            total_S="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/scatter_xs_endfb8_S_coeffs.hdf5"
+            total_E="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/scatter_xs_endfb8_E_coeffs.hdf5"
             beta_cutoff="20.0"
             alpha_cutoff="1636.7475317348378">
             <beta_partitions>
               <partition
-                CDF="/Users/atumulak/Developer/minimc/data/tsl/endfb8/beta_endfb8_0_CDF_coeffs.hdf5"
-                S="/Users/atumulak/Developer/minimc/data/tsl/endfb8/beta_endfb8_0_S_coeffs.hdf5"
-                E_T="/Users/atumulak/Developer/minimc/data/tsl/endfb8/beta_endfb8_0_E_T_coeffs.hdf5"/>
+                CDF="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/beta_endfb8_0_CDF_coeffs.hdf5"
+                S="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/beta_endfb8_0_S_coeffs.hdf5"
+                E_T="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/beta_endfb8_0_E_T_coeffs.hdf5"/>
               <partition
-                CDF="/Users/atumulak/Developer/minimc/data/tsl/endfb8/beta_endfb8_1_CDF_coeffs.hdf5"
-                S="/Users/atumulak/Developer/minimc/data/tsl/endfb8/beta_endfb8_1_S_coeffs.hdf5"
-                E_T="/Users/atumulak/Developer/minimc/data/tsl/endfb8/beta_endfb8_1_E_T_coeffs.hdf5"/>
+                CDF="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/beta_endfb8_1_CDF_coeffs.hdf5"
+                S="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/beta_endfb8_1_S_coeffs.hdf5"
+                E_T="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/beta_endfb8_1_E_T_coeffs.hdf5"/>
               <partition
-                CDF="/Users/atumulak/Developer/minimc/data/tsl/endfb8/beta_endfb8_2_CDF_coeffs.hdf5"
-                S="/Users/atumulak/Developer/minimc/data/tsl/endfb8/beta_endfb8_2_S_coeffs.hdf5"
-                E_T="/Users/atumulak/Developer/minimc/data/tsl/endfb8/beta_endfb8_2_E_T_coeffs.hdf5"/>
+                CDF="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/beta_endfb8_2_CDF_coeffs.hdf5"
+                S="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/beta_endfb8_2_S_coeffs.hdf5"
+                E_T="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/beta_endfb8_2_E_T_coeffs.hdf5"/>
               <partition
-                CDF="/Users/atumulak/Developer/minimc/data/tsl/endfb8/beta_endfb8_3_CDF_coeffs.hdf5"
-                S="/Users/atumulak/Developer/minimc/data/tsl/endfb8/beta_endfb8_3_S_coeffs.hdf5"
-                E_T="/Users/atumulak/Developer/minimc/data/tsl/endfb8/beta_endfb8_3_E_T_coeffs.hdf5"/>
+                CDF="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/beta_endfb8_3_CDF_coeffs.hdf5"
+                S="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/beta_endfb8_3_S_coeffs.hdf5"
+                E_T="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/beta_endfb8_3_E_T_coeffs.hdf5"/>
             </beta_partitions>
             <alpha_partitions>
               <partition
-                CDF="/Users/atumulak/Developer/minimc/data/tsl/endfb8/alpha_endfb8_0_CDF_coeffs.hdf5"
-                S="/Users/atumulak/Developer/minimc/data/tsl/endfb8/alpha_endfb8_0_S_coeffs.hdf5"
-                beta_T="/Users/atumulak/Developer/minimc/data/tsl/endfb8/alpha_endfb8_0_beta_T_coeffs.hdf5"/>
+                CDF="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/alpha_endfb8_0_CDF_coeffs.hdf5"
+                S="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/alpha_endfb8_0_S_coeffs.hdf5"
+                beta_T="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/alpha_endfb8_0_beta_T_coeffs.hdf5"/>
               <partition
-                CDF="/Users/atumulak/Developer/minimc/data/tsl/endfb8/alpha_endfb8_1_CDF_coeffs.hdf5"
-                S="/Users/atumulak/Developer/minimc/data/tsl/endfb8/alpha_endfb8_1_S_coeffs.hdf5"
-                beta_T="/Users/atumulak/Developer/minimc/data/tsl/endfb8/alpha_endfb8_1_beta_T_coeffs.hdf5"/>
+                CDF="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/alpha_endfb8_1_CDF_coeffs.hdf5"
+                S="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/alpha_endfb8_1_S_coeffs.hdf5"
+                beta_T="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/alpha_endfb8_1_beta_T_coeffs.hdf5"/>
               <partition
-                CDF="/Users/atumulak/Developer/minimc/data/tsl/endfb8/alpha_endfb8_2_CDF_coeffs.hdf5"
-                S="/Users/atumulak/Developer/minimc/data/tsl/endfb8/alpha_endfb8_2_S_coeffs.hdf5"
-                beta_T="/Users/atumulak/Developer/minimc/data/tsl/endfb8/alpha_endfb8_2_beta_T_coeffs.hdf5"/>
+                CDF="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/alpha_endfb8_2_CDF_coeffs.hdf5"
+                S="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/alpha_endfb8_2_S_coeffs.hdf5"
+                beta_T="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/alpha_endfb8_2_beta_T_coeffs.hdf5"/>
               <partition
-                CDF="/Users/atumulak/Developer/minimc/data/tsl/endfb8/alpha_endfb8_3_CDF_coeffs.hdf5"
-                S="/Users/atumulak/Developer/minimc/data/tsl/endfb8/alpha_endfb8_3_S_coeffs.hdf5"
-                beta_T="/Users/atumulak/Developer/minimc/data/tsl/endfb8/alpha_endfb8_3_beta_T_coeffs.hdf5"/>
+                CDF="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/alpha_endfb8_3_CDF_coeffs.hdf5"
+                S="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/alpha_endfb8_3_S_coeffs.hdf5"
+                beta_T="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/alpha_endfb8_3_beta_T_coeffs.hdf5"/>
             </alpha_partitions>
-          </tsl>
+          </tnsl>
         </scatter>
       </neutron>
     </nuclide>

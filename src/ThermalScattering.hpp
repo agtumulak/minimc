@@ -27,8 +27,8 @@ public:
   using Beta = Real;
   /// @brief Dimensionless momentum transfer
   using Alpha = Real;
-  /// @brief Constructs thermal scattering data from a `tsl` node
-  ThermalScattering(const pugi::xml_node& tsl_node) noexcept;
+  /// @brief Constructs thermal scattering data from a `tnsl` node
+  ThermalScattering(const pugi::xml_node& tnsl_node) noexcept;
   /// @brief Returns true if Particle is Type::neutron and is strictly below
   ///        the cutoff energy
   bool IsValid(const Particle& p) const noexcept;

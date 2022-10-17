@@ -38,34 +38,34 @@ set(UNIT_TEST_INPUTS
   data/endfb8/n-U235_0-elastic.hdf5
   data/endfb8/n-U235_0-fission.hdf5
   data/endfb8/n-U235_0-nubar.hdf5
-  data/tsl/endfb8/majorant_endfb8_safety_factor_1.05.hdf5
-  data/tsl/endfb8/scatter_xs_endfb8_T_coeffs.hdf5
-  data/tsl/endfb8/scatter_xs_endfb8_S_coeffs.hdf5
-  data/tsl/endfb8/scatter_xs_endfb8_E_coeffs.hdf5
-  data/tsl/endfb8/beta_endfb8_0_CDF_coeffs.hdf5
-  data/tsl/endfb8/beta_endfb8_1_CDF_coeffs.hdf5
-  data/tsl/endfb8/beta_endfb8_2_CDF_coeffs.hdf5
-  data/tsl/endfb8/beta_endfb8_3_CDF_coeffs.hdf5
-  data/tsl/endfb8/beta_endfb8_0_S_coeffs.hdf5
-  data/tsl/endfb8/beta_endfb8_1_S_coeffs.hdf5
-  data/tsl/endfb8/beta_endfb8_2_S_coeffs.hdf5
-  data/tsl/endfb8/beta_endfb8_3_S_coeffs.hdf5
-  data/tsl/endfb8/beta_endfb8_0_E_T_coeffs.hdf5
-  data/tsl/endfb8/beta_endfb8_1_E_T_coeffs.hdf5
-  data/tsl/endfb8/beta_endfb8_2_E_T_coeffs.hdf5
-  data/tsl/endfb8/beta_endfb8_3_E_T_coeffs.hdf5
-  data/tsl/endfb8/alpha_endfb8_0_CDF_coeffs.hdf5
-  data/tsl/endfb8/alpha_endfb8_1_CDF_coeffs.hdf5
-  data/tsl/endfb8/alpha_endfb8_2_CDF_coeffs.hdf5
-  data/tsl/endfb8/alpha_endfb8_3_CDF_coeffs.hdf5
-  data/tsl/endfb8/alpha_endfb8_0_S_coeffs.hdf5
-  data/tsl/endfb8/alpha_endfb8_1_S_coeffs.hdf5
-  data/tsl/endfb8/alpha_endfb8_2_S_coeffs.hdf5
-  data/tsl/endfb8/alpha_endfb8_3_S_coeffs.hdf5
-  data/tsl/endfb8/alpha_endfb8_0_beta_T_coeffs.hdf5
-  data/tsl/endfb8/alpha_endfb8_1_beta_T_coeffs.hdf5
-  data/tsl/endfb8/alpha_endfb8_2_beta_T_coeffs.hdf5
-  data/tsl/endfb8/alpha_endfb8_3_beta_T_coeffs.hdf5
+  data/tnsl/endfb8/majorant_endfb8_safety_factor_1.05.hdf5
+  data/tnsl/endfb8/scatter_xs_endfb8_T_coeffs.hdf5
+  data/tnsl/endfb8/scatter_xs_endfb8_S_coeffs.hdf5
+  data/tnsl/endfb8/scatter_xs_endfb8_E_coeffs.hdf5
+  data/tnsl/endfb8/beta_endfb8_0_CDF_coeffs.hdf5
+  data/tnsl/endfb8/beta_endfb8_1_CDF_coeffs.hdf5
+  data/tnsl/endfb8/beta_endfb8_2_CDF_coeffs.hdf5
+  data/tnsl/endfb8/beta_endfb8_3_CDF_coeffs.hdf5
+  data/tnsl/endfb8/beta_endfb8_0_S_coeffs.hdf5
+  data/tnsl/endfb8/beta_endfb8_1_S_coeffs.hdf5
+  data/tnsl/endfb8/beta_endfb8_2_S_coeffs.hdf5
+  data/tnsl/endfb8/beta_endfb8_3_S_coeffs.hdf5
+  data/tnsl/endfb8/beta_endfb8_0_E_T_coeffs.hdf5
+  data/tnsl/endfb8/beta_endfb8_1_E_T_coeffs.hdf5
+  data/tnsl/endfb8/beta_endfb8_2_E_T_coeffs.hdf5
+  data/tnsl/endfb8/beta_endfb8_3_E_T_coeffs.hdf5
+  data/tnsl/endfb8/alpha_endfb8_0_CDF_coeffs.hdf5
+  data/tnsl/endfb8/alpha_endfb8_1_CDF_coeffs.hdf5
+  data/tnsl/endfb8/alpha_endfb8_2_CDF_coeffs.hdf5
+  data/tnsl/endfb8/alpha_endfb8_3_CDF_coeffs.hdf5
+  data/tnsl/endfb8/alpha_endfb8_0_S_coeffs.hdf5
+  data/tnsl/endfb8/alpha_endfb8_1_S_coeffs.hdf5
+  data/tnsl/endfb8/alpha_endfb8_2_S_coeffs.hdf5
+  data/tnsl/endfb8/alpha_endfb8_3_S_coeffs.hdf5
+  data/tnsl/endfb8/alpha_endfb8_0_beta_T_coeffs.hdf5
+  data/tnsl/endfb8/alpha_endfb8_1_beta_T_coeffs.hdf5
+  data/tnsl/endfb8/alpha_endfb8_2_beta_T_coeffs.hdf5
+  data/tnsl/endfb8/alpha_endfb8_3_beta_T_coeffs.hdf5
   test/continuous.xml
   test/continuous_invalid_nuclide_data_path.xml
   test/minimc.xsd
