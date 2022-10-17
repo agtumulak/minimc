@@ -13,7 +13,7 @@ multiple revisions over the course of decades and, as a consequence, has syntax
 that supports many ways of doing the same thing. Often, there exists an
 idiomatic approach that clearly expresses intent without compromising
 performance. Developers must always be aware of how their code may perform, but
-never to the detriment of readability. <em>Avoid premature optimization uncless
+never to the detriment of readability. <em>Avoid premature optimization unless
 you can quantitatively prove its benefits via benchmarking</em>.
 
 Sources for information herein come primarily from
