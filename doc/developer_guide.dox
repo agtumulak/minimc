@@ -73,9 +73,8 @@ Use `const` as much as possible</a>.
 
 Sometimes, a `const` member variable (such as `const std::vector`) needs to be
 initialized using non-`const` methods (such as `std::vector::push_back()`). In
-such cases, it is recommended to create a static helper function which will
-construct a temporary object which is then used to initialize the `const`
-member.
+such cases, one can create a static helper function which will construct a
+temporary object which is then used to initialize the `const` member.
 @code{.cpp}
 // Note: The following code won't compile as written because of the declaration
 // order but this will not be an issue if split into header and implemenation
@@ -84,15 +83,38 @@ class World {
 public:
   World(...): cells{CreateCells(...)} {};
 private:
-  static std::vector<const Cell> CreateCells(...);
-  const std::vector<const Cell> cells;
+  static std::vector<Cell> CreateCells(...);
+  const std::vector<Cell> cells;
 }
 @endcode
-
 In the above code, the constructor for `World` accepts parameters `(...)` which
 are passed onto `CreateCells()` which returns a properly-initialized temporary
 object. The temporary object is then used to move construct the `const` member
 `cells`.
+
+Alternatively, one may use the
+<a href="https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines.html#es28-use-lambdas-for-complex-initialization-especially-of-const-variables">
+Immediately Invoked Function Expression (IIFE)</a>
+pattern to perform complex initialization of a complex `const` member (in this
+case `World::cells`).
+@code{.cpp}
+class World {
+public:
+  World(...): cells{[](...){
+    // construct non-const temporary object (usually named `result`)
+    std::vector<Cell> result;
+    // populate `result`
+    result.push_back(...);
+    // (named) return value optimization guarantees that `result` is not copied
+    return result;}()
+  }{};
+private:
+  const std::vector<Cell> cells;
+}
+@endcode
+Both approaches are used throughout MiniMC. IIFE is generally preferred but if
+it becomes unwieldly and difficult to read, then a static helper function may
+be warranted.
 
 @section developer_guide_input_parsing Input Parsing
 
