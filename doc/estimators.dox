@@ -177,43 +177,83 @@ so repeated application of the product rule gives for the indirect effect
   +
   \ldots
 @f]
-The transition probabilities are typically decomposed
-@f{equation}{
+The transition probabilities are conventionally decomposed
+@f{align*}{
   \label{eq:transmission-emergence-kernel}
   p_{X_{i+1} \mid X_{i}} \left( x_{i+1} \middle| x_{i} \right)
-  =
-  \underbrace{
-    p \left(
-        \hat{\boldsymbol{\Omega}}_{i+1},
-        E_{i+1},
-        r_{i+1}
-      \middle|
-        \boldsymbol{x}_{i+1}
-        \hat{\boldsymbol{\Omega}}_{i},
-        E_{i},
-        r_{i}
-      \right)
-  }_{\mathcal{E}_{i}}
-  \underbrace{
-    p
-      \left(
-        \boldsymbol{x}_{i+1}
-      \middle|
-        \boldsymbol{x}_{i},
-        \hat{\boldsymbol{\Omega}}_{i},
-        E_{i},
-        r_{i}
-      \right)
-  }_{\mathcal{T}_{i}}
+  &=
+  p
+    \left(
+      \boldsymbol{x}_{i+1}
+      \hat{\boldsymbol{\Omega}}_{i+1}
+      E_{i+1},
+      r_{i+1}
+    \middle|
+      \boldsymbol{x}_{i},
+      \hat{\boldsymbol{\Omega}}_{i},
+      E_{i},
+      r_{i}
+    \right)
+  \\
+  &=
+  p
+    \left(
+      \boldsymbol{x}_{i+1}
+    \middle|
+      \boldsymbol{x}_{i},
+      \hat{\boldsymbol{\Omega}}_{i},
+      E_{i},
+      r_{i}
+    \right)
+  \\
+  &\quad\times
+  p \left(
+      r_{i+1}
+    \middle|
+      \boldsymbol{x}_{i+1}
+      \hat{\boldsymbol{\Omega}}_{i},
+      E_{i},
+      r_{i}
+    \right)
+  \\
+  &\quad\times
+  p \left(
+      E_{i+1}
+    \middle|
+      \boldsymbol{x}_{i+1}
+      \hat{\boldsymbol{\Omega}}_{i},
+      E_{i},
+      r_{i+1}
+    \right)
+  \\
+  &\quad\times
+  p \left(
+      \hat{\boldsymbol{\Omega}}_{i+1},
+    \middle|
+      \boldsymbol{x}_{i+1}
+      \hat{\boldsymbol{\Omega}}_{i},
+      E_{i+1},
+      r_{i+1}
+    \right)
+  \\
+  &=
+  \mathcal{T}_{i} \times \mathcal{R}_{i} \times \mathcal{E}_{i} \times \mathcal{A}_{i}
 @f}
-where the <em>transmission kernel</em> @f$ \mathcal{T}_{i} @f$ gives the
-probability that a particle at @f$ x_{i} @f$ will stream then immediately
-collide at @f$ \boldsymbol{x}_{i+1} @f$ and the <em>emergence kernel</em> @f$
-\mathcal{E}_{i} @f$ gives the conditional probability that a particle which
-collided @f$ \boldsymbol{x}_{i+1} @f$ will emerge with direction @f$
-\hat{\boldsymbol{\Omega}}_{i+1} @f$, and energy @f$ E_{i+1} @f$, having
-undergone reaction @f$ r_{i+1} @f$. The indirect effect at step @f$ i @f$ is
-therefore
+where the four terms on the righthand side are, in order,
+-# @f$ \mathcal{T}_{i} @f$: The probability of streaming from @f$
+   \boldsymbol{x}_{i} @f$ then colliding at @f$ \boldsymbol{x}_{i+1} @f$,
+-# @f$ \mathcal{R}_{i} @f$: The probability that a particle colliding at @f$
+   \boldsymbol{x}_{i+1} @f$ undergoes reaction @f$ r_{i+1} @f$,
+-# @f$ \mathcal{E}_{i} @f$: The probability that a particle undergoing reaction
+   @f$ r_{i+1} @f$ emerges with energy @f$ E_{i+1} @f$, and
+-# @f$ \mathcal{A}_{i} @f$: The probability that a particle emerging with
+   energy @f$ E_{i+1} @f$ emerges with direction @f$
+   \hat{\boldsymbol{\Omega}}_{i+1} @f$.
+
+Although the conditional probabilities could be selected in any order, the
+particular choice above corresponds to the order that each portion of phase
+space is actually sampled. Again using repeated application of the product
+rule, the indirect effect at step @f$ i @f$ is
 @f{equation}{
   \label{eq:step-i-indirect-effect}
   \frac
@@ -225,12 +265,18 @@ therefore
     { \mathcal{T_{i}} }
   +
   \frac
+    { \frac{\mathrm{d}}{\mathrm{d}\lambda} \mathcal{R_{i}} }
+    { \mathcal{R_{i}} }
+  +
+  \frac
     { \frac{\mathrm{d}}{\mathrm{d}\lambda} \mathcal{E_{i}} }
     { \mathcal{E_{i}} }
+  +
+  \frac
+    { \frac{\mathrm{d}}{\mathrm{d}\lambda} \mathcal{A_{i}} }
+    { \mathcal{A_{i}} }
   \mathrm{.}
 @f}
-The first term on the righthand side is implemented by Perturbation::Stream and
-the second term on the righthand side is implemented by Perturbation::Scatter.
 
 @subsection estimators_dos_pod_tnsl Thermal Neutron Scattering Law
 
@@ -747,55 +793,12 @@ so @f$ \eqref{eq:log-derivative-alpha-probability} @f$ becomes
 
 @subsubsection estimators_dos_pod_tnsl_implementation Implementation
 
-The total scattering cross section is unaffected by perturbing @f$ u_{mr} @f$,
-@f$ \sigma_{r} @f$, or @f$ v_{nr} @f$ so @f$ \left.
-\frac{\mathrm{d}\mathcal{T_{i}}}{\mathrm{d}\lambda} \middle/ \mathcal{T_{i}}
-\right. = 0 @f$.
-They do, however, affect the emergence
-kernel @f$ \eqref{eq:transmission-emergence-kernel} @f$ which can be decomposed
-@f{align*}{
-  &
-  p \left(
-      \hat{\boldsymbol{\Omega}}_{i+1},
-      E_{i+1},
-      r_{i+1}
-    \middle|
-      \boldsymbol{x}_{i+1}
-      \hat{\boldsymbol{\Omega}}_{i},
-      E_{i},
-      r_{i}
-    \right)
-  \\
-  =&
-  p \left(
-      \hat{\boldsymbol{\Omega}}_{i+1},
-    \middle|
-      \boldsymbol{x}_{i+1}
-      \hat{\boldsymbol{\Omega}}_{i},
-      E_{i+1},
-      r_{i+1}
-    \right)
-  p \left(
-      E_{i+1},
-    \middle|
-      \boldsymbol{x}_{i+1}
-      \hat{\boldsymbol{\Omega}}_{i},
-      E_{i},
-      r_{i+1}
-    \right)
-  p \left(
-      r_{i+1}
-    \middle|
-      \boldsymbol{x}_{i+1}
-      \hat{\boldsymbol{\Omega}}_{i},
-      E_{i},
-      r_{i}
-    \right)
-  \,\mathrm{.}
-@f}
-Since only parameters for @f$ \alpha @f$ are being considered, the only nonzero
-term on the righthand side is
+When only perturbations in @f$ u_{mr} @f$, @f$ \sigma_{r} @f$, or @f$ v_{nr}
+@f$ for @f$ \alpha @f$ CDF data are considred, the only nonzero term in @f$
+\eqref{eq:step-i-indirect-effect} @f$ is
 @f[
+  \mathcal{E}_{i}
+  =
   p
   \left(
     \hat{\boldsymbol{\Omega}}_{i+1},
@@ -816,8 +819,7 @@ term on the righthand side is
     r_{i+1}
   \right)
 @f]
-so @f$ \eqref{eq:step-i-indirect-effect} @f$ for perturbing @f$ u_{mr} @f$, @f$
-\sigma_{r} @f$, or @f$ v_{nr} @f$ for @f$ \alpha @f$ is just
+so we have
 @f[
   \frac
     {\frac{\mathrm{d}}{\mathrm{d}\lambda} p_{X_{i+1} \mid X_{i}}(x_{i+1} \mid x_{i})}
