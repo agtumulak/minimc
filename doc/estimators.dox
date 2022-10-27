@@ -794,7 +794,7 @@ so @f$ \eqref{eq:log-derivative-alpha-probability} @f$ becomes
 @subsubsection estimators_dos_pod_tnsl_implementation Implementation
 
 When only perturbations in @f$ u_{mr} @f$, @f$ \sigma_{r} @f$, or @f$ v_{nr}
-@f$ for @f$ \alpha @f$ CDF data are considred, the only nonzero term in @f$
+@f$ for @f$ \alpha @f$ CDF data are considered, the only nonzero term in @f$
 \eqref{eq:step-i-indirect-effect} @f$ is
 @f[
   \mathcal{E}_{i}
