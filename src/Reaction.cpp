@@ -1,8 +1,5 @@
 #include "Reaction.hpp"
 
-#include <stdexcept>
-#include <string>
-
 Reaction ToReaction(const std::string& name) {
   if (name == "capture") {
     return Reaction::capture;
@@ -14,6 +11,7 @@ Reaction ToReaction(const std::string& name) {
     return Reaction::fission;
   }
   else {
-    throw std::runtime_error("Unrecognized reaction name: " + name);
+    assert(false); // this should have been caught by the validator
+    return {};
   };
 }
