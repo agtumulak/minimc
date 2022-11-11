@@ -1,44 +1,48 @@
 /**
 
-@page transport_methods Transport Methods
+@page stream_delegates Stream Delegates
 
 @tableofcontents
 
-@section transport_methods_intro Introduction
+@section stream_delegate_intro Introduction
 
-MiniMC currently supports two transport methods: <em>surface tracking</em> and
-<em>intracell delta tracking</em>. Surface tracking (implemented in
+MiniMC supports two methods for streaming a Particle: <em>surface tracking</em>
+and <em>intracell delta tracking</em>. Surface tracking (implemented in
 SurfaceTracking) searches for the nearest surface intersection at each step.
-Intracell delta tracking (imlemented in CellDeltaTracking) also searches for
-the nearest surface intersection at each step but uses a majorant cross
-section <em>within</em> a Cell to find a distance to collision. Regular delta
-tracking does not search for the nearest surface interseaction at all but uses
-a majorant cross section across <em>all</em> Cell objects in the World to
-find a distance to collision.
+Intracell delta tracking (implemented in CellDeltaTracking) also searches for
+the nearest surface intersection at each step but uses a majorant cross section
+<em>within</em> a Cell to find a distance to collision. Regular delta tracking
+does not search for the nearest surface intersection at all but uses a majorant
+cross section across <em>all</em> Cell objects in the World to find a distance
+to collision.
+
+The StreamDelegate class is named so because it implements the <em>composition
+over inheritance</em> pattern. Rather than directly implementing its own method
+for streaming, a Particle <em>delegates</em> the task of streaming by way of
+composition to a StreamDelegate member variable.
 
 <table>
-<caption id="transport methods and features">Transport Methods and Features</caption>
-<tr><th> Transport Method                      <th> @f$ T @f$ Dependence in %Cell  <th> %Continuous @f$ T @f$ Thermal Scattering? <th> Supported?
-<tr><td rowspan="4"> Surface Tracking          <td rowspan="2"> Constant           <td> No                                        <td rowspan=2> Yes
+<caption id="stream delegates and features">Stream Delegates and Features</caption>
+<tr><th> Stream Delegate                       <th> @f$ T @f$ Dependence in %Cell  <th> Bound Targets (TNSL) <th> Supported?
+<tr><td rowspan="4"> Surface Tracking          <td rowspan="2"> Constant           <td> No                   <td rowspan=2> Yes
 <tr>                                                                               <td> Yes
-<tr>                                           <td rowspan="2"> %Continuous        <td> No                                        <td rowspan=2> No, surface tracking assumes constant cross section within a Cell
+<tr>                                           <td rowspan="2"> %Continuous        <td> No                   <td rowspan=2> No, surface tracking assumes constant cross section within a Cell
 <tr>                                                                               <td> Yes
-<tr><td rowspan="4"> Intracell Delta Tracking  <td rowspan="2"> Constant           <td> No                                        <td rowspan=2> Yes, but somewhat pointless
+<tr><td rowspan="4"> Intracell Delta Tracking  <td rowspan="2"> Constant           <td> No                   <td rowspan=2> Yes, but somewhat pointless
 <tr>                                                                               <td> Yes
-<tr>                                           <td rowspan="2"> %Continuous        <td> No                                        <td rowspan=2> Yes, see @ref transport_methods_continuous_temperature "Continuous Temperature"
+<tr>                                           <td rowspan="2"> %Continuous        <td> No                   <td rowspan=2> Yes, see @ref transport_methods_continuous_temperature "Continuous Temperature"
 <tr>                                                                               <td> Yes
 </table>
 
 The above table roughly corresponds to logic implemented in the definition of
-TransportMethod::Create.
+StreamDelegate::Create.
 
 @section transport_methods_energy_regimes Energy Regimes
 
 When the temperature in a Cell is constant but thermal scattering data is
 provided through continuous-in-temperature @f$ S(\alpha, \beta, T) @f$ data,
-neutron transport must consider the following:
-
-There are three regimes defined by two incident neutron threshold energies:
+neutron transport must consider three energy regimes defined by two incident
+neutron threshold energies:
 1. @f$ E_\text{thermal} \approx 5 \text{eV} @f$ below which neutrons are
    considered to be at thermal energies so bound targets must be handled using
    a thermal scattering law and above which targets are considered to be a free

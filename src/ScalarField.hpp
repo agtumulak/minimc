@@ -20,7 +20,7 @@ public:
   /// @brief Virtual destructor (C++ Core Guidelines C.127)
   virtual ~ScalarField() noexcept;
   /// @brief Returns true if the field is constant
-  /// @details Used during input parsing to check if a TransportMethod is valid
+  /// @details Used during input parsing to check if a StreamDelegate is valid
   virtual bool IsConstant() const noexcept = 0;
   /// @brief Returns the value at a given Point
   virtual Real at(const Point& p) const noexcept = 0;

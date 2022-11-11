@@ -1,14 +1,12 @@
 #include "FixedSource.hpp"
 
+#include "Bank.hpp"
 #include "Particle.hpp"
-#include "TransportMethod.hpp"
 #include "pugixml.hpp"
 
 #include <cstddef>
 #include <future>
 #include <iostream>
-#include <list>
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -17,7 +15,9 @@
 //// public
 
 FixedSource::FixedSource(const pugi::xml_node& root)
-    : Driver{root}, source{root.child("problemtype").child("fixedsource")} {};
+    : Driver{root}, source{
+                        root.child("problemtype").child("fixedsource"), world,
+                        perturbations} {};
 
 EstimatorSet FixedSource::Solve() {
   std::vector<std::future<EstimatorSet>> worker_estimator_sets;
@@ -42,10 +42,6 @@ EstimatorSet FixedSource::StartWorker() {
   EstimatorSet worker_estimator_set = init_estimator_set;
   // keep sampling histories until batchsize histories have been sampled
   while (true) {
-    // we _could_ return a newly constructed EstimatorSet from each call to
-    // Transport() to keep things more functional, but I suspect it will be
-    // super slow, so we use a lightweight EstimatorSet::Proxy
-    auto scoring_proxy = worker_estimator_set.GetProxy();
     // atomically update thread-local count of histories started
     auto elapsed = histories_elapsed++;
     if (elapsed >= batchsize) {
@@ -54,24 +50,26 @@ EstimatorSet FixedSource::StartWorker() {
     if (const auto interval_period = batchsize / 10000;
         interval_period != 0 && elapsed % interval_period == 0) {
       std::cout << '\r' << static_cast<double>(elapsed) / batchsize * 100
-                << "% complete...";
+                << "% complete...                ";
     }
+    // history will be considered fully sampled when bank is empty...
     Bank bank;
-    // use the remaining number of histories run for the seed
     bank.emplace_back(source.Sample(seed + elapsed));
-    // beginning with the initial Particle, complete the history
+    // ...until then we accumulate scores in EstimatorProxy objects
+    auto estimator_proxies = worker_estimator_set.CreateProxies();
+    // sample the full history
     while (!bank.empty()) {
-      // add indirect effects to current Particle
-      bank.back().SetPerturbations(perturbations);
       // transport the Particle
-      bank.back().Transport(scoring_proxy, world);
+      Transport(bank.back(), estimator_proxies);
       // new Particle objects are added to front
       bank.back().MoveSecondariesTo(bank);
       // most recently processed Particle is removed from back
       bank.pop_back();
     }
-    // add the scores stored by the proxy to worker_estimator_set
-    scoring_proxy.CommitHistory();
+    // history is fully sampled
+    for (const auto& estimator_proxy : estimator_proxies) {
+      estimator_proxy.CommitHistory();
+    }
   }
   return worker_estimator_set;
 }

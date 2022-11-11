@@ -133,15 +133,6 @@
         <xs:complexType>
           <xs:choice>
             <xs:element name="fixedsource" type="SourceDistributionType"/>
-            <xs:element name="keigenvalue">
-              <xs:complexType>
-                <xs:all>
-                  <xs:element name="initialsource" type="SourceDistributionType"/>
-                </xs:all>
-                <xs:attribute name="inactive" type="xs:positiveInteger" use="required"/>
-                <xs:attribute name="active" type="xs:positiveInteger" use="required"/>
-              </xs:complexType>
-            </xs:element>
           </xs:choice>
         </xs:complexType>
       </xs:element>

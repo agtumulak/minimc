@@ -6,10 +6,13 @@
 
 #include <memory>
 #include <variant>
+#include <vector>
 
 namespace pugi {
 class xml_node;
 }
+class Perturbation;
+class World;
 
 /// @brief Template for distributions which can be sampled with an RNG
 /// @tparam T Returned type of the distribution
@@ -68,7 +71,10 @@ public:
   ///        of an XML document
   /// @details `SourceDistributionType` is a `complexType` defined in the
   ///          minimc XML schema
-  Source(const pugi::xml_node& source_node);
+  Source(
+      const pugi::xml_node& source_node,
+      const World& world,
+      const std::vector<std::unique_ptr<const Perturbation>>& perturbations);
   /// @brief Samples a source Particle
   Particle Sample(RNG::result_type seed) const noexcept;
 
@@ -77,4 +83,6 @@ private:
   std::unique_ptr<const Distribution<Direction>> direction;
   std::unique_ptr<const Distribution<Energy>> energy;
   std::unique_ptr<const Distribution<Particle::Type>> particle_type;
+  const World& world;
+  const std::vector<std::unique_ptr<const Perturbation>>& perturbations;
 };

@@ -29,8 +29,6 @@ set(MINIMC_SOURCES
   HDF5DataSet.hpp
   Interaction.cpp
   Interaction.hpp
-  KEigenvalue.cpp
-  KEigenvalue.hpp
   Material.cpp
   Material.hpp
   Multigroup.cpp
@@ -53,10 +51,10 @@ set(MINIMC_SOURCES
   Scorable.hpp
   Source.cpp
   Source.hpp
+  StreamDelegate.cpp
+  StreamDelegate.hpp
   ThermalScattering.cpp
   ThermalScattering.hpp
-  TransportMethod.cpp
-  TransportMethod.hpp
   World.cpp
   World.hpp
   XMLDocument.cpp

@@ -2,17 +2,19 @@
 
 #include "BasicTypes.hpp"
 #include "Estimator.hpp"
-#include "Perturbation.hpp"
 #include "World.hpp"
 
 #include <cstddef>
 #include <filesystem>
 #include <memory>
+#include <vector>
 
 namespace pugi {
 class xml_node;
 }
-class TransportMethod;
+class Particle;
+class Perturbation;
+class StreamDelegate;
 
 /// @brief A Driver owns all the data needed to perform radiation transport
 class Driver {
@@ -30,11 +32,19 @@ public:
   virtual EstimatorSet Solve() = 0;
 
 protected:
+  /// @brief Kernel of the Monte Carlo transport loop
+  /// @details Samples new Particle states until it dies, scoring any
+  ///          EstimatorProxy objects along the way. A vector of EstimatorProxy
+  ///          is passed as an argument since the history may not be fully
+  ///          sampled when this function returns.
+  void Transport(Particle& p, std::vector<EstimatorProxy>& estimators) noexcept;
   /// @brief Global, read-only description of geometric and material properties
   const World world;
   /// @brief All perturbations whose effect on one or more Estimator objects is
   ///        being estimated
-  const PerturbationSet perturbations;
+  const std::vector<std::unique_ptr<const Perturbation>> perturbations;
+  /// @brief Composition over inheritance delegate for sampling next position
+  const std::unique_ptr<const StreamDelegate> stream_delegate;
 
 public:
   /// @brief Total histories for fixed-source; cycle weight for k-eigenvalue

@@ -66,7 +66,7 @@ public:
 
 /// @brief Contains data required to perform a scatter interaction
 /// @details Additional data on scattering methods is available on @ref
-///          transport_methods
+///          stream_delegates
 class ContinuousScatter : public ContinuousReaction {
 public:
   /// @brief Constructs ContinuousScatter from a `scatter` node of an XML
@@ -88,10 +88,6 @@ public:
   MicroscopicCrossSection
   GetCrossSection(const Particle& p) const noexcept override;
   /// @brief Scatter the Particle
-  /// @todo Compute @f$ \mu @f$ more directly in free gas scattering. Find
-  ///       analytic expression to avoid dot product between incident neutron
-  ///       velocity and outgoing neutron velocity when calling
-  ///       Particle::Scatter.
   void Interact(Particle& p) const noexcept override;
 
 private:

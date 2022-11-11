@@ -24,6 +24,8 @@ Cell::Cell(
       material{AssignMaterial(cell_node, all_materials)},
       temperature{AssignTemperature(cell_node, global_temperature)} {}
 
+bool Cell::IsVoid() const noexcept { return !material; }
+
 bool Cell::Contains(const Point& p) const noexcept {
   return std::all_of(
       surface_senses.cbegin(), surface_senses.cend(),
@@ -34,7 +36,7 @@ bool Cell::Contains(const Point& p) const noexcept {
       });
 }
 
-std::tuple<std::shared_ptr<const CSGSurface>, Real>
+std::tuple<const CSGSurface*, Real>
 Cell::NearestSurface(const Point& p, const Direction& d) const {
   const auto& nearest_it = std::min_element(
       surface_senses.cbegin(), surface_senses.cend(),
@@ -47,7 +49,8 @@ Cell::NearestSurface(const Point& p, const Direction& d) const {
   }
   const auto& nearest_surface = (*nearest_it).first;
   // TODO: Cache result of nearest surface distance instead of computing again
-  return std::make_tuple(nearest_surface, nearest_surface->Distance(p, d));
+  return std::make_tuple(
+      nearest_surface.get(), nearest_surface->Distance(p, d));
 }
 
 bool Cell::operator==(const Cell& rhs) const noexcept { return this == &rhs; }

@@ -14,10 +14,12 @@ TEST_CASE("Cell is constructed properly") {
   const World w{doc.root};
 
   const auto& inner_shell = w.cells.at(1);
-  const Particle neutron_group1{
-      Point{}, Direction{1, 0, 0}, Group{1}, Particle::Type::neutron, 1};
-  const Particle neutron_group2{
-      Point{}, Direction{1, 0, 0}, Group{2}, Particle::Type::neutron, 1};
+  const Particle neutron_group1{{},       Point{}, Direction{1, 0, 0},
+                                Group{1}, {},      Particle::Type::neutron,
+                                1};
+  const Particle neutron_group2{{},       Point{}, Direction{1, 0, 0},
+                                Group{2}, {},      Particle::Type::neutron,
+                                1};
 
   SECTION("Cell returns correct nearest CSGSurface"){
     const auto& [surface, distance] =

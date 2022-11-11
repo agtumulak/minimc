@@ -64,20 +64,19 @@ estimate of the expected value is given by
 @section estimators_scoring_functions Scoring Functions
 
 In general an estimator is a function of all states that a Particle undergoes
-during transport @f$ S(\omega) = S(x_{1}, \ldots, x_{N}) @f$. However, a
+during transport @f$ S(\omega) = S(x_{1}, \ldots, x_{N}) @f$. However, some
 special class of estimators can be expressed
 @f[
   S(\omega) = \sum_{i} f(x_{i})
 @f]
 where the <em> scoring function </em> @f$ f: X \rightarrow \mathbb{R} @f$ is
-only a function of the @f$ i @f$-th state. One example of a scoring function
-is
+only a function of the current state. One example of such a scoring function is
 @f[
   f(x_{i}) = \delta_{r_{i}, \text{scatter}}
 @f]
 which scores @f$ 1 @f$ if the particle underwent a scatter in step @f$ i @f$,
 zero otherwise. Using this scoring function results in an estimator for the
-total scatter rate. Another scoring function is
+total scatter rate. Another scoring function of this special class is
 @f[
   f(x_{i}) =
   \frac {\delta_{x_{i}, \text{capture}} + \delta_{x_{i}, \text{scatter}}}
@@ -85,6 +84,20 @@ total scatter rate. Another scoring function is
 @f]
 which scores @f$ \Sigma^{-1}_{t}(x_{i}) @f$ whenever a Particle collides. Using
 this scoring funtion results in an estimator for the scalar flux.
+
+A slightly more general class of estimators are
+@f[
+  S(\omega) = \sum_{i} f(x_{i-1}, x_{i})
+@f]
+where the scoring function @f$ f : X \times X \rightarrow \mathbb{R} @f$ is now
+a function of the current state and the previous state. One example of such a
+scoring function is
+@f[
+  f(x_{i-1}, x_{i})
+  = \lVert \boldsymbol{x}_{i-1} - \boldsymbol{x}_{i} \rVert
+@f]
+which simply adds the distance between each state. This scoring function is
+the basis of <em>track length</em> estimators.
 
 @section estimators_dos Differential Operator Sampling
 

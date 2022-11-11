@@ -43,14 +43,16 @@ public:
       const pugi::xml_node& cell_node, const CSGSurfaceVector& all_surfaces,
       const MaterialVector& all_materials,
       const std::shared_ptr<const ScalarField> global_temperature) noexcept;
+  /// @brief Returns true if Cell is a void
+  bool IsVoid() const noexcept;
   /// @brief Returns true if the point lies inside this Cell
   bool Contains(const Point& p) const noexcept;
   /// @brief Finds the nearest CSGSurface from a point along a given direction
   /// @param p position in the Cell
   /// @param d direction to search along
   /// @exception std::runtime_error No CSGSurface found
-  /// @return Returns a tuple to nearest CSGSurface and distance to it
-  std::tuple<std::shared_ptr<const CSGSurface>, Real>
+  /// @returns A tuple to nearest CSGSurface and distance to it
+  std::tuple<const CSGSurface*, Real>
   NearestSurface(const Point& p, const Direction& d) const;
   /// @brief Returns true if both Cell objects are the same object
   bool operator==(const Cell& rhs) const noexcept;

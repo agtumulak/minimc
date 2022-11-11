@@ -1,9 +1,12 @@
 #include "Sensitivity.hpp"
 
 #include "Estimator.hpp"
-#include "Particle.hpp"
+#include "Perturbation.hpp"
 #include "pugixml.hpp"
 
+#include <algorithm>
+#include <numeric>
+#include <stdexcept>
 #include <string>
 
 // Sensitivity
@@ -12,12 +15,28 @@
 
 std::unique_ptr<Sensitivity> Sensitivity::Create(
     const pugi::xml_node& sensitivity_perturbation_node,
-    const PerturbationSet& perturbations, const Estimator& estimator) {
+    const std::vector<std::unique_ptr<const Perturbation>>& perturbations,
+    const Estimator& estimator) {
   // find matching Perturbation
-  const auto& matched_perturbation = perturbations.FindPerturbationByName(
-      sensitivity_perturbation_node.attribute("name").as_string());
-  return matched_perturbation.CreateSensitivity(
-      sensitivity_perturbation_node, estimator);
+  const std::string& name =
+      sensitivity_perturbation_node.attribute("name").as_string();
+  const auto perturbation_it = std::find_if(
+      perturbations.cbegin(), perturbations.cend(),
+      [&name](const auto& perturbation_ptr) {
+        return perturbation_ptr->name == name;
+      });
+  if (perturbation_it == perturbations.cend()) {
+    throw std::runtime_error(
+        "Perturbation \"" + name + "\" not found. Must be one of: [" +
+        std::accumulate(
+            perturbations.cbegin(), perturbations.cend(), std::string{},
+            [](const auto& accumulated, const auto& perturbation_ptr) noexcept {
+              return accumulated + "\"" + perturbation_ptr->name + "\", ";
+            }) +
+        "]");
+  }
+  return (*perturbation_it)
+      ->CreateSensitivity(sensitivity_perturbation_node, estimator);
 }
 
 Sensitivity::~Sensitivity() noexcept {}
@@ -39,6 +58,19 @@ Sensitivity::Sensitivity(
     : Scorable{estimator, perturbation}, estimator{estimator},
       perturbation{perturbation} {}
 
+// SensitivityProxy
+
+//// public
+
+SensitivityProxy::SensitivityProxy(Sensitivity& original) noexcept
+    : original{original} {};
+
+void SensitivityProxy::CommitHistory() const noexcept {
+  for (const auto& [index, score] : pending_scores) {
+    original.AddScore(index, score);
+  }
+}
+
 // CurrentTotalCrossSectionSensitivity
 
 //// public
@@ -50,9 +82,4 @@ CurrentTotalCrossSectionSensitivity::CurrentTotalCrossSectionSensitivity(
 std::unique_ptr<Sensitivity>
 CurrentTotalCrossSectionSensitivity::Clone() const noexcept {
   return std::make_unique<CurrentTotalCrossSectionSensitivity>(*this);
-}
-
-Real CurrentTotalCrossSectionSensitivity::GetScore(
-    const Particle& p) const noexcept {
-  return p.GetIndirectEffect(&perturbation) * estimator.GetScore(p);
 }

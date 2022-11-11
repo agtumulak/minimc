@@ -1,18 +1,21 @@
 #include "Estimator.hpp"
 
 #include "Bins.hpp"
-#include "Particle.hpp"
-#include "Sensitivity.hpp"
 #include "World.hpp"
 #include "pugixml.hpp"
 
 #include <algorithm>
 #include <cassert>
 #include <numeric>
-#include <ostream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
+// Estimator::Visitor
+
+//// public
+
+Estimator::Visitor::~Visitor() noexcept {}
 
 // Estimator
 
@@ -20,7 +23,7 @@
 
 std::unique_ptr<Estimator> Estimator::Create(
     const pugi::xml_node& estimator_node, const World& world,
-    const PerturbationSet& perturbations) {
+    const std::vector<std::unique_ptr<const Perturbation>>& perturbations) {
   const std::string estimator_type = estimator_node.name();
   if (estimator_type == "current") {
     return std::make_unique<CurrentEstimator>(
@@ -75,10 +78,9 @@ Estimator& Estimator::operator+=(const Estimator& other) noexcept {
 
 Estimator::Estimator(
     const pugi::xml_node& estimator_node,
-    const PerturbationSet& perturbations) noexcept
-    : Scorable{
-      estimator_node.attribute("name").as_string(),
-      estimator_node.child("bins")},
+    const std::vector<std::unique_ptr<const Perturbation>>&
+        perturbations) noexcept
+    : Scorable{estimator_node.attribute("name").as_string(), estimator_node.child("bins")},
       // IIFE
       sensitivities{[this, &estimator_node, &perturbations]() {
         std::vector<std::unique_ptr<Sensitivity>> result;
@@ -95,26 +97,36 @@ Estimator::Estimator(
 //// public
 
 EstimatorProxy::EstimatorProxy(Estimator& original) noexcept
-    : ScorableProxy{original},
-      // IIFE
+    : // IIFE
       sensitivity_proxies{[&original]() noexcept {
-        std::vector<ScorableProxy> result;
+        std::vector<SensitivityProxy> result;
         for (const auto& sensitivity : original.sensitivities) {
           result.emplace_back(*sensitivity);
         }
         return result;
-      }()} {}
+      }()},
+      original{original} {}
 
-void EstimatorProxy::Score(const Particle& p) noexcept {
-  ScorableProxy::Score(p);
-  // score child ScorableProxy objects for Sensitivity objects
-  for (auto& sensitivity_proxy : sensitivity_proxies) {
-    sensitivity_proxy.Score(p);
+void EstimatorProxy::Visit(const Estimator::Visitor& visitor) noexcept {
+  if (const auto result = original.Visit(visitor)) {
+    const auto& [bin_index, score] = result.value();
+    // check if the Particle's bin has already been scored to
+    if (const auto it = pending_scores.find(bin_index);
+        it != pending_scores.cend()) {
+      // add score to existing index
+      it->second += score;
+    }
+    else {
+      // insert index and initialize score
+      pending_scores.insert(std::make_pair(bin_index, score));
+    }
   }
 }
 
 void EstimatorProxy::CommitHistory() const noexcept {
-  ScorableProxy::CommitHistory();
+  for (const auto& [index, score] : pending_scores) {
+    original.AddScore(index, score);
+  }
   // commit child ScorableProxy objects for Sensitivity objects
   for (auto& sensitivity_proxy : sensitivity_proxies) {
     sensitivity_proxy.CommitHistory();
@@ -127,7 +139,7 @@ void EstimatorProxy::CommitHistory() const noexcept {
 
 CurrentEstimator::CurrentEstimator(
     const pugi::xml_node& current_estimator_node, const World& world,
-    const PerturbationSet& perturbations)
+    const std::vector<std::unique_ptr<const Perturbation>>& perturbations)
     : Estimator{current_estimator_node, perturbations},
       surface{world.FindSurfaceByName(
           current_estimator_node.attribute("surface").as_string())} {}
@@ -135,19 +147,13 @@ CurrentEstimator::CurrentEstimator(
 CurrentEstimator::CurrentEstimator(const CurrentEstimator& other) noexcept
     : Estimator(other), surface{other.surface} {}
 
-std::unique_ptr<Estimator> CurrentEstimator::Clone() const noexcept {
-  return std::make_unique<CurrentEstimator>(*this);
+Estimator::Visitor::T
+CurrentEstimator::Visit(const Visitor& visitor) const noexcept {
+  return visitor.Visit(*this);
 }
 
-Real CurrentEstimator::GetScore(const Particle& p) const noexcept {
-  if (p.current_surface == surface &&
-      (p.event == Particle::Event::surface_cross ||
-       p.event == Particle::Event::leak)) {
-    return 1;
-  }
-  else {
-    return 0;
-  }
+std::unique_ptr<Estimator> CurrentEstimator::Clone() const noexcept {
+  return std::make_unique<CurrentEstimator>(*this);
 }
 
 // EstimatorSet
@@ -156,7 +162,7 @@ Real CurrentEstimator::GetScore(const Particle& p) const noexcept {
 
 EstimatorSet::EstimatorSet(
     const pugi::xml_node& estimators_node, const World& world,
-    const PerturbationSet& perturbations,
+    const std::vector<std::unique_ptr<const Perturbation>>& perturbations,
     const Real total_weight)
     : // IIFE
       estimators{[&estimators_node, &world, &perturbations]() {
@@ -180,8 +186,12 @@ EstimatorSet::EstimatorSet(const EstimatorSet& other) noexcept
       }()},
       total_weight{other.total_weight} {}
 
-EstimatorSetProxy EstimatorSet::GetProxy() const noexcept {
-  return EstimatorSetProxy(*this);
+std::vector<EstimatorProxy> EstimatorSet::CreateProxies() const noexcept {
+  std::vector<EstimatorProxy> result;
+  for (const auto& estimator : estimators) {
+    result.emplace_back(*estimator);
+  }
+  return result;
 }
 
 const Estimator&
@@ -228,30 +238,4 @@ EstimatorSet& EstimatorSet::operator+=(const EstimatorSet& other) {
         *estimator += **matched_it;
       });
   return *this;
-}
-
-// EstimatorSetProxy
-
-//// public
-
-EstimatorSetProxy::EstimatorSetProxy(const EstimatorSet& init) noexcept
-    : // IIFE
-      estimator_proxies{[&init]() {
-        std::vector<EstimatorProxy> result;
-        for (const auto& estimator_ptr : init.estimators) {
-          result.emplace_back(*estimator_ptr);
-        }
-        return result;
-      }()} {}
-
-void EstimatorSetProxy::Score(const Particle& p) noexcept {
-  std::for_each(
-      estimator_proxies.begin(), estimator_proxies.end(),
-      [&p](auto& estimator_proxy) { estimator_proxy.Score(p); });
-}
-
-void EstimatorSetProxy::CommitHistory() noexcept {
-  std::for_each(
-      estimator_proxies.begin(), estimator_proxies.end(),
-      [](auto& proxy) { proxy.CommitHistory(); });
 }

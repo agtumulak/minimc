@@ -184,7 +184,9 @@ void ContinuousScatter::Interact(Particle& p) const noexcept {
     const auto v_n_prime = V_n_prime + v_cm;
     // outgoing energy in lab frame
     const auto E_prime = 0.5 * m_n * v_n_prime.Dot(v_n_prime);
-    p.Scatter(p.GetDirection().Dot(Direction{v_n_prime}), E_prime);
+    // update Particle state
+    p.SetEnergy(E_prime);
+    p.SetDirection(Direction{v_n_prime});
   }
   return;
 }

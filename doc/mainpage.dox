@@ -21,7 +21,7 @@ Decomposition
 
 - @ref developer_guide
 - @ref style_guide
-- @ref transport_methods
+- @ref stream_delegates
 - @ref estimators
 
 */

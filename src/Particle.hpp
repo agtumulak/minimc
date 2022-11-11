@@ -5,24 +5,21 @@
 #include "Point.hpp"
 
 #include <iosfwd>
-#include <map>
+#include <unordered_map>
 #include <memory>
 
 class Cell;
 class CSGSurface;
-class EstimatorSetProxy;
-class Nuclide;
 class Perturbation;
-class PerturbationSet;
-class TransportMethod;
-class World;
 
 /// @brief The primary entity performing random walks in a World.
-/// @details Particles are characterized by their position, direction, energy,
-///          type, and an alive flag. The awkward declaration order of member
-///          variables is meant to improve alignment.
+/// @details The awkward declaration order of member variables is meant to
+///          improve alignment.
 /// @note Users of this class should assume that Direction is normalized to
 ///       avoid extra computation.
+/// @todo Make Particle a struct or make most members public. Change Particle
+///       documentation from emphasis on encapsulation to emphasis on
+///       const-correctness when references to it are used.
 class Particle {
 public:
   /// @brief Affects which cross section data is used during transport, among
@@ -37,37 +34,28 @@ public:
     scatter,
     capture,
     fission,
-    surface_cross,
     leak,
-    virtual_collision,
   };
   /// @brief Helper function to convert from std::string to Type
   static Type ToType(const std::string& name) noexcept;
-  /// @brief The TransportMethod used by all Particle objects
-  static std::unique_ptr<const TransportMethod> transport_method;
   /// @brief Member constructor. Explicitly assigns phase-space members.
   Particle(
+      const std::unordered_map<const Perturbation*, Real>& indirect_effects,
       const Point& position, const Direction& direction, const Energy& energy,
-      const Type type, RNG::result_type seed,
-      const Cell* cell = nullptr) noexcept;
-  /// @brief Use Particle::transport_method to update Particle state until it
-  ///        dies
-  Bank Transport(EstimatorSetProxy& e, const World& w) noexcept;
-  /// @brief Moves the particle along its current direction a given distance
-  void Stream(const Real distance) noexcept;
+      const Cell* cell, const Type type, RNG::result_type seed) noexcept;
   /// @brief Scatters the Particle with an outgoing direction and energy.
   /// @details Scattering is assumed to be azimuthally symmetric.
   /// @param mu The scattering cosine @f$ \mu @f$
   /// @param e The outgoing energy
   void Scatter(const Real& mu, const Energy& e) noexcept;
-  /// @brief Returns a reference to the indirect effects of this Particle
-  Real GetIndirectEffect(const Perturbation* perturbation) const noexcept;
-  /// @brief Sets the indirect effects of the Particle
-  void SetPerturbations(const PerturbationSet& perturbations) noexcept;
   /// @brief Return the current position of the Particle
   const Point& GetPosition() const noexcept;
+  /// @brief Updates the current position of the Particle
+  void SetPosition(const Point& p) noexcept;
   /// @brief Return the current direction of the Particle
   const Direction& GetDirection() const noexcept;
+  /// @brief Set the current direction of the Particle
+  void SetDirection(const Direction& d) noexcept;
   /// @brief Sets the direction to a random isotropic direction
   /// @note This should be replaced by a method which accepts scattering cosine
   void SetDirectionIsotropic() noexcept;
@@ -95,15 +83,23 @@ public:
   ///          complicated sampling schemes require multiple uniformly
   ///          distributed random numbers
   Real Sample() noexcept;
-  /// @brief Sample a Nuclide given that the Particle has collided inside its
-  ///        Cell
-  const Nuclide& SampleNuclide() noexcept;
   /// @brief Returns true if the Particle should continue to be transported
   bool IsAlive() const noexcept;
+  /// @brief Indirect effects due to a Perturbation (C++ Core Guidelines C.131)
+  /// @details Raw pointers are used for three reasons:
+  ///          1. A Perturbation should outlive any Particle so this should
+  ///             never be a dangling pointer,
+  ///          2. Particle objects are frequently constructed and destructed so
+  ///             a std::shared_ptr would update the control block quite
+  ///             frequently, and
+  ///          3. std::unordered_map keys must be hashable and using pointers
+  ///             avoids the need to implement a hash function for Perturbation.
+  ///             The order is no longer deterministic but this should not
+  ///             matter since calculation of indirect effects do not update
+  ///             Particle state
+  std::unordered_map<const Perturbation*, Real> indirect_effects;
 
 private:
-  // Indirect effects due to a Perturbation
-  std::map<const Perturbation*, Real> indirect_effects;
   // Secondaries produced
   Bank secondaries;
   // Position may be anywhere in @f$ \mathbb{R}^3 @f$
@@ -112,21 +108,20 @@ private:
   Direction direction{1, 0, 0};
   // Energy in continuous energy calculation or group in multigroup calculation
   Energy energy{Group{1}};
-  // Non-owning pointer to current const Cell occupied by the Particle
-  const Cell* cell{nullptr};
 
 public:
-  /// @brief Random number generator (C++ Core Guidelines C.131)
-  /// @details This Particle contains its own random number generator. Any
-  ///          Particle initialized with the same member variables and passed
-  ///          to the same TransportMethod::Transport call should return the
-  ///          same TransportMethod::Outcome.
-  RNG rng;
+  /// @brief Non-owning pointer to current const Cell occupied by the Particle
+  ///        (C++ Core Guideliens C.131)
+  const Cell* cell{nullptr};
   /// @brief Type of the Particle (C++ Core Guidelines C.131)
   const Type type{Type::neutron};
+  /// @brief Random number generator (C++ Core Guidelines C.131)
+  /// @details This Particle contains its own random number generator. Any
+  ///          Particle initialized with the same member variables and
+  ///          transported in the same World should undergo the same history
+  ///          and return the same Bank.
+  RNG rng;
   /// @brief Flag describing the event that occured at the current point in
   ///        phase space
   Event event{Event::birth};
-  /// @brief Pointer to most recent surface crossed
-  std::shared_ptr<const CSGSurface> current_surface;
 };

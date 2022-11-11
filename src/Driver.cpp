@@ -1,9 +1,12 @@
 #include "Driver.hpp"
 
+#include "Cell.hpp"
 #include "FixedSource.hpp"
-#include "KEigenvalue.hpp"
+#include "Material.hpp"
+#include "Nuclide.hpp"
 #include "Particle.hpp"
-#include "TransportMethod.hpp"
+#include "Perturbation.hpp"
+#include "StreamDelegate.hpp"
 #include "XMLDocument.hpp"
 #include "pugixml.hpp"
 
@@ -25,9 +28,6 @@ Driver::Create(const std::filesystem::path& xml_filepath) {
   if (problem_type == "fixedsource") {
     return std::make_unique<FixedSource>(doc->root);
   }
-  else if (problem_type == "keigenvalue") {
-    return std::make_unique<KEigenvalue>(doc->root);
-  }
   else {
     assert(false); // this should have been caught by the validator
     return {};
@@ -35,7 +35,14 @@ Driver::Create(const std::filesystem::path& xml_filepath) {
 }
 
 Driver::Driver(const pugi::xml_node& root)
-    : world{root}, perturbations{root.child("perturbations"), world},
+    : world{root}, perturbations{[this, &root]() {
+        std::vector<std::unique_ptr<const Perturbation>> result;
+        for (const auto& perturbation_node : root.child("perturbations")) {
+          result.push_back(Perturbation::Create(perturbation_node, world));
+        }
+        return result;
+      }()},
+      stream_delegate{StreamDelegate::Create(root, world)},
       batchsize(
           std::stoi(root.child("general").child("histories").child_value())),
       seed(std::stoi(
@@ -46,9 +53,26 @@ Driver::Driver(const pugi::xml_node& root)
           root.child("estimators"), world, perturbations,
           static_cast<Real>(batchsize)},
       threads{
-          std::stoul(root.child("general").child("threads").child_value())} {
-  // All Particle objects will use the selected TransportMethod
-  Particle::transport_method = TransportMethod::Create(root, world);
-}
+          std::stoul(root.child("general").child("threads").child_value())} {}
 
 Driver::~Driver() noexcept {}
+
+void Driver::Transport(
+    Particle& p, std::vector<EstimatorProxy>& estimators) noexcept {
+  while (p.IsAlive()) {
+    // sample the next position
+    stream_delegate->StreamToNextCollision(p, estimators, world);
+    if (p.event != Particle::Event::leak) {
+      // sample the next reaction
+      const MicroscopicCrossSection threshold =
+          p.cell->material->GetMicroscopicTotal(p) * p.Sample();
+      MicroscopicCrossSection accumulated = 0;
+      for (const auto& [nuclide_ptr, afrac] : p.cell->material->afracs) {
+        accumulated += afrac * nuclide_ptr->GetTotal(p);
+        if (accumulated > threshold) {
+          nuclide_ptr->Interact(p);
+        }
+      }
+    }
+  }
+}

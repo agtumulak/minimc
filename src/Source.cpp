@@ -2,6 +2,7 @@
 
 #include "BasicTypes.hpp"
 #include "Constants.hpp"
+#include "World.hpp"
 #include "pugixml.hpp"
 
 #include <cassert>
@@ -10,7 +11,7 @@
 #include <random>
 #include <string>
 #include <type_traits>
-#include <variant>
+#include <unordered_map>
 
 // Template class specialization instantiations
 
@@ -45,7 +46,7 @@ Distribution<T>::Create(const pugi::xml_node& property_node) {
     else if (distribution_name == "isotropic") {
       return std::make_unique<IsotropicDistribution>();
     }
-    else if (distribution_name == "isotropic-flux"){
+    else if (distribution_name == "isotropic-flux") {
       return std::make_unique<IsotropicFlux>(distribution_node);
     }
     else {
@@ -101,8 +102,7 @@ template <typename T>
 ConstantDistribution<T>::ConstantDistribution(const T& constant)
     : constant{constant} {};
 
-template <typename T>
-T ConstantDistribution<T>::Sample(RNG&) const noexcept {
+template <typename T> T ConstantDistribution<T>::Sample(RNG&) const noexcept {
   return constant;
 };
 
@@ -132,23 +132,36 @@ Direction IsotropicFlux::Sample(RNG& rng) const noexcept {
 
 //// public
 
-Source::Source(const pugi::xml_node& source_node)
+Source::Source(
+    const pugi::xml_node& source_node, const World& world,
+    const std::vector<std::unique_ptr<const Perturbation>>& perturbations)
     : position{Distribution<Point>::Create(source_node.child("position"))},
       direction{
           Distribution<Direction>::Create(source_node.child("direction"))},
       energy{Distribution<Energy>::Create(source_node.child("energy"))},
       particle_type{Distribution<Particle::Type>::Create(
-          source_node.child("particletype"))} {}
+          source_node.child("particletype"))},
+      world{world}, perturbations{perturbations} {}
 
 Particle Source::Sample(RNG::result_type seed) const noexcept {
+  // initialize indirect effects for new Particle
+  std::unordered_map<const Perturbation*, Real> indirect_effects;
+  for (const auto& perturbation : perturbations) {
+    indirect_effects[perturbation.get()] = 0;
+  }
   // evaluation order of arguments is undefined so do evaluation here
   RNG rng{seed};
-  auto sampled_position = position->Sample(rng);
-  auto sampled_direction = direction->Sample(rng);
-  auto sampled_energy = energy->Sample(rng);
-  auto sampled_particle_type = particle_type->Sample(rng);
-  auto sampled_seed = rng();
+  const auto sampled_position = position->Sample(rng);
+  const auto sampled_direction = direction->Sample(rng);
+  const auto sampled_energy = energy->Sample(rng);
+  const auto sampled_particle_type = particle_type->Sample(rng);
+  const auto sampled_seed = rng();
   return Particle{
-      sampled_position, sampled_direction, sampled_energy,
-      sampled_particle_type, sampled_seed};
+      indirect_effects,
+      sampled_position,
+      sampled_direction,
+      sampled_energy,
+      &world.FindCellContaining(sampled_position),
+      sampled_particle_type,
+      sampled_seed};
 }

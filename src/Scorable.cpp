@@ -8,7 +8,7 @@
 #include <cstddef>
 #include <functional>
 #include <sstream>
-#include <utility>
+#include <string>
 
 // Scorable
 
@@ -28,6 +28,11 @@ Scorable::Scorable(
       scores(bins->size(), 0), square_scores(bins->size(), 0) {}
 
 Scorable::~Scorable() noexcept {}
+
+void Scorable::AddScore(const size_t index, const Real score) noexcept {
+  scores[index] += score;
+  square_scores[index] += score * score;
+}
 
 Real Scorable::GetScore(
     const size_t index, const Real total_weight) const noexcept {
@@ -67,40 +72,4 @@ std::string Scorable::GetScoreAsString(const Real total_weight) const noexcept {
   }
   sstream << "\n\n";
   return sstream.str();
-}
-
-// ScorableProxy
-
-//// public
-
-ScorableProxy::ScorableProxy(Scorable& original) noexcept
-    : original{original} {}
-
-ScorableProxy::~ScorableProxy() noexcept {}
-
-void ScorableProxy::Score(const Particle& p) noexcept {
-  // determine score this Particle would produce
-  const auto& score = original.GetScore(p);
-  // skip scoring if score would have been zero
-  if (score == 0) {
-    return;
-  }
-  // determine which bin this Particle would score to
-  const auto& index = original.bins->GetIndex(p);
-  // check if the Particle's bin has already been scored to
-  if (const auto it = pending_scores.find(index); it != pending_scores.cend()) {
-    // add score to existing index
-    it->second += score;
-  }
-  else {
-    // insert index and initialize score
-    pending_scores.insert(std::make_pair(index, score));
-  }
-}
-
-void ScorableProxy::CommitHistory() const noexcept {
-  for (const auto& [index, score] : pending_scores) {
-    original.scores[index] += score;
-    original.square_scores[index] += score * score;
-  }
 }

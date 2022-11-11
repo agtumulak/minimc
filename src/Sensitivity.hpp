@@ -4,14 +4,16 @@
 #include "Perturbation.hpp"
 #include "Scorable.hpp"
 
+#include <cstddef>
 #include <iosfwd>
+#include <map>
 #include <memory>
+#include <vector>
 
 namespace pugi {
 class xml_node;
 }
 class Estimator;
-class Particle;
 
 /// @brief Estimates the sensitivity of an Estimator with respect to a
 ///        Perturbation
@@ -19,11 +21,13 @@ class Sensitivity : public Scorable {
 public:
   /// @brief Factory method to create a new Sensitivity from a `perturbation`
   ///        child of a `sensitivities` node of an XML document
-  /// @exception Sensitivity for Estimator with respect to Perturbation not
+  /// @exception std::runtime_error Perturbation with given name not found or
+  ///            Sensitivity for Estimator with respect to Perturbation not
   ///            supported
   static std::unique_ptr<Sensitivity> Create(
       const pugi::xml_node& sensitivity_perturbation_node,
-      const PerturbationSet& perturbations, const Estimator& estimator);
+      const std::vector<std::unique_ptr<const Perturbation>>& perturbations,
+      const Estimator& estimator);
   /// @brief Virtual destructor (C++ Core Guidelines C.127)
   virtual ~Sensitivity() noexcept;
   /// @brief Virtual constructor, used for deep copying a Sensitivity
@@ -45,6 +49,23 @@ protected:
   const Perturbation& perturbation;
 };
 
+/// @brief A lightweight object for accumulating Sensitivity scores for a
+///        single history
+/// @details Semantics similar to EstimatorProxy
+class SensitivityProxy {
+public:
+  /// @brief Constructs a SensitivtyProxy for an existing Sensitivity
+  SensitivityProxy(Sensitivity& original) noexcept;
+  /// @brief Adds the pending scores to the actual Sensitivity
+  void CommitHistory() const noexcept;
+
+private:
+  // map from indices in flattened ParticleBin index to pending scores
+  std::map<size_t, Real> pending_scores;
+  // Reference to original Sensitivity
+  Sensitivity& original;
+};
+
 /// @brief Estimates the sensitivity of a CurrentEstimator with respect to a
 ///        TotalCrossSectionPerturbation
 class CurrentTotalCrossSectionSensitivity : public Sensitivity {
@@ -56,6 +77,4 @@ public:
   /// @brief Returns a pointer to a new instance of
   ///        CurrentTotalCrossSectionSensitivity
   std::unique_ptr<Sensitivity> Clone() const noexcept override;
-  /// @brief Implements Scorable method
-  Real GetScore(const Particle& p) const noexcept override;
 };
