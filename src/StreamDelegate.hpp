@@ -14,8 +14,9 @@ class xml_node;
 class Particle;
 class World;
 
-/// @brief Composition over inheritance interface for StreamToNextCollision()
-///        method
+/// @brief Models the streaming of a Particle through a World
+/// @details Composition over inheritance interface for StreamToNextCollision()
+///          method
 class StreamDelegate {
 public:
   /// @brief Factory method to create new StreamDelegate from an XML document

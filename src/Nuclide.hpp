@@ -2,14 +2,16 @@
 
 #include "BasicTypes.hpp"
 #include "Interaction.hpp"
+#include "Particle.hpp"
 
 #include <iosfwd>
+#include <map>
+#include <memory>
 #include <string>
 
 namespace pugi {
 class xml_node;
 }
-class Particle;
 
 /// @brief Aggregates cross sections for all reactions and related nuclear data
 class Nuclide {
@@ -27,5 +29,5 @@ public:
 
 private:
   // Aggregates (polymorphic) Interaction objects for each Particle::Type
-  const Interaction::Map xs;
+  const std::map<Particle::Type, std::unique_ptr<const Interaction>> xs;
 };
