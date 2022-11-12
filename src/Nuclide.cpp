@@ -1,7 +1,5 @@
 #include "Nuclide.hpp"
 
-#include "Continuous.hpp"
-#include "Multigroup.hpp"
 #include "pugixml.hpp"
 
 #include <cassert>
@@ -15,7 +13,7 @@
 
 Nuclide::Nuclide(const pugi::xml_node& nuclide_node)
     : name{nuclide_node.attribute("name").as_string()}, xs{[&nuclide_node]() {
-        std::map<Particle::Type, std::unique_ptr<const Interaction>> xs;
+        std::map<Particle::Type, std::unique_ptr<const InteractionDelegate>> xs;
         std::stringstream particle_name_list{
             nuclide_node.root()
                 .select_node("minimc/general/particles")

@@ -14,8 +14,6 @@ set(MINIMC_SOURCES
   Cell.hpp
   Driver.cpp
   Driver.hpp
-  Continuous.cpp
-  Continuous.hpp
   ContinuousMap.hpp
   ContinuousEvaluation.cpp
   ContinuousEvaluation.hpp
@@ -27,12 +25,10 @@ set(MINIMC_SOURCES
   FixedSource.cpp
   FixedSource.hpp
   HDF5DataSet.hpp
-  Interaction.cpp
-  Interaction.hpp
+  InteractionDelegate.cpp
+  InteractionDelegate.hpp
   Material.cpp
   Material.hpp
-  Multigroup.cpp
-  Multigroup.hpp
   Nuclide.cpp
   Nuclide.hpp
   Particle.cpp

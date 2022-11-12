@@ -1,7 +1,7 @@
 #pragma once
 
 #include "BasicTypes.hpp"
-#include "Interaction.hpp"
+#include "InteractionDelegate.hpp"
 #include "Particle.hpp"
 
 #include <iosfwd>
@@ -28,6 +28,7 @@ public:
   const std::string name;
 
 private:
-  // Aggregates (polymorphic) Interaction objects for each Particle::Type
-  const std::map<Particle::Type, std::unique_ptr<const Interaction>> xs;
+  // Aggregates (polymorphic) InteractionDelegate objects for each
+  // Particle::Type
+  const std::map<Particle::Type, std::unique_ptr<const InteractionDelegate>> xs;
 };

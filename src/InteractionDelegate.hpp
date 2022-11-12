@@ -1,10 +1,11 @@
 #pragma once
 
 #include "BasicTypes.hpp"
-#include "Interaction.hpp"
-#include "Reaction.hpp"
+#include "ContinuousEvaluation.hpp"
+#include "ContinuousReaction.hpp"
 
 #include <map>
+#include <memory>
 #include <optional>
 #include <vector>
 
@@ -12,13 +13,63 @@ namespace pugi {
 class xml_node;
 }
 class Particle;
+enum class Reaction;
+
+/// @brief Models the interaction between a Particle and a Nuclide
+/// @details Composition over inheritance interface for Interact() method
+class InteractionDelegate {
+public:
+  /// @brief Virtual destructor (C++ Core Guidelines C.127)
+  virtual ~InteractionDelegate() noexcept;
+  /// @brief Returns the majorant cross section for a given Particle
+  virtual MicroscopicCrossSection
+  GetMajorant(const Particle& p) const noexcept = 0;
+  /// @brief Returns the total cross section for a given Particle
+  virtual MicroscopicCrossSection
+  GetTotal(const Particle& p) const noexcept = 0;
+  /// @brief Interact with a Particle, updating its state
+  virtual void Interact(Particle& p) const noexcept = 0;
+};
+
+/// @brief Contains cross sections which are indexed by continuous energy values
+class Continuous : public InteractionDelegate {
+public:
+  /// @brief Constructs continuous energy nuclear data from a particle node of
+  ///        an XML document
+  Continuous(const pugi::xml_node& particle_node);
+  /// @brief Returns the largest cross section that may be found within the
+  ///        current Cell
+  /// @details Currently this is the cross section at the majorant temperature
+  ///          in the Cell
+  MicroscopicCrossSection
+  GetMajorant(const Particle& p) const noexcept override;
+  /// @brief Returns the total cross section for a given Particle
+  /// @details This is not guaranteed to be consistent with the sum of all
+  ///          mutually exclusive reactions. The total cross section is meant
+  ///          to be a user-provided quantity to speed up calculations.
+  MicroscopicCrossSection GetTotal(const Particle& p) const noexcept override;
+  /// @brief Interact with a Particle, updating its state
+  void Interact(Particle& p) const noexcept override;
+
+private:
+  // Helper function for reaction cross section construction
+  static std::vector<std::unique_ptr<const ContinuousReaction>>
+  CreateReactions(const pugi::xml_node& particle_node);
+  // Returns true if any reaction modifies the total cross section even if the
+  // total cross section was evaluated at the target temperature
+  bool ReactionsModifyTotal(const Particle& p) const noexcept;
+  // Cross section data for mutually exclusive reactions
+  const std::vector<std::unique_ptr<const ContinuousReaction>> reactions;
+  // Total cross section provided in nuclear data files
+  const ContinuousEvaluation total;
+};
 
 /// @brief Contains cross sections which are indexed by discrete energy groups
 /// @details Groups are integers in `[1,G]`. Group `1` corresponds to the
 ///          highest energy. Group `G` corresponds to the lowest energy.
 /// @todo Refactor Multigroup::reactions into vector instead of map as is now
 ///       done with Continuous::reactions
-class Multigroup : public Interaction {
+class Multigroup : public InteractionDelegate {
 public:
   /// @brief Constructs multigroup nuclear data from a particle node of an XML
   ///        document
@@ -98,12 +149,10 @@ private:
   // Returns the user-specified number of groups under the `multigroup` node
   static Group GroupStructureSize(const pugi::xml_node& root) noexcept;
   // Creates scatter cross section from a scatter matrix by summing each column
-  static OneDimensional
-  CreateScatterXS(const pugi::xml_node& scatter_node);
+  static OneDimensional CreateScatterXS(const pugi::xml_node& scatter_node);
   // Helper function for reaction cross section construction. Throws exception
   // on incorrect number of entries.
-  static ReactionsMap
-  CreateReactions(const pugi::xml_node& particle_node);
+  static ReactionsMap CreateReactions(const pugi::xml_node& particle_node);
   // Helper function for creating total cross section by summing all reactions
   static OneDimensional CreateTotalXS(
       const pugi::xml_node& particle_node,
