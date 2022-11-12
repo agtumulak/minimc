@@ -43,6 +43,8 @@ compile_commands.json
 
 # Python
 **/__pycache__/
+Pipfile
+Pipfile.lock
 
 # misc
 build/
