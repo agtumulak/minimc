@@ -76,7 +76,7 @@ void Continuous::Interact(
   for (const auto& candidate : reactions) {
     accumulated += candidate->GetCrossSection(p);
     if (accumulated > threshold) {
-      candidate->Interact(p);
+      candidate->Interact(p, estimator_proxies);
       return;
     }
   }
@@ -149,13 +149,13 @@ void Multigroup::Interact(
         assert(false); // Interact() only called after StreamToNextCollision()
         break;
       case Reaction::capture:
-        Capture(p);
+        Capture(p, estimator_proxies);
         break;
       case Reaction::scatter:
-        Scatter(p);
+        Scatter(p, estimator_proxies);
         break;
       case Reaction::fission:
-        Fission(p);
+        Fission(p, estimator_proxies);
         break;
       case Reaction::leak:
         assert(false); // Interact() should never be called on leaked Particle
@@ -346,11 +346,13 @@ Multigroup::OneDimensional Multigroup::CreateTotalXS(
       });
 }
 
-void Multigroup::Capture(Particle& p) const noexcept {
+void Multigroup::Capture(
+    Particle& p, std::vector<EstimatorProxy>&) const noexcept {
   p.reaction = Reaction::capture;
 }
 
-void Multigroup::Scatter(Particle& p) const noexcept {
+void Multigroup::Scatter(
+    Particle& p, std::vector<EstimatorProxy>&) const noexcept {
   p.reaction = Reaction::scatter;
   const Real threshold = std::uniform_real_distribution{}(p.rng);
   Real accumulated{0};
@@ -368,7 +370,8 @@ void Multigroup::Scatter(Particle& p) const noexcept {
   assert(false);
 }
 
-void Multigroup::Fission(Particle& p) const noexcept {
+void Multigroup::Fission(
+    Particle& p, std::vector<EstimatorProxy>&) const noexcept {
   p.reaction = Reaction::fission;
   auto incident_group{std::get<Group>(p.GetEnergy())};
   // rely on the fact that double to int conversions essentially do a floor()

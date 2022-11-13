@@ -7,10 +7,12 @@
 
 #include <memory>
 #include <optional>
+#include <vector>
 
 namespace pugi {
 class xml_node;
 }
+class EstimatorProxy;
 class Particle;
 
 /// @brief Abstract interface for reactions which update the state of a
@@ -47,7 +49,9 @@ public:
   virtual MicroscopicCrossSection
   GetCrossSection(const Particle& p) const noexcept;
   /// @brief Interact with a Particle, updating its state
-  virtual void Interact(Particle& p) const noexcept = 0;
+  virtual void Interact(
+      Particle& p,
+      std::vector<EstimatorProxy>& estimator_proxies) const noexcept = 0;
 
 protected:
   /// @brief Cross section data associated with reaction
@@ -61,7 +65,8 @@ public:
   ///        document
   ContinuousCapture(const pugi::xml_node& capture_node);
   /// @brief Captures the Particle, ending its history
-  void Interact(Particle& p) const noexcept override;
+  void Interact(Particle& p, std::vector<EstimatorProxy>& estimator_proxies)
+      const noexcept override;
 };
 
 /// @brief Contains data required to perform a scatter interaction
@@ -88,7 +93,8 @@ public:
   MicroscopicCrossSection
   GetCrossSection(const Particle& p) const noexcept override;
   /// @brief Scatter the Particle
-  void Interact(Particle& p) const noexcept override;
+  void Interact(Particle& p, std::vector<EstimatorProxy>& estimator_proxies)
+      const noexcept override;
 
 private:
   // Helper function for constructing thermal scattering data S(a,b,T) if found
@@ -115,7 +121,8 @@ public:
   ///        document
   ContinuousFission(const pugi::xml_node& fission_node);
   /// @brief Induces a fission event, possibly producing secondary particles
-  void Interact(Particle& p) const noexcept override;
+  void Interact(Particle& p, std::vector<EstimatorProxy>& estimator_proxies)
+      const noexcept override;
 
 private:
   // Average number of secondary particles produced per fission

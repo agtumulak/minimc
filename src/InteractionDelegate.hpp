@@ -163,11 +163,14 @@ private:
       const pugi::xml_node& particle_node,
       const ReactionsMap& reactions) noexcept;
   // Captures the Particle, killing it
-  void Capture(Particle& p) const noexcept;
+  void Capture(Particle& p, std::vector<EstimatorProxy>& estimator_proxies)
+      const noexcept;
   // Scatters the Particle and updates its Group and Direction
-  void Scatter(Particle& p) const noexcept;
+  void Scatter(Particle& p, std::vector<EstimatorProxy>& estimator_proxies)
+      const noexcept;
   // Fissions the Nuclide and produces secondaries
-  void Fission(Particle& p) const noexcept;
+  void Fission(Particle& p, std::vector<EstimatorProxy>& estimator_proxies)
+      const noexcept;
   // Average number of secondary particles produced per fission
   const std::optional<OneDimensional> nubar;
   // Outgoing energy distribution of fission neutrons
