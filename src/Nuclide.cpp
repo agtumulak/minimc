@@ -53,6 +53,8 @@ MicroscopicCrossSection Nuclide::GetTotal(const Particle& p) const noexcept {
   return xs.at(p.type)->GetTotal(p);
 }
 
-void Nuclide::Interact(Particle& p) const noexcept {
-  xs.at(p.type)->Interact(p);
+void Nuclide::Interact(
+    Particle& p,
+    std::vector<EstimatorProxy>& estimator_proxies) const noexcept {
+  xs.at(p.type)->Interact(p, estimator_proxies);
 }

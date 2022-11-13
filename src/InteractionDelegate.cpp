@@ -68,7 +68,9 @@ MicroscopicCrossSection Continuous::GetTotal(const Particle& p) const noexcept {
   }
 }
 
-void Continuous::Interact(Particle& p) const noexcept {
+void Continuous::Interact(
+    Particle& p,
+    std::vector<EstimatorProxy>& estimator_proxies) const noexcept {
   const MicroscopicCrossSection threshold =
       std::uniform_real_distribution{}(p.rng) * GetTotal(p);
   MicroscopicCrossSection accumulated{0};
@@ -80,7 +82,7 @@ void Continuous::Interact(Particle& p) const noexcept {
     }
   }
   // If no reaction found, resample tail-recursively
-  return Interact(p);
+  return Interact(p, estimator_proxies);
 }
 
 //// private
@@ -134,7 +136,9 @@ MicroscopicCrossSection Multigroup::GetTotal(const Particle& p) const noexcept {
   return total.at(std::get<Group>(p.GetEnergy()));
 }
 
-void Multigroup::Interact(Particle& p) const noexcept {
+void Multigroup::Interact(
+    Particle& p,
+    std::vector<EstimatorProxy>& estimator_proxies) const noexcept {
   const MicroscopicCrossSection threshold{
       std::uniform_real_distribution{}(p.rng) * GetTotal(p)};
   MicroscopicCrossSection accumulated{0};

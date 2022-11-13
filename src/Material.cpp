@@ -40,7 +40,6 @@ Material::Material(
 
 MicroscopicCrossSection
 Material::GetMicroscopicMajorant(const Particle& p) const noexcept {
-  // TODO: Memoize this call for performance
   return std::accumulate(
       afracs.cbegin(), afracs.cend(), MicroscopicCrossSection{0},
       [&p](const auto& accumulated, const auto& nuclide_afrac_pair) {
@@ -51,7 +50,6 @@ Material::GetMicroscopicMajorant(const Particle& p) const noexcept {
 
 MicroscopicCrossSection
 Material::GetMicroscopicTotal(const Particle& p) const noexcept {
-  // TODO: Memoize this call for performance
   return std::accumulate(
       afracs.cbegin(), afracs.cend(), MicroscopicCrossSection{0},
       [&p](const auto& accumulated, const auto& nuclide_afrac_pair) {

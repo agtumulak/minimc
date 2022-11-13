@@ -62,17 +62,25 @@ void Driver::Transport(
   while (p.IsAlive()) {
     // sample the next position
     stream_delegate->StreamToNextCollision(p, estimators, world);
-    if (p.event != Particle::Event::leak) {
-      // sample the next reaction
+    if (p.event == Particle::Event::leak) {
+      break;
+    }
+    // sample the next Nuclide, currently no need to delegate this
+    const auto& sampled_nuclide = [&p]() {
       const MicroscopicCrossSection threshold =
           p.cell->material->GetMicroscopicTotal(p) * p.Sample();
       MicroscopicCrossSection accumulated = 0;
       for (const auto& [nuclide_ptr, afrac] : p.cell->material->afracs) {
         accumulated += afrac * nuclide_ptr->GetTotal(p);
         if (accumulated > threshold) {
-          nuclide_ptr->Interact(p);
+          return nuclide_ptr;
         }
       }
-    }
+      // Material total cross section is computed by adding Nuclide total cross
+      // sections so this should never be reached
+      assert(false);
+    }();
+    // interact with the sampled nuclide
+    sampled_nuclide->Interact(p, estimators);
   }
 }

@@ -12,6 +12,7 @@
 namespace pugi {
 class xml_node;
 }
+class EstimatorProxy;
 class Particle;
 enum class Reaction;
 
@@ -28,7 +29,9 @@ public:
   virtual MicroscopicCrossSection
   GetTotal(const Particle& p) const noexcept = 0;
   /// @brief Interact with a Particle, updating its state
-  virtual void Interact(Particle& p) const noexcept = 0;
+  virtual void Interact(
+      Particle& p,
+      std::vector<EstimatorProxy>& estimator_proxies) const noexcept = 0;
 };
 
 /// @brief Contains cross sections which are indexed by continuous energy values
@@ -49,7 +52,8 @@ public:
   ///          to be a user-provided quantity to speed up calculations.
   MicroscopicCrossSection GetTotal(const Particle& p) const noexcept override;
   /// @brief Interact with a Particle, updating its state
-  void Interact(Particle& p) const noexcept override;
+  void Interact(Particle& p, std::vector<EstimatorProxy>& estimator_proxies)
+      const noexcept override;
 
 private:
   // Helper function for reaction cross section construction
@@ -86,7 +90,8 @@ public:
   /// @brief Returns the total cross section for a given Particle
   MicroscopicCrossSection GetTotal(const Particle& p) const noexcept override;
   /// @brief Interact with a Particle, updating its state
-  void Interact(Particle& p) const noexcept override;
+  void Interact(Particle& p, std::vector<EstimatorProxy>& estimator_proxies)
+      const noexcept override;
 
 private:
   // Groupwise cross sections indexed by one Group
