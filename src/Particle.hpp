@@ -3,13 +3,12 @@
 #include "Bank.hpp"
 #include "BasicTypes.hpp"
 #include "Point.hpp"
+#include "Reaction.hpp"
 
 #include <iosfwd>
 #include <unordered_map>
-#include <memory>
 
 class Cell;
-class CSGSurface;
 class Perturbation;
 
 /// @brief The primary entity performing random walks in a World.
@@ -27,14 +26,6 @@ public:
   enum class Type {
     neutron,
     photon,
-  };
-  /// @brief Mutually exclusive events which can occur
-  enum class Event {
-    birth,
-    scatter,
-    capture,
-    fission,
-    leak,
   };
   /// @brief Helper function to convert from std::string to Type
   static Type ToType(const std::string& name) noexcept;
@@ -121,7 +112,7 @@ public:
   ///          transported in the same World should undergo the same history
   ///          and return the same Bank.
   RNG rng;
-  /// @brief Flag describing the event that occured at the current point in
+  /// @brief Flag describing the reaction that occured at the current point in
   ///        phase space
-  Event event{Event::birth};
+  Reaction reaction{Reaction::birth};
 };

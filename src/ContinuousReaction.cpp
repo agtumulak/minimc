@@ -9,6 +9,7 @@
 #include "ScalarField.hpp"
 #include "pugixml.hpp"
 
+#include <cassert>
 #include <cmath>
 #include <cstddef>
 #include <random>
@@ -25,12 +26,18 @@
 std::unique_ptr<const ContinuousReaction>
 ContinuousReaction::Create(const pugi::xml_node& reaction_node) {
   switch (ToReaction(reaction_node.name())) {
+  case Reaction::birth:
+    assert(false); // this should have been caught by the validator
+    return {};
   case Reaction::capture:
     return std::make_unique<const ContinuousCapture>(reaction_node);
   case Reaction::scatter:
     return std::make_unique<const ContinuousScatter>(reaction_node);
   case Reaction::fission:
     return std::make_unique<const ContinuousFission>(reaction_node);
+  case Reaction::leak:
+    assert(false); // this should have been caught by the validator
+    return {};
   }
 }
 
@@ -59,7 +66,7 @@ ContinuousCapture::ContinuousCapture(const pugi::xml_node& capture_node)
     : ContinuousReaction{capture_node} {}
 
 void ContinuousCapture::Interact(Particle& p) const noexcept {
-  p.event = Particle::Event::capture;
+  p.reaction = Reaction::capture;
 }
 
 // ContinuousScatter
@@ -118,7 +125,7 @@ ContinuousScatter::GetCrossSection(const Particle& p) const noexcept {
 }
 
 void ContinuousScatter::Interact(Particle& p) const noexcept {
-  p.event = Particle::Event::scatter;
+  p.reaction = Reaction::scatter;
   if (tnsl.has_value() && tnsl->IsValid(p)) {
     tnsl->Scatter(p);
   }
@@ -253,7 +260,7 @@ ContinuousFission::ContinuousFission(const pugi::xml_node& fission_node)
               : std::nullopt} {}
 
 void ContinuousFission::Interact(Particle& p) const noexcept {
-  p.event = Particle::Event::fission;
+  p.reaction = Reaction::fission;
   // rely on the fact that double to int conversions essentially do a floor()
   size_t fission_yield(
       nubar.value().at(std::get<ContinuousEnergy>(p.GetEnergy())) +

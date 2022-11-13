@@ -8,6 +8,7 @@
 #include "Particle.hpp"
 #include "Perturbation.hpp"
 #include "Point.hpp"
+#include "Reaction.hpp"
 #include "World.hpp"
 #include "pugixml.hpp"
 
@@ -75,9 +76,9 @@ void StreamDelegate::CrossSurface(
   for (auto& estimator_proxy : estimator_proxies) {
     estimator_proxy.Visit(*GetCrossSurfaceEstimatorVisitor(p, surface));
   }
-  // if Particle leaked, update Particle::Event
+  // if Particle leaked, update Reaction
   if (new_cell.IsVoid()){
-    p.event = Particle::Event::leak;
+    p.reaction = Reaction::leak;
   }
 }
 

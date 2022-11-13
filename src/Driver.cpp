@@ -5,6 +5,7 @@
 #include "Material.hpp"
 #include "Nuclide.hpp"
 #include "Particle.hpp"
+#include "Reaction.hpp"
 #include "Perturbation.hpp"
 #include "StreamDelegate.hpp"
 #include "XMLDocument.hpp"
@@ -62,7 +63,7 @@ void Driver::Transport(
   while (p.IsAlive()) {
     // sample the next position
     stream_delegate->StreamToNextCollision(p, estimators, world);
-    if (p.event == Particle::Event::leak) {
+    if (p.reaction == Reaction::leak) {
       break;
     }
     // sample the next Nuclide, currently no need to delegate this

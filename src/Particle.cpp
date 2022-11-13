@@ -80,6 +80,6 @@ Real Particle::Sample() noexcept {
 }
 
 bool Particle::IsAlive() const noexcept {
-  return event != Event::capture && event != Event::leak &&
-         event != Event::fission;
+  return reaction != Reaction::capture && reaction != Reaction::leak &&
+         reaction != Reaction::fission;
 }

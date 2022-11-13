@@ -4,8 +4,8 @@
 #include "ContinuousMap.hpp"
 #include "ContinuousReaction.hpp"
 #include "Particle.hpp"
-#include "Reaction.hpp"
 #include "Point.hpp"
+#include "Reaction.hpp"
 #include "ScalarField.hpp"
 #include "pugixml.hpp"
 
@@ -21,7 +21,6 @@
 #include <string>
 #include <type_traits>
 #include <variant>
-
 
 // InteractionDelegate
 
@@ -146,6 +145,9 @@ void Multigroup::Interact(
     accumulated += xs.at(std::get<Group>(p.GetEnergy()));
     if (accumulated > threshold) {
       switch (reaction) {
+      case Reaction::birth:
+        assert(false); // Interact() only called after StreamToNextCollision()
+        break;
       case Reaction::capture:
         Capture(p);
         break;
@@ -154,6 +156,9 @@ void Multigroup::Interact(
         break;
       case Reaction::fission:
         Fission(p);
+        break;
+      case Reaction::leak:
+        assert(false); // Interact() should never be called on leaked Particle
         break;
       }
       return;
@@ -305,16 +310,23 @@ Multigroup::ReactionsMap
 Multigroup::CreateReactions(const pugi::xml_node& particle_node) {
   Multigroup::ReactionsMap reactions;
   for (const auto& reaction_node : particle_node) {
-    const auto reaction{ToReaction(reaction_node.name())};
-    if (reaction == Reaction::scatter) {
+    switch (const auto reaction = ToReaction(reaction_node.name())) {
+    case Reaction::birth:
+      assert(false); // Interact() only called after StreamToNextCollision()
+      break;
+    case Reaction::capture:
+      reactions.emplace(reaction, reaction_node);
+      break;
+    case Reaction::scatter:
       reactions.emplace(reaction, CreateScatterXS(reaction_node));
-    }
-    else if (reaction == Reaction::fission) {
+      break;
+    case Reaction::fission:
       // fission cross sections "xs" are bundled along with "chi" and "nubar"
       reactions.emplace(reaction, reaction_node.child("xs"));
-    }
-    else {
-      reactions.emplace(reaction, reaction_node);
+      break;
+    case Reaction::leak:
+      assert(false); // Interact() should never be called on leaked Particle
+      break;
     }
   }
   return reactions;
@@ -335,11 +347,11 @@ Multigroup::OneDimensional Multigroup::CreateTotalXS(
 }
 
 void Multigroup::Capture(Particle& p) const noexcept {
-  p.event = Particle::Event::capture;
+  p.reaction = Reaction::capture;
 }
 
 void Multigroup::Scatter(Particle& p) const noexcept {
-  p.event = Particle::Event::scatter;
+  p.reaction = Reaction::scatter;
   const Real threshold = std::uniform_real_distribution{}(p.rng);
   Real accumulated{0};
   const auto& group_probs{
@@ -357,7 +369,7 @@ void Multigroup::Scatter(Particle& p) const noexcept {
 }
 
 void Multigroup::Fission(Particle& p) const noexcept {
-  p.event = Particle::Event::fission;
+  p.reaction = Reaction::fission;
   auto incident_group{std::get<Group>(p.GetEnergy())};
   // rely on the fact that double to int conversions essentially do a floor()
   size_t fission_yield(
