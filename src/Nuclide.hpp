@@ -18,6 +18,11 @@ class EstimatorProxy;
 class Nuclide {
 public:
   /// @brief Constructs a Nuclide from a `nuclide` node
+  /// @todo Remove calls to xml_node::root in constructor so that Nuclide can
+  ///       be constructed without requiring additional context about XML file.
+  ///       The intention is to inline as many of the XML files in the test
+  ///       directory within the corresponding unit tests without increasing
+  ///       line count too much.
   Nuclide(const pugi::xml_node& nuclide_node);
   /// @brief Returns the majorant cross section for a given Particle
   MicroscopicCrossSection GetMajorant(const Particle& p) const noexcept;
