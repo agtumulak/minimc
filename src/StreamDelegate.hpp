@@ -3,6 +3,7 @@
 #include "BasicTypes.hpp"
 #include "CSGSurface.hpp"
 #include "Estimator.hpp"
+#include "IndirectEffect.hpp"
 #include "Perturbation.hpp"
 
 #include <memory>
@@ -50,10 +51,10 @@ protected:
       const World& w, const CSGSurface& surface) const noexcept;
 
 private:
-  // Interface for getting indirect effect from a Perturbation after streaming
-  // within the current Cell. Reference to const Particle ensures that order
-  // each Perturbation does not matter.
-  virtual std::unique_ptr<const Perturbation::Visitor>
+  // Interface for updating each IndirectEffect after streaming within the
+  // current Cell. Reference to const Particle ensures that order each
+  // IndirectEffect is visited does not matter.
+  virtual std::unique_ptr<const IndirectEffect::Visitor>
   GetStreamWithinCellIndirectEffectVisitor(
       const Particle& p, const Real distance) const noexcept = 0;
   // Interface for getting the score that streaming within a Cell would
@@ -77,7 +78,7 @@ public:
       const World& w) const noexcept;
 
 private:
-  std::unique_ptr<const Perturbation::Visitor>
+  std::unique_ptr<const IndirectEffect::Visitor>
   GetStreamWithinCellIndirectEffectVisitor(
       const Particle& p, const Real distance) const noexcept final;
 
@@ -97,7 +98,7 @@ public:
       const World& w) const noexcept override;
 
 private:
-  std::unique_ptr<const Perturbation::Visitor>
+  std::unique_ptr<const IndirectEffect::Visitor>
   GetStreamWithinCellIndirectEffectVisitor(
       const Particle& p, const Real distance) const noexcept final;
 

@@ -26,11 +26,18 @@ Particle::Type Particle::ToType(const std::string& name) noexcept {
 }
 
 Particle::Particle(
-    const std::unordered_map<const Perturbation*, Real>& indirect_effects,
+    const std::vector<std::unique_ptr<IndirectEffect>>& indirect_effects,
     const Point& position, const Direction& direction, const Energy& energy,
     const Cell* cell, const Type type, RNG::result_type seed) noexcept
-    : indirect_effects{indirect_effects}, position{position},
-      direction{direction}, energy{energy}, cell{cell}, type{type}, rng{seed} {}
+    : indirect_effects{[&indirect_effects]() {
+        std::vector<std::unique_ptr<IndirectEffect>> result;
+        for (const auto& indirect_effect : indirect_effects) {
+          result.emplace_back(indirect_effect->Clone());
+        }
+        return result;
+      }()},
+      position{position}, direction{direction}, energy{energy}, cell{cell},
+      type{type}, rng{seed} {}
 
 void Particle::Scatter(const Real& mu, const Energy& e) noexcept {
   // update direction and energy

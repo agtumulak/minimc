@@ -4,6 +4,7 @@
 #include "Cell.hpp"
 #include "Constants.hpp"
 #include "Estimator.hpp"
+#include "IndirectEffect.hpp"
 #include "Material.hpp"
 #include "Particle.hpp"
 #include "Perturbation.hpp"
@@ -57,8 +58,8 @@ void StreamDelegate::StreamWithinCell(
   // move the Particle to new position
   p.SetPosition(p.GetPosition() + p.GetDirection() * distance);
   // update indirect effects
-  for (auto& [perturbation_ptr, indirect_effect] : p.indirect_effects) {
-    indirect_effect += perturbation_ptr->Visit(
+  for (auto& indirect_effect : p.indirect_effects) {
+    indirect_effect->Visit(
         *GetStreamWithinCellIndirectEffectVisitor(p, distance));
   }
   // score Estimator objects
@@ -112,25 +113,21 @@ void SurfaceTracking::StreamToNextCollision(
 
 //// private
 
-std::unique_ptr<const Perturbation::Visitor>
+std::unique_ptr<const IndirectEffect::Visitor>
 SurfaceTracking::GetStreamWithinCellIndirectEffectVisitor(
     const Particle& p, const Real distance) const noexcept {
   // construct visitor for getting Perturbation indirect effect
-  class IndirectEffectVisitor : public Perturbation::Visitor {
+  class IndirectEffectVisitor : public IndirectEffect::Visitor {
   public:
     IndirectEffectVisitor(const Particle& p, Real distance)
         : p{p}, distance{distance} {}
-    Real Visit(const TotalCrossSectionPerturbation& perturbation)
+    void Visit(TotalCrossSectionPerturbationIndirectEffect& indirect_effect)
         const noexcept final {
       const auto& afracs = p.GetCell().material->afracs;
-      if (afracs.find(perturbation.nuclide) == afracs.cend()) {
-        // indirect effect is zero if perturbed Nuclide is not in Cell
-        return 0;
+      if (afracs.find(indirect_effect.perturbation.nuclide) != afracs.cend()) {
+        indirect_effect.running_total +=
+            1 / p.GetCell().material->GetMicroscopicTotal(p) - distance;
       }
-      else {
-        return 1 / p.GetCell().material->GetMicroscopicTotal(p) - distance;
-      }
-      return 0;
     }
 
   private:
@@ -211,24 +208,20 @@ void CellDeltaTracking::StreamToNextCollision(
 
 //// private
 
-std::unique_ptr<const Perturbation::Visitor>
+std::unique_ptr<const IndirectEffect::Visitor>
 CellDeltaTracking::GetStreamWithinCellIndirectEffectVisitor(
     const Particle& p, const Real) const noexcept {
   // construct visitor for getting Perturbation indirect effect
-  class IndirectEffectVisitor : public Perturbation::Visitor {
+  class IndirectEffectVisitor : public IndirectEffect::Visitor {
   public:
     IndirectEffectVisitor(const Particle& p) : p{p} {}
-    Real Visit(const TotalCrossSectionPerturbation& perturbation)
+    void Visit(TotalCrossSectionPerturbationIndirectEffect& indirect_effect)
         const noexcept final {
       const auto& afracs = p.GetCell().material->afracs;
-      if (afracs.find(perturbation.nuclide) == afracs.cend()) {
-        // indirect effect is zero if perturbed Nuclide is not in Cell
-        return 0;
+      if (afracs.find(indirect_effect.perturbation.nuclide) != afracs.cend()) {
+        indirect_effect.running_total +=
+            1 / p.GetCell().material->GetMicroscopicTotal(p);
       }
-      else {
-        return 1 / p.GetCell().material->GetMicroscopicTotal(p);
-      }
-      return 0;
     }
 
   private:

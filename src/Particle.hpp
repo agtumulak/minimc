@@ -2,14 +2,15 @@
 
 #include "Bank.hpp"
 #include "BasicTypes.hpp"
+#include "IndirectEffect.hpp"
 #include "Point.hpp"
 #include "Reaction.hpp"
 
 #include <iosfwd>
-#include <unordered_map>
+#include <memory>
+#include <vector>
 
 class Cell;
-class Perturbation;
 
 /// @brief The primary entity performing random walks in a World.
 /// @details The awkward declaration order of member variables is meant to
@@ -31,7 +32,7 @@ public:
   static Type ToType(const std::string& name) noexcept;
   /// @brief Member constructor. Explicitly assigns phase-space members.
   Particle(
-      const std::unordered_map<const Perturbation*, Real>& indirect_effects,
+      const std::vector<std::unique_ptr<IndirectEffect>>& indirect_effects,
       const Point& position, const Direction& direction, const Energy& energy,
       const Cell* cell, const Type type, RNG::result_type seed) noexcept;
   /// @brief Scatters the Particle with an outgoing direction and energy.
@@ -77,18 +78,7 @@ public:
   /// @brief Returns true if the Particle should continue to be transported
   bool IsAlive() const noexcept;
   /// @brief Indirect effects due to a Perturbation (C++ Core Guidelines C.131)
-  /// @details Raw pointers are used for three reasons:
-  ///          1. A Perturbation should outlive any Particle so this should
-  ///             never be a dangling pointer,
-  ///          2. Particle objects are frequently constructed and destructed so
-  ///             a std::shared_ptr would update the control block quite
-  ///             frequently, and
-  ///          3. std::unordered_map keys must be hashable and using pointers
-  ///             avoids the need to implement a hash function for Perturbation.
-  ///             The order is no longer deterministic but this should not
-  ///             matter since calculation of indirect effects do not update
-  ///             Particle state
-  std::unordered_map<const Perturbation*, Real> indirect_effects;
+  const std::vector<std::unique_ptr<IndirectEffect>> indirect_effects;
 
 private:
   // Secondaries produced

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "BasicTypes.hpp"
-
 #include <iosfwd>
 #include <memory>
 #include <string>
@@ -10,35 +8,24 @@ namespace pugi {
 class xml_node;
 }
 class Estimator;
+class IndirectEffect;
 class Nuclide;
 class Sensitivity;
-class TotalCrossSectionPerturbation;
 class World;
 
 /// @brief Models a change in a system parameter
+/// @todo Merge Perturbation, Sensitivity, and IndirectEffect classes
 class Perturbation {
 public:
-  /// @brief Visitor interface for interacting with a Perturbation
-  /// @details Classes which desire different behaviors for interacting with
-  ///          different Perturbation subclasses can derive from this Visitor
-  ///          and implement each of the required interfaces. If different
-  ///          return types are required, consider templating.
-  class Visitor {
-  public:
-    /// @brief Virtual destructor (C++ Core Guidelines C.127)
-    virtual ~Visitor() noexcept;
-    /// @brief Interface for double dispatch implementations
-    virtual Real
-    Visit(const TotalCrossSectionPerturbation& p) const noexcept = 0;
-  };
   /// @brief Factory method to create a new Perturbation from a perturbation
   ///        node of an XML document
   static std::unique_ptr<const Perturbation>
   Create(const pugi::xml_node& perturbation_node, const World& world) noexcept;
   /// @brief Virtual destructor (C++ Core Guidelines C.127)
   virtual ~Perturbation() noexcept;
-  /// @brief Interface for double dispatch implementations
-  virtual Real Visit(const Visitor& visitor) const noexcept = 0;
+  /// @brief Create an IndirectEffect for constructing a Particle
+  virtual std::unique_ptr<IndirectEffect>
+  CreateIndirectEffect() const noexcept = 0;
   /// @brief Create a Sensitivity estimator from a `perturbation` child of a
   ///        `sensitivities` node of an XML document
   virtual std::unique_ptr<Sensitivity> CreateSensitivity(
@@ -62,13 +49,13 @@ public:
   /// @exception std::runtime_error Perturbed Nuclide name not found in World
   TotalCrossSectionPerturbation(
       const pugi::xml_node& total_node, const World& world);
-  /// @brief Interface for double dispatch implementations
-  Real Visit(const Visitor& visitor) const noexcept final;
-  /// @brief Creates sensitivity estimator for a TotalCrossSectionPerturbation
-  ///        if it is supported
+  /// @brief Create an IndirectEffect for a TotalCrossSectionPerturbation
+  std::unique_ptr<IndirectEffect> CreateIndirectEffect() const noexcept final;
+  /// @brief Create Sensitivity estimator for a TotalCrossSectionPerturbation if
+  ///        it is supported
   std::unique_ptr<Sensitivity> CreateSensitivity(
       const pugi::xml_node& perturbation_node,
-      const Estimator& estimator) const override;
+      const Estimator& estimator) const final;
   /// @brief Nuclide whose total cross section is being perturbed
   const std::shared_ptr<const Nuclide> nuclide;
 };

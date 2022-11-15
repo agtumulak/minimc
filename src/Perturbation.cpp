@@ -1,17 +1,12 @@
 #include "Perturbation.hpp"
 
+#include "IndirectEffect.hpp"
 #include "Sensitivity.hpp"
 #include "World.hpp"
 #include "pugixml.hpp"
 
 #include <cassert>
 #include <stdexcept>
-
-// Perturbation::Visitor
-
-//// public
-
-Perturbation::Visitor::~Visitor() noexcept {}
 
 // Perturbation
 
@@ -47,9 +42,9 @@ TotalCrossSectionPerturbation::TotalCrossSectionPerturbation(
       nuclide{world.FindNuclideByName(
           total_node.attribute("nuclide").as_string())} {}
 
-Real TotalCrossSectionPerturbation::Visit(
-    const Visitor& visitor) const noexcept {
-  return visitor.Visit(*this);
+std::unique_ptr<IndirectEffect>
+TotalCrossSectionPerturbation::CreateIndirectEffect() const noexcept {
+  return std::make_unique<TotalCrossSectionPerturbationIndirectEffect>(*this);
 };
 
 std::unique_ptr<Sensitivity> TotalCrossSectionPerturbation::CreateSensitivity(

@@ -25,6 +25,8 @@ set(MINIMC_SOURCES
   FixedSource.cpp
   FixedSource.hpp
   HDF5DataSet.hpp
+  IndirectEffect.cpp
+  IndirectEffect.hpp
   InteractionDelegate.cpp
   InteractionDelegate.hpp
   Material.cpp
