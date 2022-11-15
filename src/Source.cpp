@@ -1,7 +1,9 @@
 #include "Source.hpp"
 
-#include "BasicTypes.hpp"
+#include "Bank.hpp"
 #include "Constants.hpp"
+#include "IndirectEffect.hpp"
+#include "Perturbation.hpp"
 #include "World.hpp"
 #include "pugixml.hpp"
 
@@ -10,8 +12,6 @@
 #include <iosfwd>
 #include <random>
 #include <string>
-#include <type_traits>
-#include <unordered_map>
 
 // Template class specialization instantiations
 
@@ -143,25 +143,26 @@ Source::Source(
           source_node.child("particletype"))},
       world{world}, perturbations{perturbations} {}
 
-Particle Source::Sample(RNG::result_type seed) const noexcept {
-  // initialize indirect effects for new Particle
-  std::unordered_map<const Perturbation*, Real> indirect_effects;
-  for (const auto& perturbation : perturbations) {
-    indirect_effects[perturbation.get()] = 0;
+Bank Source::Sample(
+    RNG::result_type begin_seed, RNG::result_type end_seed) const noexcept {
+  Bank result;
+  for (auto seed = begin_seed; seed != end_seed; seed++) {
+    // initialize indirect effects for new Particle
+    std::vector<std::unique_ptr<IndirectEffect>> indirect_effects;
+    for (const auto& perturbation : perturbations) {
+      indirect_effects.emplace_back(perturbation->CreateIndirectEffect());
+    }
+    // evaluation order of arguments is undefined so do evaluation here
+    RNG rng{seed};
+    const auto sampled_position = position->Sample(rng);
+    const auto sampled_direction = direction->Sample(rng);
+    const auto sampled_energy = energy->Sample(rng);
+    const auto sampled_particle_type = particle_type->Sample(rng);
+    const auto sampled_seed = rng();
+    result.emplace_back(
+        indirect_effects, sampled_position, sampled_direction, sampled_energy,
+        &world.FindCellContaining(sampled_position), sampled_particle_type,
+        sampled_seed);
   }
-  // evaluation order of arguments is undefined so do evaluation here
-  RNG rng{seed};
-  const auto sampled_position = position->Sample(rng);
-  const auto sampled_direction = direction->Sample(rng);
-  const auto sampled_energy = energy->Sample(rng);
-  const auto sampled_particle_type = particle_type->Sample(rng);
-  const auto sampled_seed = rng();
-  return Particle{
-      indirect_effects,
-      sampled_position,
-      sampled_direction,
-      sampled_energy,
-      &world.FindCellContaining(sampled_position),
-      sampled_particle_type,
-      sampled_seed};
+  return result;
 }

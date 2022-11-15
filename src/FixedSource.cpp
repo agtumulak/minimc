@@ -4,7 +4,6 @@
 #include "Particle.hpp"
 #include "pugixml.hpp"
 
-#include <cstddef>
 #include <future>
 #include <iostream>
 #include <string>
@@ -53,8 +52,7 @@ EstimatorSet FixedSource::StartWorker() {
                 << "% complete...                ";
     }
     // history will be considered fully sampled when bank is empty...
-    Bank bank;
-    bank.emplace_back(source.Sample(seed + elapsed));
+    auto bank = source.Sample(seed + elapsed, seed + elapsed + 1);
     // ...until then we accumulate scores in EstimatorProxy objects
     auto estimator_proxies = worker_estimator_set.CreateProxies();
     // sample the full history

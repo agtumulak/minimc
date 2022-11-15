@@ -11,6 +11,7 @@
 namespace pugi {
 class xml_node;
 }
+class Bank;
 class Perturbation;
 class World;
 
@@ -44,7 +45,7 @@ private:
 };
 
 /// @brief Returns a point isotropically sampled on the unit sphere
-class IsotropicDistribution : public Distribution<Direction>{
+class IsotropicDistribution : public Distribution<Direction> {
   /// @brief Returns an isotropically sampled Direction
   Direction Sample(RNG& rng) const noexcept override;
 };
@@ -72,11 +73,13 @@ public:
   /// @details `SourceDistributionType` is a `complexType` defined in the
   ///          minimc XML schema
   Source(
-      const pugi::xml_node& source_node,
-      const World& world,
+      const pugi::xml_node& source_node, const World& world,
       const std::vector<std::unique_ptr<const Perturbation>>& perturbations);
-  /// @brief Samples a source Particle
-  Particle Sample(RNG::result_type seed) const noexcept;
+  /// @brief Returns a Bank of source Particle objects from a vector of seeds
+  /// @details Particle objects are created sequentially using seeds in
+  ///          `[begin_seed, end_seed)`
+  Bank
+  Sample(RNG::result_type begin_seed, RNG::result_type end_seed) const noexcept;
 
 private:
   std::unique_ptr<const Distribution<Point>> position;
