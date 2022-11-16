@@ -238,7 +238,7 @@
   <xs:choice>
     <xs:element name="constant">
       <xs:complexType>
-        <xs:attribute name="type" type="ParticleType"/>
+        <xs:attribute name="type" type="ParticleType" use="required"/>
       </xs:complexType>
     </xs:element>
   </xs:choice>
