@@ -87,7 +87,7 @@
 
 <xs:complexType name="ContinuousXSReactions">
   <xs:all>
-    <xs:element name="total" type="ContinuousEvaluation" minOccurs="0"/>
+    <xs:element name="total" type="ContinuousEvaluation"/>
     <xs:element name="capture" type="ContinuousEvaluation" minOccurs="0"/>
     <xs:element name="scatter" minOccurs="0">
       <xs:complexType>
