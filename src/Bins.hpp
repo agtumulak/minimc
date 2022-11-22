@@ -35,7 +35,7 @@ public:
   ///          bins
   virtual size_t size() const noexcept = 0;
   /// @brief Abstract interface for getting the bin index of a given value
-  virtual size_t GetIndex(const Real& v) const noexcept = 0;
+  virtual BinIndex GetIndex(const Real& v) const noexcept = 0;
   /// @brief Returns the contents of Bins as a string suitable for printing
   virtual std::string to_string() const noexcept = 0;
 };
@@ -46,7 +46,7 @@ public:
   /// @brief A NoBins only has one element
   size_t size() const noexcept override;
   /// @brief A NoBins always returns the one and only bin index, 0
-  size_t GetIndex(const Real&) const noexcept override;
+  BinIndex GetIndex(const Real&) const noexcept override;
   /// @brief Prints string "none" to indicate absence of bins
   std::string to_string() const noexcept override;
 };
@@ -64,7 +64,7 @@ public:
   size_t size() const noexcept override;
   /// @brief The equally spaced bin structure can take advantage of arithmetic
   ///        that speeds up bin index lookup
-  size_t GetIndex(const Real& v) const noexcept override;
+  BinIndex GetIndex(const Real& v) const noexcept override;
   /// @brief Prints space-separated array of bin boundaries
   std::string to_string() const noexcept override;
 
@@ -92,7 +92,7 @@ public:
   size_t size() const noexcept override;
   /// @brief The logarithmically spaced bin structure can take advantage of
   ///        arithmetic that speeds up bin index lookup
-  size_t GetIndex(const Real& v) const noexcept override;
+  BinIndex GetIndex(const Real& v) const noexcept override;
   /// @brief Prints space-separated array of bin boundaries
   std::string to_string() const noexcept override;
 
@@ -118,7 +118,7 @@ public:
   /// @brief Returns the number of elements
   size_t size() const noexcept override;
   /// @brief Return an index to the bin that would contain a given value
-  size_t GetIndex(const Real& v) const noexcept override;
+  BinIndex GetIndex(const Real& v) const noexcept override;
   /// @brief Prints space-separated array of bin boundaries
   std::string to_string() const noexcept override;
 
@@ -137,7 +137,7 @@ public:
   size_t size() const noexcept;
   /// @brief Maps a point in @ref estimators_phase_space "phase space" @f$ X
   ///        @f$ to an index in @f$ \mathbb{Z}_{\geq 0} @f$
-  size_t GetIndex(const Particle& p) const noexcept;
+  BinIndex GetIndex(const Particle& p) const noexcept;
   /// @brief Returns a string suitable for printing
   std::string to_string() const noexcept;
 

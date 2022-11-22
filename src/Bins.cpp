@@ -46,7 +46,7 @@ Bins::~Bins() noexcept {}
 
 size_t NoBins::size() const noexcept { return 1; }
 
-size_t NoBins::GetIndex(const Real&) const noexcept { return 0; }
+BinIndex NoBins::GetIndex(const Real&) const noexcept { return 0; }
 
 std::string NoBins::to_string() const noexcept { return "none"; }
 
@@ -69,7 +69,7 @@ LinspaceBins::LinspaceBins(const pugi::xml_node& linspace_node)
 
 size_t LinspaceBins::size() const noexcept { return n_bins; }
 
-size_t LinspaceBins::GetIndex(const Real& v) const noexcept {
+BinIndex LinspaceBins::GetIndex(const Real& v) const noexcept {
   if (v < lower_bound){
     return 0;
   }
@@ -109,7 +109,7 @@ LogspaceBins::LogspaceBins(const pugi::xml_node& logspace_node)
 
 size_t LogspaceBins::size() const noexcept { return n_bins; }
 
-size_t LogspaceBins::GetIndex(const Real& v) const noexcept {
+BinIndex LogspaceBins::GetIndex(const Real& v) const noexcept {
   const auto log_v = std::log(v) / std::log(base);
   if (log_v < log_lower_bound) {
     return 0;
@@ -155,7 +155,7 @@ BoundaryBins::BoundaryBins(const pugi::xml_node& boundaries_node)
 
 size_t BoundaryBins::size() const noexcept { return boundaries.size() + 1; }
 
-size_t BoundaryBins::GetIndex(const Real& v) const noexcept {
+BinIndex BoundaryBins::GetIndex(const Real& v) const noexcept {
   return std::distance(
       boundaries.cbegin(),
       std::upper_bound(boundaries.cbegin(), boundaries.cend(), v));
@@ -193,7 +193,7 @@ size_t ParticleBins::size() const noexcept {
   return cosine->size() * strides.front();
 }
 
-size_t ParticleBins::GetIndex(const Particle& p) const noexcept {
+BinIndex ParticleBins::GetIndex(const Particle& p) const noexcept {
   // get cosine bin
   const auto c_i =
       direction ? cosine->GetIndex(direction.value().Dot(p.GetDirection())) : 0;

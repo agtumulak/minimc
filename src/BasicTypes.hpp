@@ -6,6 +6,8 @@
 
 /// @file
 
+/// @brief Index for Bins classes
+using BinIndex = size_t;
 /// @brief Real number @f$ \mathbb{R} @f$ (C++ Core Guidelines P.1)
 using Real = double;
 /// @brief Temperature in kelvins
