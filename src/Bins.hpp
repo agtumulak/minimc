@@ -44,11 +44,11 @@ public:
 class NoBins : public Bins {
 public:
   /// @brief A NoBins only has one element
-  size_t size() const noexcept override;
+  size_t size() const noexcept final;
   /// @brief A NoBins always returns the one and only bin index, 0
-  BinIndex GetIndex(const Real&) const noexcept override;
+  BinIndex GetIndex(const Real&) const noexcept final;
   /// @brief Prints string "none" to indicate absence of bins
-  std::string to_string() const noexcept override;
+  std::string to_string() const noexcept final;
 };
 
 /// @brief A Bin with equally-spaced bin boundaries
@@ -61,12 +61,12 @@ public:
   ///          are automatically included.
   LinspaceBins(const pugi::xml_node& linspace_node);
   /// @brief Size required to store all bins
-  size_t size() const noexcept override;
+  size_t size() const noexcept final;
   /// @brief The equally spaced bin structure can take advantage of arithmetic
   ///        that speeds up bin index lookup
-  BinIndex GetIndex(const Real& v) const noexcept override;
+  BinIndex GetIndex(const Real& v) const noexcept final;
   /// @brief Prints space-separated array of bin boundaries
-  std::string to_string() const noexcept override;
+  std::string to_string() const noexcept final;
 
 private:
   // total number of bins
@@ -89,12 +89,12 @@ public:
   ///          are automatically included.
   LogspaceBins(const pugi::xml_node& logspace_node);
   /// @brief Size required to store all bins
-  size_t size() const noexcept override;
+  size_t size() const noexcept final;
   /// @brief The logarithmically spaced bin structure can take advantage of
   ///        arithmetic that speeds up bin index lookup
-  BinIndex GetIndex(const Real& v) const noexcept override;
+  BinIndex GetIndex(const Real& v) const noexcept final;
   /// @brief Prints space-separated array of bin boundaries
-  std::string to_string() const noexcept override;
+  std::string to_string() const noexcept final;
 
 private:
   // number of bins; equal to number of bin boundaries
@@ -116,11 +116,11 @@ public:
   ///        document
   BoundaryBins(const pugi::xml_node& boundaries_node);
   /// @brief Returns the number of elements
-  size_t size() const noexcept override;
+  size_t size() const noexcept final;
   /// @brief Return an index to the bin that would contain a given value
-  BinIndex GetIndex(const Real& v) const noexcept override;
+  BinIndex GetIndex(const Real& v) const noexcept final;
   /// @brief Prints space-separated array of bin boundaries
-  std::string to_string() const noexcept override;
+  std::string to_string() const noexcept final;
 
 private:
   // bin boundaries
