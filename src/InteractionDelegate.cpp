@@ -19,7 +19,6 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <type_traits>
 #include <variant>
 
 // InteractionDelegate
@@ -69,7 +68,7 @@ MicroscopicCrossSection Continuous::GetTotal(const Particle& p) const noexcept {
 
 void Continuous::Interact(
     Particle& p,
-    std::vector<EstimatorProxy>& estimator_proxies) const noexcept {
+    std::vector<Estimator::Proxy>& estimator_proxies) const noexcept {
   const MicroscopicCrossSection threshold =
       std::uniform_real_distribution{}(p.rng) * GetTotal(p);
   MicroscopicCrossSection accumulated{0};
@@ -137,7 +136,7 @@ MicroscopicCrossSection Multigroup::GetTotal(const Particle& p) const noexcept {
 
 void Multigroup::Interact(
     Particle& p,
-    std::vector<EstimatorProxy>& estimator_proxies) const noexcept {
+    std::vector<Estimator::Proxy>& estimator_proxies) const noexcept {
   const MicroscopicCrossSection threshold{
       std::uniform_real_distribution{}(p.rng) * GetTotal(p)};
   MicroscopicCrossSection accumulated{0};
@@ -347,12 +346,12 @@ Multigroup::OneDimensional Multigroup::CreateTotalXS(
 }
 
 void Multigroup::Capture(
-    Particle& p, std::vector<EstimatorProxy>&) const noexcept {
+    Particle& p, std::vector<Estimator::Proxy>&) const noexcept {
   p.reaction = Reaction::capture;
 }
 
 void Multigroup::Scatter(
-    Particle& p, std::vector<EstimatorProxy>&) const noexcept {
+    Particle& p, std::vector<Estimator::Proxy>&) const noexcept {
   p.reaction = Reaction::scatter;
   const Real threshold = std::uniform_real_distribution{}(p.rng);
   Real accumulated{0};
@@ -371,7 +370,7 @@ void Multigroup::Scatter(
 }
 
 void Multigroup::Fission(
-    Particle& p, std::vector<EstimatorProxy>&) const noexcept {
+    Particle& p, std::vector<Estimator::Proxy>&) const noexcept {
   p.reaction = Reaction::fission;
   auto incident_group{std::get<Group>(p.GetEnergy())};
   // rely on the fact that double to int conversions essentially do a floor()

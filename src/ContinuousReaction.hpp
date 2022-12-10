@@ -9,10 +9,12 @@
 #include <optional>
 #include <vector>
 
+namespace Estimator {
+class Proxy;
+}
 namespace pugi {
 class xml_node;
 }
-class EstimatorProxy;
 class Particle;
 
 /// @brief Abstract interface for reactions which update the state of a
@@ -39,8 +41,7 @@ public:
   /// @brief Returns the largest cross section that may be found within the
   ///        current Cell
   /// @details Currently wraps GetCrossSection
-  virtual MicroscopicCrossSection
-  GetMajorant(const Particle& p) const noexcept;
+  virtual MicroscopicCrossSection GetMajorant(const Particle& p) const noexcept;
   /// @brief Returns temperature-adjusted cross section for the reaction
   /// @details Currently returns the cross section without considering
   ///          temperature
@@ -51,7 +52,7 @@ public:
   /// @brief Interact with a Particle, updating its state
   virtual void Interact(
       Particle& p,
-      std::vector<EstimatorProxy>& estimator_proxies) const noexcept = 0;
+      std::vector<Estimator::Proxy>& estimator_proxies) const noexcept = 0;
 
 protected:
   /// @brief Cross section data associated with reaction
@@ -65,7 +66,7 @@ public:
   ///        document
   ContinuousCapture(const pugi::xml_node& capture_node);
   /// @brief Captures the Particle, ending its history
-  void Interact(Particle& p, std::vector<EstimatorProxy>& estimator_proxies)
+  void Interact(Particle& p, std::vector<Estimator::Proxy>& estimator_proxies)
       const noexcept override;
 };
 
@@ -93,7 +94,7 @@ public:
   MicroscopicCrossSection
   GetCrossSection(const Particle& p) const noexcept override;
   /// @brief Scatter the Particle
-  void Interact(Particle& p, std::vector<EstimatorProxy>& estimator_proxies)
+  void Interact(Particle& p, std::vector<Estimator::Proxy>& estimator_proxies)
       const noexcept override;
 
 private:
@@ -121,7 +122,7 @@ public:
   ///        document
   ContinuousFission(const pugi::xml_node& fission_node);
   /// @brief Induces a fission event, possibly producing secondary particles
-  void Interact(Particle& p, std::vector<EstimatorProxy>& estimator_proxies)
+  void Interact(Particle& p, std::vector<Estimator::Proxy>& estimator_proxies)
       const noexcept override;
 
 private:

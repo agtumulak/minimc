@@ -2,8 +2,8 @@
 
 #include "Bank.hpp"
 #include "Constants.hpp"
-#include "IndirectEffect.hpp"
-#include "Perturbation.hpp"
+#include "Perturbation/Perturbation.hpp"
+#include "Perturbation/IndirectEffect/IndirectEffect.hpp"
 #include "World.hpp"
 #include "pugixml.hpp"
 
@@ -134,7 +134,8 @@ Direction IsotropicFlux::Sample(RNG& rng) const noexcept {
 
 Source::Source(
     const pugi::xml_node& source_node, const World& world,
-    const std::vector<std::unique_ptr<const Perturbation>>& perturbations)
+    const std::vector<std::unique_ptr<const Perturbation::Interface>>&
+        perturbations)
     : position{Distribution<Point>::Create(source_node.child("position"))},
       direction{
           Distribution<Direction>::Create(source_node.child("direction"))},
@@ -148,7 +149,8 @@ Bank Source::Sample(
   Bank result;
   for (auto seed = begin_seed; seed != end_seed; seed++) {
     // initialize indirect effects for new Particle
-    std::vector<std::unique_ptr<IndirectEffect>> indirect_effects;
+    std::vector<std::shared_ptr<Perturbation::IndirectEffect::Interface>>
+        indirect_effects;
     for (const auto& perturbation : perturbations) {
       indirect_effects.emplace_back(perturbation->CreateIndirectEffect());
     }

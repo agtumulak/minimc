@@ -19,14 +19,16 @@ set(MINIMC_SOURCES
   ContinuousEvaluation.hpp
   ContinuousReaction.cpp
   ContinuousReaction.hpp
-  Estimator.cpp
-  Estimator.hpp
+  Estimator/Estimator.cpp
+  Estimator/Estimator.hpp
+  Estimator/Proxy.cpp
+  Estimator/Proxy.hpp
+  Estimator/Visitor.cpp
+  Estimator/Visitor.hpp
   Constants.hpp
   FixedSource.cpp
   FixedSource.hpp
   HDF5DataSet.hpp
-  IndirectEffect.cpp
-  IndirectEffect.hpp
   InteractionDelegate.cpp
   InteractionDelegate.hpp
   Material.cpp
@@ -35,18 +37,24 @@ set(MINIMC_SOURCES
   Nuclide.hpp
   Particle.cpp
   Particle.hpp
-  Perturbation.cpp
-  Perturbation.hpp
+  Perturbation/IndirectEffect/IndirectEffect.cpp
+  Perturbation/IndirectEffect/IndirectEffect.hpp
+  Perturbation/IndirectEffect/Visitor.cpp
+  Perturbation/IndirectEffect/Visitor.hpp
+  Perturbation/Perturbation.cpp
+  Perturbation/Perturbation.hpp
+  Perturbation/Sensitivity/Proxy/Proxy.cpp
+  Perturbation/Sensitivity/Proxy/Proxy.hpp
+  Perturbation/Sensitivity/Proxy/Visitor.cpp
+  Perturbation/Sensitivity/Proxy/Visitor.hpp
+  Perturbation/Sensitivity/Sensitivity.cpp
+  Perturbation/Sensitivity/Sensitivity.hpp
   Point.cpp
   Point.hpp
   Reaction.cpp
   Reaction.hpp
-  Sensitivity.cpp
-  Sensitivity.hpp
   ScalarField.cpp
   ScalarField.hpp
-  Scorable.cpp
-  Scorable.hpp
   Source.cpp
   Source.hpp
   StreamDelegate.cpp

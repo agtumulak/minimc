@@ -2,13 +2,19 @@
 
 #include "BasicTypes.hpp"
 #include "CSGSurface.hpp"
-#include "Estimator.hpp"
-#include "IndirectEffect.hpp"
-#include "Perturbation.hpp"
 
 #include <memory>
 #include <vector>
 
+namespace Estimator {
+class Proxy;
+class Visitor;
+} // namespace Estimator
+namespace Perturbation {
+namespace IndirectEffect {
+class Visitor;
+} // namespace IndirectEffect
+} // namespace Perturbation
 namespace pugi {
 class xml_node;
 }
@@ -34,27 +40,27 @@ public:
   ///        indirect effects
   /// @details Transports a Particle up to (but not including) a collision
   virtual void StreamToNextCollision(
-      Particle& p, std::vector<EstimatorProxy>& estimator_proxies,
+      Particle& p, std::vector<Estimator::Proxy>& estimator_proxies,
       const World& w) const noexcept = 0;
 
 protected:
   /// @brief Interface for streaming a Particle within a Cell once a distance
   ///        has been sampled
   void StreamWithinCell(
-      Particle& p, std::vector<EstimatorProxy>& estimator_proxies,
+      Particle& p, std::vector<Estimator::Proxy>& estimator_proxies,
       const Real distance) const noexcept;
   /// @brief Interface for moving a Particle across a CSGSurface while streaming
   /// @todo Change nudge to be in direction normal to surface crossed in order
   ///       to reduce minimum nudge size and/or avoid "grazing" intersections.
   void CrossSurface(
-      Particle& p, std::vector<EstimatorProxy>& estimator_proxies,
+      Particle& p, std::vector<Estimator::Proxy>& estimator_proxies,
       const World& w, const CSGSurface& surface) const noexcept;
 
 private:
   // Interface for updating each IndirectEffect after streaming within the
   // current Cell. Reference to const Particle ensures that order each
   // IndirectEffect is visited does not matter.
-  virtual std::unique_ptr<const IndirectEffect::Visitor>
+  virtual std::unique_ptr<const Perturbation::IndirectEffect::Visitor>
   GetStreamWithinCellIndirectEffectVisitor(
       const Particle& p, const Real distance) const noexcept = 0;
   // Interface for getting the score that streaming within a Cell would
@@ -74,11 +80,11 @@ private:
 class SurfaceTracking : public StreamDelegate {
 public:
   void StreamToNextCollision(
-      Particle& p, std::vector<EstimatorProxy>& estimator_proxies,
+      Particle& p, std::vector<Estimator::Proxy>& estimator_proxies,
       const World& w) const noexcept;
 
 private:
-  std::unique_ptr<const IndirectEffect::Visitor>
+  std::unique_ptr<const Perturbation::IndirectEffect::Visitor>
   GetStreamWithinCellIndirectEffectVisitor(
       const Particle& p, const Real distance) const noexcept final;
 
@@ -94,11 +100,11 @@ private:
 class CellDeltaTracking : public StreamDelegate {
 public:
   void StreamToNextCollision(
-      Particle& p, std::vector<EstimatorProxy>& estimator_proxies,
+      Particle& p, std::vector<Estimator::Proxy>& estimator_proxies,
       const World& w) const noexcept override;
 
 private:
-  std::unique_ptr<const IndirectEffect::Visitor>
+  std::unique_ptr<const Perturbation::IndirectEffect::Visitor>
   GetStreamWithinCellIndirectEffectVisitor(
       const Particle& p, const Real distance) const noexcept final;
 

@@ -1,6 +1,7 @@
 #include "Particle.hpp"
 
 #include "Constants.hpp"
+#include "Perturbation/IndirectEffect/IndirectEffect.hpp"
 
 #include <cassert>
 #include <random>
@@ -26,11 +27,13 @@ Particle::Type Particle::ToType(const std::string& name) noexcept {
 }
 
 Particle::Particle(
-    const std::vector<std::unique_ptr<IndirectEffect>>& indirect_effects,
+    const std::vector<std::shared_ptr<Perturbation::IndirectEffect::Interface>>&
+        indirect_effects,
     const Point& position, const Direction& direction, const Energy& energy,
     const Cell* cell, const Type type, RNG::result_type seed) noexcept
     : indirect_effects{[&indirect_effects]() {
-        std::vector<std::unique_ptr<IndirectEffect>> result;
+        std::vector<std::shared_ptr<Perturbation::IndirectEffect::Interface>>
+            result;
         for (const auto& indirect_effect : indirect_effects) {
           result.emplace_back(indirect_effect->Clone());
         }

@@ -1,5 +1,6 @@
 #include "Nuclide.hpp"
 
+#include "InteractionDelegate.hpp"
 #include "pugixml.hpp"
 
 #include <cassert>
@@ -55,6 +56,6 @@ MicroscopicCrossSection Nuclide::GetTotal(const Particle& p) const noexcept {
 
 void Nuclide::Interact(
     Particle& p,
-    std::vector<EstimatorProxy>& estimator_proxies) const noexcept {
+    std::vector<Estimator::Proxy>& estimator_proxies) const noexcept {
   xs.at(p.type)->Interact(p, estimator_proxies);
 }

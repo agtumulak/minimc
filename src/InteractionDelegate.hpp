@@ -9,10 +9,12 @@
 #include <optional>
 #include <vector>
 
+namespace Estimator {
+class Proxy;
+}
 namespace pugi {
 class xml_node;
 }
-class EstimatorProxy;
 class Particle;
 enum class Reaction;
 
@@ -31,7 +33,7 @@ public:
   /// @brief Interact with a Particle, updating its state
   virtual void Interact(
       Particle& p,
-      std::vector<EstimatorProxy>& estimator_proxies) const noexcept = 0;
+      std::vector<Estimator::Proxy>& estimator_proxies) const noexcept = 0;
 };
 
 /// @brief Contains cross sections which are indexed by continuous energy values
@@ -52,7 +54,7 @@ public:
   ///          to be a user-provided quantity to speed up calculations.
   MicroscopicCrossSection GetTotal(const Particle& p) const noexcept override;
   /// @brief Interact with a Particle, updating its state
-  void Interact(Particle& p, std::vector<EstimatorProxy>& estimator_proxies)
+  void Interact(Particle& p, std::vector<Estimator::Proxy>& estimator_proxies)
       const noexcept override;
 
 private:
@@ -90,7 +92,7 @@ public:
   /// @brief Returns the total cross section for a given Particle
   MicroscopicCrossSection GetTotal(const Particle& p) const noexcept override;
   /// @brief Interact with a Particle, updating its state
-  void Interact(Particle& p, std::vector<EstimatorProxy>& estimator_proxies)
+  void Interact(Particle& p, std::vector<Estimator::Proxy>& estimator_proxies)
       const noexcept override;
 
 private:
@@ -163,13 +165,13 @@ private:
       const pugi::xml_node& particle_node,
       const ReactionsMap& reactions) noexcept;
   // Captures the Particle, killing it
-  void Capture(Particle& p, std::vector<EstimatorProxy>& estimator_proxies)
+  void Capture(Particle& p, std::vector<Estimator::Proxy>& estimator_proxies)
       const noexcept;
   // Scatters the Particle and updates its Group and Direction
-  void Scatter(Particle& p, std::vector<EstimatorProxy>& estimator_proxies)
+  void Scatter(Particle& p, std::vector<Estimator::Proxy>& estimator_proxies)
       const noexcept;
   // Fissions the Nuclide and produces secondaries
-  void Fission(Particle& p, std::vector<EstimatorProxy>& estimator_proxies)
+  void Fission(Particle& p, std::vector<Estimator::Proxy>& estimator_proxies)
       const noexcept;
   // Average number of secondary particles produced per fission
   const std::optional<OneDimensional> nubar;

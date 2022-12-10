@@ -1,4 +1,4 @@
-#include "Estimator.hpp"
+#include "Estimator/Estimator.hpp"
 #include "FixedSource.hpp"
 #include "Statistics.hpp"
 #include "World.hpp"
@@ -15,8 +15,7 @@ TEST_CASE("point source leakage probability") {
   const World w{doc.root};
   FixedSource f{doc.root};
   size_t samples = 1000; // set in point_source_leakage.xml
-  const auto estimated_leakage_rate =
-      f.Solve().FindEstimatorByName("leakage").GetScore(0, samples);
+  const auto estimated_leakage_rate = f.Solve().front()->GetScore(0, samples);
   auto expected_leakage_rate = std::exp(-1);
   REQUIRE_THAT(
       estimated_leakage_rate,

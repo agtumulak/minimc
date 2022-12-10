@@ -2,13 +2,18 @@
 
 #include "Bank.hpp"
 #include "BasicTypes.hpp"
-#include "IndirectEffect.hpp"
 #include "Point.hpp"
 #include "Reaction.hpp"
 
 #include <iosfwd>
 #include <memory>
 #include <vector>
+
+namespace Perturbation {
+namespace IndirectEffect {
+class Interface;
+}
+} // namespace Perturbation
 
 class Cell;
 
@@ -32,7 +37,8 @@ public:
   static Type ToType(const std::string& name) noexcept;
   /// @brief Member constructor. Explicitly assigns phase-space members.
   Particle(
-      const std::vector<std::unique_ptr<IndirectEffect>>& indirect_effects,
+      const std::vector<std::shared_ptr<
+          Perturbation::IndirectEffect::Interface>>& indirect_effects,
       const Point& position, const Direction& direction, const Energy& energy,
       const Cell* cell, const Type type, RNG::result_type seed) noexcept;
   /// @brief Scatters the Particle with an outgoing direction and energy.
@@ -78,7 +84,8 @@ public:
   /// @brief Returns true if the Particle should continue to be transported
   bool IsAlive() const noexcept;
   /// @brief Indirect effects due to a Perturbation (C++ Core Guidelines C.131)
-  const std::vector<std::unique_ptr<IndirectEffect>> indirect_effects;
+  const std::vector<std::shared_ptr<Perturbation::IndirectEffect::Interface>>
+      indirect_effects;
 
 private:
   // Secondaries produced

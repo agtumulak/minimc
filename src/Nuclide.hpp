@@ -8,11 +8,15 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <vector>
 
+namespace Estimator {
+class Proxy;
+}
 namespace pugi {
 class xml_node;
 }
-class EstimatorProxy;
+class InteractionDelegate;
 
 /// @brief Aggregates cross sections for all reactions and related nuclear data
 class Nuclide {
@@ -29,7 +33,7 @@ public:
   /// @brief Returns the total cross section for a given Particle
   MicroscopicCrossSection GetTotal(const Particle& p) const noexcept;
   /// @brief Interact with a Particle, updating its state
-  void Interact(Particle& p, std::vector<EstimatorProxy>& estimator_proxies)
+  void Interact(Particle& p, std::vector<Estimator::Proxy>& estimator_proxies)
       const noexcept;
   /// @brief Unique, user-defined identifier (C++ Core Guidelines C.131)
   const std::string name;

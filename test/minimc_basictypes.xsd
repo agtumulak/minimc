@@ -298,45 +298,30 @@
   </xs:all>
 </xs:complexType>
 
-<xs:complexType name="EstimatorSensitivitiesType">
-  <xs:choice minOccurs="1" maxOccurs="unbounded">
-    <xs:element name="perturbation">
-      <xs:complexType>
-        <xs:attribute name="name" type="xs:normalizedString" use="required"/>
-      </xs:complexType>
-    </xs:element>
-  </xs:choice>
+<xs:complexType name="PerturbationBase">
+  <xs:attribute name="name" type="xs:normalizedString" use="required"/>
 </xs:complexType>
 
-<xs:complexType name="EstimatorDefinition">
-  <xs:choice minOccurs="1" maxOccurs="unbounded">
-    <xs:element name="current">
+<xs:complexType name="EstimatorBase">
+  <xs:all>
+    <xs:element name="bins" type="ParticleBinType" minOccurs="0"/>
+    <xs:element name="perturbations" minOccurs="0">
       <xs:complexType>
-        <xs:all>
-          <xs:element name="bins" type="ParticleBinType" minOccurs="0"/>
-          <xs:element name="sensitivities" type="EstimatorSensitivitiesType" minOccurs="0">
-            <xs:unique name="unique-sensitivity-name">
-              <xs:selector xpath="./*"/>
-              <xs:field xpath="@name"/>
-            </xs:unique>
+        <xs:choice minOccurs="1" maxOccurs="unbounded">
+          <xs:element name="sensitivity">
+            <xs:complexType>
+              <xs:attribute name="to" type="xs:normalizedString" use="required"/>
+            </xs:complexType>
           </xs:element>
-        </xs:all>
-        <xs:attribute name="name" type="xs:normalizedString" use="required"/>
-        <xs:attribute name="surface" type="xs:normalizedString" use="required"/>
+        </xs:choice>
       </xs:complexType>
+      <xs:unique name="unique-perturbation-sensitivity-name">
+        <xs:selector xpath="./*"/>
+        <xs:field xpath="@name"/>
+      </xs:unique>
     </xs:element>
-  </xs:choice>
-</xs:complexType>
-
-<xs:complexType name="PerturbationDefinition">
-  <xs:choice minOccurs="1" maxOccurs="unbounded">
-    <xs:element name="total">
-      <xs:complexType>
-        <xs:attribute name="name" type="xs:normalizedString" use="required"/>
-        <xs:attribute name="nuclide" type="xs:normalizedString" use="required"/>
-      </xs:complexType>
-    </xs:element>
-  </xs:choice>
+  </xs:all>
+  <xs:attribute name="name" type="xs:normalizedString" use="required"/>
 </xs:complexType>
 
 </xs:schema>

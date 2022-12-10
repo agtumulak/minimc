@@ -1,13 +1,13 @@
 #include "StreamDelegate.hpp"
 
-#include "Bins.hpp"
 #include "Cell.hpp"
 #include "Constants.hpp"
-#include "Estimator.hpp"
-#include "IndirectEffect.hpp"
+#include "Estimator/Proxy.hpp"
+#include "Estimator/Visitor.hpp"
 #include "Material.hpp"
 #include "Particle.hpp"
-#include "Perturbation.hpp"
+#include "Perturbation/IndirectEffect/IndirectEffect.hpp"
+#include "Perturbation/IndirectEffect/Visitor.hpp"
 #include "Point.hpp"
 #include "Reaction.hpp"
 #include "World.hpp"
@@ -15,11 +15,9 @@
 
 #include <cassert>
 #include <map>
-#include <optional>
 #include <random>
 #include <stdexcept>
 #include <string>
-#include <tuple>
 
 // StreamDelegate
 
@@ -53,7 +51,7 @@ StreamDelegate::Create(const pugi::xml_node& root, const World& world) {
 StreamDelegate::~StreamDelegate() noexcept {}
 
 void StreamDelegate::StreamWithinCell(
-    Particle& p, std::vector<EstimatorProxy>& estimator_proxies,
+    Particle& p, std::vector<Estimator::Proxy>& estimator_proxies,
     const Real distance) const noexcept {
   // move the Particle to new position
   p.SetPosition(p.GetPosition() + p.GetDirection() * distance);
@@ -69,8 +67,8 @@ void StreamDelegate::StreamWithinCell(
 }
 
 void StreamDelegate::CrossSurface(
-    Particle& p, std::vector<EstimatorProxy>& estimator_proxies, const World& w,
-    const CSGSurface& surface) const noexcept {
+    Particle& p, std::vector<Estimator::Proxy>& estimator_proxies,
+    const World& w, const CSGSurface& surface) const noexcept {
   const auto& new_cell = w.FindCellContaining(p.GetPosition());
   p.SetCell(new_cell);
   // update Estimator objects
@@ -78,7 +76,7 @@ void StreamDelegate::CrossSurface(
     estimator_proxy.Visit(*GetCrossSurfaceEstimatorVisitor(p, surface));
   }
   // if Particle leaked, update Reaction
-  if (new_cell.IsVoid()){
+  if (new_cell.IsVoid()) {
     p.reaction = Reaction::leak;
   }
 }
@@ -88,7 +86,7 @@ void StreamDelegate::CrossSurface(
 //// public
 
 void SurfaceTracking::StreamToNextCollision(
-    Particle& p, std::vector<EstimatorProxy>& estimator_proxies,
+    Particle& p, std::vector<Estimator::Proxy>& estimator_proxies,
     const World& w) const noexcept {
   while (true) {
     const auto distance_to_collision = std::exponential_distribution{
@@ -113,19 +111,18 @@ void SurfaceTracking::StreamToNextCollision(
 
 //// private
 
-std::unique_ptr<const IndirectEffect::Visitor>
+std::unique_ptr<const Perturbation::IndirectEffect::Visitor>
 SurfaceTracking::GetStreamWithinCellIndirectEffectVisitor(
     const Particle& p, const Real distance) const noexcept {
   // construct visitor for getting Perturbation indirect effect
-  class IndirectEffectVisitor : public IndirectEffect::Visitor {
+  class Visitor : public Perturbation::IndirectEffect::Visitor {
   public:
-    IndirectEffectVisitor(const Particle& p, Real distance)
-        : p{p}, distance{distance} {}
-    void Visit(TotalCrossSectionPerturbationIndirectEffect& indirect_effect)
+    Visitor(const Particle& p, Real distance) : p{p}, distance{distance} {}
+    void Visit(Perturbation::IndirectEffect::TotalCrossSection& indirect_effect)
         const noexcept final {
       const auto& afracs = p.GetCell().material->afracs;
-      if (afracs.find(indirect_effect.perturbation.nuclide) != afracs.cend()) {
-        indirect_effect.running_total +=
+      if (afracs.find(indirect_effect.nuclide) != afracs.cend()) {
+        indirect_effect.indirect_effects.front() +=
             1 / p.GetCell().material->GetMicroscopicTotal(p) - distance;
       }
     }
@@ -134,41 +131,36 @@ SurfaceTracking::GetStreamWithinCellIndirectEffectVisitor(
     const Particle& p;
     const Real distance;
   };
-  return std::make_unique<const IndirectEffectVisitor>(p, distance);
+  return std::make_unique<const Visitor>(p, distance);
 }
 
 std::unique_ptr<const Estimator::Visitor>
 SurfaceTracking::GetStreamWithinCellEstimatorVisitor(
-    const Particle&, const Real) const noexcept {
-  class StreamWithinCellEstimatorVisitor : public Estimator::Visitor {
+    const Particle& p, const Real) const noexcept {
+  class Visitor : public Estimator::Visitor {
   public:
-    Visitor::T Visit(const CurrentEstimator&) const noexcept final {
-      return std::nullopt;
-    }
+    Visitor(const Particle& p) noexcept : Estimator::Visitor{p} {};
+    Score Visit(const Estimator::Current&) const noexcept final { return 0; }
   };
-  return std::make_unique<const StreamWithinCellEstimatorVisitor>();
+  return std::make_unique<const Visitor>(p);
 }
 
 std::unique_ptr<const Estimator::Visitor>
 SurfaceTracking::GetCrossSurfaceEstimatorVisitor(
     const Particle& p, const CSGSurface& s) const noexcept {
-  class CrossSurfaceEstimatorVisitor : public Estimator::Visitor {
+  class Visitor : public Estimator::Visitor {
   public:
-    CrossSurfaceEstimatorVisitor(const Particle& p, const CSGSurface& s)
-        : p{p}, s{s} {}
-    Visitor::T
-    Visit(const CurrentEstimator& current_estimator) const noexcept final {
-      return current_estimator.surface.get() == &s
-                 ? Visitor::T{std::make_tuple(
-                       current_estimator.bins->GetIndex(p), 1)}
-                 : std::nullopt;
+    Visitor(const Particle& p, const CSGSurface& s)
+        : Estimator::Visitor{p}, s{s} {}
+    Score
+    Visit(const Estimator::Current& current_estimator) const noexcept final {
+      return current_estimator.surface.get() == &s ? 1 : 0;
     }
 
   private:
-    const Particle& p;
     const CSGSurface& s;
   };
-  return std::make_unique<const CrossSurfaceEstimatorVisitor>(p, s);
+  return std::make_unique<const Visitor>(p, s);
 }
 
 // CellDetltaTracking
@@ -176,7 +168,7 @@ SurfaceTracking::GetCrossSurfaceEstimatorVisitor(
 //// public
 
 void CellDeltaTracking::StreamToNextCollision(
-    Particle& p, std::vector<EstimatorProxy>& estimator_proxies,
+    Particle& p, std::vector<Estimator::Proxy>& estimator_proxies,
     const World& w) const noexcept {
   while (true) {
     const auto distance_to_collision = std::exponential_distribution{
@@ -208,18 +200,18 @@ void CellDeltaTracking::StreamToNextCollision(
 
 //// private
 
-std::unique_ptr<const IndirectEffect::Visitor>
+std::unique_ptr<const Perturbation::IndirectEffect::Visitor>
 CellDeltaTracking::GetStreamWithinCellIndirectEffectVisitor(
     const Particle& p, const Real) const noexcept {
   // construct visitor for getting Perturbation indirect effect
-  class IndirectEffectVisitor : public IndirectEffect::Visitor {
+  class Visitor : public Perturbation::IndirectEffect::Visitor {
   public:
-    IndirectEffectVisitor(const Particle& p) : p{p} {}
-    void Visit(TotalCrossSectionPerturbationIndirectEffect& indirect_effect)
+    Visitor(const Particle& p) : p{p} {}
+    void Visit(Perturbation::IndirectEffect::TotalCrossSection& indirect_effect)
         const noexcept final {
       const auto& afracs = p.GetCell().material->afracs;
-      if (afracs.find(indirect_effect.perturbation.nuclide) != afracs.cend()) {
-        indirect_effect.running_total +=
+      if (afracs.find(indirect_effect.nuclide) != afracs.cend()) {
+        indirect_effect.indirect_effects.front() +=
             1 / p.GetCell().material->GetMicroscopicTotal(p);
       }
     }
@@ -227,39 +219,34 @@ CellDeltaTracking::GetStreamWithinCellIndirectEffectVisitor(
   private:
     const Particle& p;
   };
-  return std::make_unique<const IndirectEffectVisitor>(p);
+  return std::make_unique<const Visitor>(p);
 }
 
 std::unique_ptr<const Estimator::Visitor>
 CellDeltaTracking::GetStreamWithinCellEstimatorVisitor(
-    const Particle&, const Real) const noexcept {
-  class StreamWithinCellEstimatorVisitor : public Estimator::Visitor {
+    const Particle& p, const Real) const noexcept {
+  class Visitor : public Estimator::Visitor {
   public:
-    Visitor::T Visit(const CurrentEstimator&) const noexcept final {
-      return std::nullopt;
-    }
+    Visitor(const Particle& p) noexcept : Estimator::Visitor{p} {};
+    Score Visit(const Estimator::Current&) const noexcept final { return 0; }
   };
-  return std::make_unique<const StreamWithinCellEstimatorVisitor>();
+  return std::make_unique<const Visitor>(p);
 }
 
 std::unique_ptr<const Estimator::Visitor>
 CellDeltaTracking::GetCrossSurfaceEstimatorVisitor(
     const Particle& p, const CSGSurface& s) const noexcept {
-  class CrossSurfaceEstimatorVisitor : public Estimator::Visitor {
+  class Visitor : public Estimator::Visitor {
   public:
-    CrossSurfaceEstimatorVisitor(const Particle& p, const CSGSurface& s)
-        : p{p}, s{s} {}
-    Visitor::T
-    Visit(const CurrentEstimator& current_estimator) const noexcept final {
-      return current_estimator.surface.get() == &s
-                 ? Visitor::T{std::make_tuple(
-                       current_estimator.bins->GetIndex(p), 1)}
-                 : std::nullopt;
+    Visitor(const Particle& p, const CSGSurface& s)
+        : Estimator::Visitor{p}, s{s} {}
+    Score
+    Visit(const Estimator::Current& current_estimator) const noexcept final {
+      return current_estimator.surface.get() == &s ? 1 : 0;
     }
 
   private:
-    const Particle& p;
     const CSGSurface& s;
   };
-  return std::make_unique<const CrossSurfaceEstimatorVisitor>(p, s);
+  return std::make_unique<const Visitor>(p, s);
 }

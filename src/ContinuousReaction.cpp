@@ -15,7 +15,6 @@
 #include <random>
 #include <stdexcept>
 #include <string>
-#include <type_traits>
 #include <variant>
 #include <iostream>
 
@@ -66,7 +65,7 @@ ContinuousCapture::ContinuousCapture(const pugi::xml_node& capture_node)
     : ContinuousReaction{capture_node} {}
 
 void ContinuousCapture::Interact(
-    Particle& p, std::vector<EstimatorProxy>&) const noexcept {
+    Particle& p, std::vector<Estimator::Proxy>&) const noexcept {
   p.reaction = Reaction::capture;
 }
 
@@ -126,7 +125,7 @@ ContinuousScatter::GetCrossSection(const Particle& p) const noexcept {
 }
 
 void ContinuousScatter::Interact(
-    Particle& p, std::vector<EstimatorProxy>&) const noexcept {
+    Particle& p, std::vector<Estimator::Proxy>&) const noexcept {
   p.reaction = Reaction::scatter;
   if (tnsl.has_value() && tnsl->IsValid(p)) {
     tnsl->Scatter(p);
@@ -262,7 +261,7 @@ ContinuousFission::ContinuousFission(const pugi::xml_node& fission_node)
               : std::nullopt} {}
 
 void ContinuousFission::Interact(
-    Particle& p, std::vector<EstimatorProxy>&) const noexcept {
+    Particle& p, std::vector<Estimator::Proxy>&) const noexcept {
   p.reaction = Reaction::fission;
   // rely on the fact that double to int conversions essentially do a floor()
   size_t fission_yield(

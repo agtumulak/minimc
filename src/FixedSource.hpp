@@ -1,11 +1,13 @@
 #pragma once
 
 #include "Driver.hpp"
-#include "Estimator.hpp"
+#include "Estimator/Estimator.hpp"
 #include "Source.hpp"
 
 #include <atomic>
 #include <cstddef>
+#include <filesystem>
+#include <vector>
 
 namespace pugi {
 class xml_node;
@@ -15,16 +17,17 @@ class xml_node;
 class FixedSource : public Driver {
 public:
   /// @brief Creates objects necessary for a fixed source calculation
-  FixedSource(const pugi::xml_node& root);
+  /// @param output_filepath Path to save estimator results.
+  FixedSource(
+      const pugi::xml_node& root,
+      const std::filesystem::path& output_filepath = {});
   /// @brief Spawn workers to work on chunks of history
-  EstimatorSet Solve() override;
+  const std::vector<std::unique_ptr<Estimator::Interface>>& Solve() const final;
 
 private:
   // function executed by a worker on a single thread
-  EstimatorSet StartWorker();
+  std::vector<std::unique_ptr<Estimator::Interface>>
+  StartWorker(std::atomic<size_t>& histories_elapsed) const;
   // fixed source from which new Particle objects can be sampled from
   const Source source;
-  // Number of histories completed or initiated by all threads. May exceed
-  // batchsize since each thread will call it once before ending.
-  std::atomic<size_t> histories_elapsed{0};
 };

@@ -16,6 +16,7 @@ set(UNIT_TEST_SOURCES
   test_Material.cpp
   test_Nuclide.cpp
   test_Particle.cpp
+  test_Perturbation.cpp
   test_Point.cpp
   test_ThermalScattering.cpp
   test_XMLDocument.cpp
@@ -78,6 +79,7 @@ set(UNIT_TEST_INPUTS
   test/point_source_leakage.xml
   test/test_HDF5_valid.hdf5
   test/test_HDF5_invalid.hdf5
+  test/test_Perturbation.xml
   test/test_ThermalScattering.xml
   test/test_XMLDocument.xsd
   test/test_XMLDocument_valid.xml

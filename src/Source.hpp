@@ -8,11 +8,13 @@
 #include <variant>
 #include <vector>
 
+namespace Perturbation {
+class Interface;
+}
 namespace pugi {
 class xml_node;
 }
 class Bank;
-class Perturbation;
 class World;
 
 /// @brief Template for distributions which can be sampled with an RNG
@@ -74,7 +76,8 @@ public:
   ///          minimc XML schema
   Source(
       const pugi::xml_node& source_node, const World& world,
-      const std::vector<std::unique_ptr<const Perturbation>>& perturbations);
+      const std::vector<std::unique_ptr<const Perturbation::Interface>>&
+          perturbations);
   /// @brief Returns a Bank of source Particle objects from a vector of seeds
   /// @details Particle objects are created sequentially using seeds in
   ///          `[begin_seed, end_seed)`
@@ -87,5 +90,6 @@ private:
   std::unique_ptr<const Distribution<Energy>> energy;
   std::unique_ptr<const Distribution<Particle::Type>> particle_type;
   const World& world;
-  const std::vector<std::unique_ptr<const Perturbation>>& perturbations;
+  const std::vector<std::unique_ptr<const Perturbation::Interface>>&
+      perturbations;
 };

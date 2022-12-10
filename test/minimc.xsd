@@ -138,9 +138,17 @@
       </xs:element>
       <xs:element name="estimators" minOccurs="0">
         <xs:complexType>
-          <xs:complexContent>
-            <xs:extension base="EstimatorDefinition"/>
-          </xs:complexContent>
+          <xs:choice minOccurs="1" maxOccurs="unbounded">
+            <xs:element name="current">
+              <xs:complexType>
+                <xs:complexContent>
+                  <xs:extension base="EstimatorBase">
+                    <xs:attribute name="surface" type="xs:normalizedString" use="required"/>
+                  </xs:extension>
+                </xs:complexContent>
+              </xs:complexType>
+            </xs:element>
+          </xs:choice>
         </xs:complexType>
         <xs:unique name="unique-estimator-name">
           <xs:selector xpath="./*"/>
@@ -149,9 +157,17 @@
       </xs:element>
       <xs:element name="perturbations" minOccurs="0">
         <xs:complexType>
-          <xs:complexContent>
-            <xs:extension base="PerturbationDefinition"/>
-          </xs:complexContent>
+          <xs:choice minOccurs="1" maxOccurs="unbounded">
+            <xs:element name="totalxs">
+              <xs:complexType>
+                <xs:complexContent>
+                  <xs:extension base="PerturbationBase">
+                    <xs:attribute name="nuclide" type="xs:normalizedString" use="required"/>
+                  </xs:extension>
+                </xs:complexContent>
+              </xs:complexType>
+            </xs:element>
+          </xs:choice>
         </xs:complexType>
         <xs:unique name="unique-perturbation-name">
           <xs:selector xpath="./*"/>
