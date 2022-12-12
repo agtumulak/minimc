@@ -75,7 +75,7 @@ void StreamDelegate::CrossSurface(
   for (auto& estimator_proxy : estimator_proxies) {
     estimator_proxy.Visit(*GetCrossSurfaceEstimatorVisitor(p, surface));
   }
-  // if Particle leaked, update Reaction
+  // if Particle leaked, update Reaction and indirect effects
   if (new_cell.IsVoid()) {
     p.reaction = Reaction::leak;
   }
@@ -85,7 +85,7 @@ void StreamDelegate::CrossSurface(
 
 //// public
 
-void SurfaceTracking::StreamToNextCollision(
+void SurfaceTracking::Stream(
     Particle& p, std::vector<Estimator::Proxy>& estimator_proxies,
     const World& w) const noexcept {
   while (true) {
@@ -114,15 +114,15 @@ void SurfaceTracking::StreamToNextCollision(
 std::unique_ptr<const Perturbation::IndirectEffect::Visitor>
 SurfaceTracking::GetStreamWithinCellIndirectEffectVisitor(
     const Particle& p, const Real distance) const noexcept {
-  // construct visitor for getting Perturbation indirect effect
+  // construct visitor for getting perturbation indirect effect
   class Visitor : public Perturbation::IndirectEffect::Visitor {
   public:
     Visitor(const Particle& p, Real distance) : p{p}, distance{distance} {}
-    void Visit(Perturbation::IndirectEffect::TotalCrossSection& indirect_effect)
-        const noexcept final {
+    void Visit(Perturbation::IndirectEffect::TotalCrossSection&
+                   total_xs_perturbation) const noexcept final {
       const auto& afracs = p.GetCell().material->afracs;
-      if (afracs.find(indirect_effect.nuclide) != afracs.cend()) {
-        indirect_effect.indirect_effects.front() +=
+      if (afracs.find(total_xs_perturbation.nuclide) != afracs.cend()) {
+        total_xs_perturbation.indirect_effects.front() +=
             1 / p.GetCell().material->GetMicroscopicTotal(p) - distance;
       }
     }
@@ -167,7 +167,7 @@ SurfaceTracking::GetCrossSurfaceEstimatorVisitor(
 
 //// public
 
-void CellDeltaTracking::StreamToNextCollision(
+void CellDeltaTracking::Stream(
     Particle& p, std::vector<Estimator::Proxy>& estimator_proxies,
     const World& w) const noexcept {
   while (true) {
@@ -203,15 +203,15 @@ void CellDeltaTracking::StreamToNextCollision(
 std::unique_ptr<const Perturbation::IndirectEffect::Visitor>
 CellDeltaTracking::GetStreamWithinCellIndirectEffectVisitor(
     const Particle& p, const Real) const noexcept {
-  // construct visitor for getting Perturbation indirect effect
+  // construct visitor for getting perturbation indirect effect
   class Visitor : public Perturbation::IndirectEffect::Visitor {
   public:
     Visitor(const Particle& p) : p{p} {}
-    void Visit(Perturbation::IndirectEffect::TotalCrossSection& indirect_effect)
-        const noexcept final {
+    void Visit(Perturbation::IndirectEffect::TotalCrossSection&
+                   total_xs_perturbation) const noexcept final {
       const auto& afracs = p.GetCell().material->afracs;
-      if (afracs.find(indirect_effect.nuclide) != afracs.cend()) {
-        indirect_effect.indirect_effects.front() +=
+      if (afracs.find(total_xs_perturbation.nuclide) != afracs.cend()) {
+        total_xs_perturbation.indirect_effects.front() +=
             1 / p.GetCell().material->GetMicroscopicTotal(p);
       }
     }

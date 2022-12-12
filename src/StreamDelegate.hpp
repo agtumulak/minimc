@@ -22,8 +22,7 @@ class Particle;
 class World;
 
 /// @brief Models the streaming of a Particle through a World
-/// @details Composition over inheritance interface for StreamToNextCollision()
-///          method
+/// @details Composition over inheritance interface for Stream() method
 class StreamDelegate {
 public:
   /// @brief Factory method to create new StreamDelegate from an XML document
@@ -39,7 +38,7 @@ public:
   /// @brief Interface for scoring track length estimators and updating
   ///        indirect effects
   /// @details Transports a Particle up to (but not including) a collision
-  virtual void StreamToNextCollision(
+  virtual void Stream(
       Particle& p, std::vector<Estimator::Proxy>& estimator_proxies,
       const World& w) const noexcept = 0;
 
@@ -57,19 +56,19 @@ protected:
       const World& w, const CSGSurface& surface) const noexcept;
 
 private:
-  // Interface for updating each IndirectEffect after streaming within the
+  // Interface for updating each indirect effect after streaming within the
   // current Cell. Reference to const Particle ensures that order each
-  // IndirectEffect is visited does not matter.
+  // indirect effect is visited does not matter.
   virtual std::unique_ptr<const Perturbation::IndirectEffect::Visitor>
   GetStreamWithinCellIndirectEffectVisitor(
       const Particle& p, const Real distance) const noexcept = 0;
   // Interface for getting the score that streaming within a Cell would
-  // contribute to an Estimator
+  // contribute to an estimator
   virtual std::unique_ptr<const Estimator::Visitor>
   GetStreamWithinCellEstimatorVisitor(
       const Particle& p, const Real distance) const noexcept = 0;
   // Interface for getting the score that streaming across a CSGSurface would
-  // contribute to an Estimator
+  // contribute to an estimator
   virtual std::unique_ptr<const Estimator::Visitor>
   GetCrossSurfaceEstimatorVisitor(
       const Particle& p, const CSGSurface& s) const noexcept = 0;
@@ -79,7 +78,7 @@ private:
 ///        surface crossing
 class SurfaceTracking : public StreamDelegate {
 public:
-  void StreamToNextCollision(
+  void Stream(
       Particle& p, std::vector<Estimator::Proxy>& estimator_proxies,
       const World& w) const noexcept;
 
@@ -99,7 +98,7 @@ private:
 ///        tracking is used across different Cells.
 class CellDeltaTracking : public StreamDelegate {
 public:
-  void StreamToNextCollision(
+  void Stream(
       Particle& p, std::vector<Estimator::Proxy>& estimator_proxies,
       const World& w) const noexcept override;
 

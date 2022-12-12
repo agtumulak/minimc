@@ -145,7 +145,7 @@ void Multigroup::Interact(
     if (accumulated > threshold) {
       switch (reaction) {
       case Reaction::birth:
-        assert(false); // Interact() only called after StreamToNextCollision()
+        assert(false); // Interact() only called after Stream()
         break;
       case Reaction::capture:
         Capture(p, estimator_proxies);

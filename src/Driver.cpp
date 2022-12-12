@@ -80,7 +80,7 @@ void Driver::Transport(
   // rather than search it each time an Estimator is scored
   while (p.IsAlive()) {
     // sample the next position
-    stream_delegate->StreamToNextCollision(p, estimator_proxies, world);
+    stream_delegate->Stream(p, estimator_proxies, world);
     if (p.reaction == Reaction::leak) {
       break;
     }
