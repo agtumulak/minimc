@@ -59,6 +59,8 @@ protected:
 /// @brief Models a perturbation in a Nuclide total cross section @f$
 ///        \Sigma_{\text{perturbed}}(E) = \Sigma_{\text{unperturbed}}(E) +
 ///        \delta \Sigma @f$
+/// @todo Change perturbation to be <em>microscopic</em> cross section rather
+///       than <em>macroscopic</em> cross ection.
 class TotalCrossSection : public Interface {
 public:
   /// @brief Constructs a TotalCrossSection from a `totalxs` node of an XML
