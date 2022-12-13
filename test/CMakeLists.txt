@@ -67,6 +67,7 @@ set(UNIT_TEST_INPUTS
   data/tnsl/endfb8/alpha_endfb8_1_beta_T_coeffs.hdf5
   data/tnsl/endfb8/alpha_endfb8_2_beta_T_coeffs.hdf5
   data/tnsl/endfb8/alpha_endfb8_3_beta_T_coeffs.hdf5
+  test/absorbing_sphere_leakage_totalxs_sensitivity.xml
   test/continuous.xml
   test/continuous_invalid_nuclide_data_path.xml
   test/minimc.xsd
@@ -79,7 +80,6 @@ set(UNIT_TEST_INPUTS
   test/point_source_leakage.xml
   test/test_HDF5_valid.hdf5
   test/test_HDF5_invalid.hdf5
-  test/test_Perturbation.xml
   test/test_ThermalScattering.xml
   test/test_XMLDocument.xsd
   test/test_XMLDocument_valid.xml

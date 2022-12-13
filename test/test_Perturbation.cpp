@@ -11,17 +11,17 @@
 #include <cmath>
 #include <cstddef>
 
-TEST_CASE("purely absorbing sphere leakage rate sensitivity") {
-  XMLDocument doc{"test_perturbation.xml"};
+TEST_CASE(
+    "purely absorbing sphere leakage rate sensitivity to total cross section") {
+  XMLDocument doc{"absorbing_sphere_leakage_totalxs_sensitivity.xml"};
   const World w{doc.root};
   FixedSource f{doc.root};
-  size_t samples = 1000; // set in test_perturbation.xml
   const auto estimated_leakage_sensitivity =
-      f.Solve().front()->sensitivities.front()->GetScore(0, samples);
+      f.Solve().front()->sensitivities.front()->GetScore(0, f.total_weight);
   auto expected_sensitivity = -std::exp(-1);
   REQUIRE_THAT(
       estimated_leakage_sensitivity,
       Catch::Matchers::WithinRel(
           expected_sensitivity,
-          epsilon::Bernoulli(-expected_sensitivity, samples)));
+          epsilon::Bernoulli(-expected_sensitivity, f.total_weight)));
 }

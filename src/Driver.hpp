@@ -61,14 +61,18 @@ protected:
   const std::vector<std::unique_ptr<Estimator::Interface>> estimators;
   /// @brief Composition over inheritance delegate for sampling next position
   const std::unique_ptr<const StreamDelegate> stream_delegate;
-  /// @brief Path to save results
+
+public:
+  /// @brief Path to save results (C++ Core Guidelines C.131)
   const std::filesystem::path output_filepath;
   /// @brief Total histories for fixed-source; cycle weight for k-eigenvalue
   ///        (C++ Core Guidelines C.131)
   const size_t total_weight;
-  /// @brief Number of threads dedicated to particle transport
+  /// @brief Number of threads dedicated to particle transport (C++ Core
+  ///        Guidelines C.131)
   const size_t threads;
-  /// @brief Histories are assigned a seed in [seed, seed + batchsize)
+  /// @brief Histories are assigned a seed in [seed, seed + batchsize) (C++
+  ///        Core Guidelines C.131)
   const RNG::result_type seed;
 
 private:
