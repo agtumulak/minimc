@@ -11,8 +11,8 @@
   <continuous>
     <nuclide name="pure absorber" awr="1.0">
       <neutron>
-        <total temperature="293.15" file="/Users/atumulak/Developer/minimc/data/pure_absorber/n-H1_0-total.hdf5"/>
-        <capture temperature="293.15" file="/Users/atumulak/Developer/minimc/data/pure_absorber/n-H1_0-gamma.hdf5"/>
+        <total temperature="293.15" file="uniform-1b.hdf5"/>
+        <capture temperature="293.15" file="uniform-1b.hdf5"/>
       </neutron>
     </nuclide>
   </continuous>

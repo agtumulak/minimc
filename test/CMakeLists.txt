@@ -28,6 +28,8 @@ target_link_libraries(all_tests PRIVATE Catch2::Catch2WithMain minimc)
 # Add unit test input files here
 # Prefixes are stripped so duplicate filenames must not appear
 set(UNIT_TEST_INPUTS
+  data/debug/uniform-1.000b.hdf5
+  data/debug/uniform-2.000b.hdf5
   data/endfb8/n-H1_0-total.hdf5
   data/endfb8/n-H1_0-gamma.hdf5
   data/endfb8/n-H1_0-elastic.hdf5
@@ -77,6 +79,7 @@ set(UNIT_TEST_INPUTS
   test/multigroup_malformed_scatter.xml
   test/multigroup_missing_particle_data.xml
   test/multigroup_nonexistent_nuclide.xml
+  test/nonmultiplying_sphere_leakage_totalxs_sensitivity.xml
   test/point_source_leakage.xml
   test/test_HDF5_valid.hdf5
   test/test_HDF5_invalid.hdf5
