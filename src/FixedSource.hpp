@@ -17,6 +17,7 @@ class xml_node;
 class FixedSource : public Driver {
 public:
   /// @brief Creates objects necessary for a fixed source calculation
+  /// @param root Root node of existing XML document
   /// @param output_filepath Path to save estimator results.
   FixedSource(
       const pugi::xml_node& root,

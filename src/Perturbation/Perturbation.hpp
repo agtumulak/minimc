@@ -56,11 +56,9 @@ protected:
       const size_t n_perturbations) noexcept;
 };
 
-/// @brief Models a perturbation in a Nuclide total cross section @f$
-///        \Sigma_{\text{perturbed}}(E) = \Sigma_{\text{unperturbed}}(E) +
-///        \delta \Sigma @f$
-/// @todo Change perturbation to be <em>microscopic</em> cross section rather
-///       than <em>macroscopic</em> cross ection.
+/// @brief Models a perturbation in a Nuclide microscopic total cross section
+///        @f$ \sigma_{\text{perturbed}}(E) = \sigma_{\text{unperturbed}}(E) +
+///        \delta \sigma @f$
 class TotalCrossSection : public Interface {
 public:
   /// @brief Constructs a TotalCrossSection from a `totalxs` node of an XML
@@ -73,7 +71,7 @@ public:
   /// @brief Returns a IndirectEffect::TotalCrossSection
   std::unique_ptr<IndirectEffect::Interface>
   CreateIndirectEffect() const noexcept final;
-  /// @brief Nuclide whose total cross section is being perturbed
+  /// @brief Nuclide whose microscopic total cross section is being perturbed
   const std::shared_ptr<const Nuclide> nuclide;
 };
 

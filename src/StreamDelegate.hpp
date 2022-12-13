@@ -44,7 +44,7 @@ public:
 
 protected:
   /// @brief Interface for streaming a Particle within a Cell once a distance
-  ///        has been sampled
+  ///        has been sampled <em>before</em> a collision occurs
   void StreamWithinCell(
       Particle& p, std::vector<Estimator::Proxy>& estimator_proxies,
       const Real distance) const noexcept;
@@ -56,22 +56,20 @@ protected:
       const World& w, const CSGSurface& surface) const noexcept;
 
 private:
-  // Interface for updating each indirect effect after streaming within the
-  // current Cell. Reference to const Particle ensures that order each
-  // indirect effect is visited does not matter.
+  // Interface for updating each indirect effect after streaming uncollided
+  // within the current Cell. Reference to const Particle ensures that order
+  // each indirect effect is visited does not matter.
   virtual std::unique_ptr<const Perturbation::IndirectEffect::Visitor>
   GetStreamWithinCellIndirectEffectVisitor(
       const Particle& p, const Real distance) const noexcept = 0;
   // Interface for getting the score that streaming within a Cell would
   // contribute to an estimator
-  virtual std::unique_ptr<const Estimator::Visitor>
-  GetStreamWithinCellEstimatorVisitor(
-      const Particle& p, const Real distance) const noexcept = 0;
+  std::unique_ptr<const Estimator::Visitor> GetStreamWithinCellEstimatorVisitor(
+      const Particle& p, const Real distance) const noexcept;
   // Interface for getting the score that streaming across a CSGSurface would
   // contribute to an estimator
-  virtual std::unique_ptr<const Estimator::Visitor>
-  GetCrossSurfaceEstimatorVisitor(
-      const Particle& p, const CSGSurface& s) const noexcept = 0;
+  std::unique_ptr<const Estimator::Visitor> GetCrossSurfaceEstimatorVisitor(
+      const Particle& p, const CSGSurface& s) const noexcept;
 };
 
 /// @brief Loops over each CSGSurface in the current Cell to find the next
@@ -86,12 +84,6 @@ private:
   std::unique_ptr<const Perturbation::IndirectEffect::Visitor>
   GetStreamWithinCellIndirectEffectVisitor(
       const Particle& p, const Real distance) const noexcept final;
-
-  std::unique_ptr<const Estimator::Visitor> GetStreamWithinCellEstimatorVisitor(
-      const Particle& p, const Real distance) const noexcept final;
-
-  std::unique_ptr<const Estimator::Visitor> GetCrossSurfaceEstimatorVisitor(
-      const Particle& p, const CSGSurface& s) const noexcept final;
 };
 
 /// @brief Tracks a particle using delta tracking within a Cell. CSGSurface
@@ -106,10 +98,4 @@ private:
   std::unique_ptr<const Perturbation::IndirectEffect::Visitor>
   GetStreamWithinCellIndirectEffectVisitor(
       const Particle& p, const Real distance) const noexcept final;
-
-  std::unique_ptr<const Estimator::Visitor> GetStreamWithinCellEstimatorVisitor(
-      const Particle& p, const Real distance) const noexcept final;
-
-  std::unique_ptr<const Estimator::Visitor> GetCrossSurfaceEstimatorVisitor(
-      const Particle& p, const CSGSurface& s) const noexcept final;
 };

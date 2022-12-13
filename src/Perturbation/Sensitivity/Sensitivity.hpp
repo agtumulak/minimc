@@ -61,12 +61,12 @@ public:
   const Perturbation::Interface& perturbation;
 
 protected:
-  // Original estimator bin; used to determine scoring vector size
+  /// @brief Original estimator bin; used to determine scoring vector size
   const ParticleBins& bins;
-  // Flattened array; subclasses determine how to interpret indices
+  /// @brief Flattened array; subclasses determine how to interpret indices
   std::vector<Score> sums =
       std::vector<Score>(bins.size() * perturbation.n_perturbations, 0.);
-  // Flattened array; subclasses determine how to interpret indices
+  /// @brief Flattened array; subclasses determine how to interpret indices
   std::vector<Score> sum_squares =
       std::vector<Score>(bins.size() * perturbation.n_perturbations, 0.);
 };

@@ -7,6 +7,8 @@
 #include "Material.hpp"
 #include "Nuclide.hpp"
 #include "Particle.hpp"
+#include "Perturbation/IndirectEffect/IndirectEffect.hpp"
+#include "Perturbation/IndirectEffect/Visitor.hpp"
 #include "Perturbation/Perturbation.hpp"
 #include "Reaction.hpp"
 #include "StreamDelegate.hpp"
@@ -84,6 +86,10 @@ void Driver::Transport(
     if (p.reaction == Reaction::leak) {
       break;
     }
+    // update indirect effects after colliding at the current position
+    for (auto& indirect_effect : p.indirect_effects) {
+      indirect_effect->Visit(*GetCollideWithinCellIndirectEffectVisitor(p));
+    }
     // sample the next Nuclide, currently no need to delegate this
     const auto& sampled_nuclide = [&p]() {
       const MicroscopicCrossSection threshold =
@@ -102,4 +108,29 @@ void Driver::Transport(
     // interact with the sampled nuclide
     sampled_nuclide->Interact(p, estimator_proxies);
   }
+}
+
+//// private
+
+std::unique_ptr<const Perturbation::IndirectEffect::Visitor>
+Driver::GetCollideWithinCellIndirectEffectVisitor(
+    const Particle& p) const noexcept {
+  class Visitor : public Perturbation::IndirectEffect::Visitor {
+  public:
+    Visitor(const Particle& p) : p{p} {};
+    void Visit(Perturbation::IndirectEffect::TotalCrossSection& indirect_effect)
+        const noexcept final {
+      const auto& material = *p.GetCell().material;
+      if (const auto& afrac_it = material.afracs.find(indirect_effect.nuclide);
+          afrac_it != material.afracs.cend()) {
+        indirect_effect.indirect_effects.front() +=
+            material.number_density * afrac_it->second /
+            material.GetMicroscopicTotal(p);
+      }
+    }
+
+  private:
+    const Particle& p;
+  };
+  return std::make_unique<const Visitor>(p);
 }

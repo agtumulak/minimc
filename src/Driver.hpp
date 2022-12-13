@@ -13,8 +13,11 @@ class Interface;
 class Proxy;
 } // namespace Estimator
 namespace Perturbation {
-class Interface;
+namespace IndirectEffect {
+class Visitor;
 }
+class Interface;
+} // namespace Perturbation
 namespace pugi {
 class xml_node;
 }
@@ -67,4 +70,10 @@ protected:
   const size_t threads;
   /// @brief Histories are assigned a seed in [seed, seed + batchsize)
   const RNG::result_type seed;
+
+private:
+  // Interface for updating each indirect effect after colliding at the current
+  // position.
+  std::unique_ptr<const Perturbation::IndirectEffect::Visitor>
+  GetCollideWithinCellIndirectEffectVisitor(const Particle& p) const noexcept;
 };
