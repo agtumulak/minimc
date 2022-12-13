@@ -11,8 +11,11 @@
   <continuous>
     <nuclide name="pure absorber" awr="1.0">
       <neutron>
-        <total temperature="293.15" file="uniform-1.000b.hdf5"/>
-        <capture temperature="293.15" file="uniform-1.000b.hdf5"/>
+        <total temperature="293.15" file="uniform-2.050b.hdf5"/>
+        <capture temperature="293.15" file="uniform-1.025b.hdf5"/>
+        <scatter>
+          <xs temperature="293.15" file="uniform-1.025b.hdf5"/>
+        </scatter>
       </neutron>
     </nuclide>
   </continuous>
@@ -56,13 +59,6 @@
   </fixedsource>
 </problemtype>
 <estimators>
-  <current name="leakage" surface="sphere">
-    <perturbations>
-      <sensitivity to="totalxs"/>
-    </perturbations>
-  </current>
+  <current name="leakage" surface="sphere"/>
 </estimators>
-<perturbations>
-  <totalxs name="totalxs" nuclide="pure absorber"/>
-</perturbations>
 </minimc>
