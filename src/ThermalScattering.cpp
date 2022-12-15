@@ -85,13 +85,13 @@ ThermalScattering::ThermalScattering(const pugi::xml_node& tnsl_node) noexcept
         return result;
       }()},
       // IIFE
-      alpha_partition_beta_ends{[this]() {
-        std::vector<size_t> result;
-        size_t current_end = 0;
+      alpha_partition_beta_begins{[this]() {
+        std::vector<size_t> result{0};
         for (const auto& partition : alpha_partitions) {
-          current_end += partition.beta_T_modes.GetAxis(0).size();
-          result.emplace_back(current_end);
+          result.emplace_back(
+              result.back() + partition.beta_T_modes.GetAxis(0).size());
         }
+        assert(result.back() == betas.size());
         return result;
       }()},
       beta_cutoff{tnsl_node.attribute("beta_cutoff").as_double()},
@@ -383,19 +383,16 @@ ThermalScattering::Alpha ThermalScattering::SampleAlpha(
   const Alpha b_a_min = std::pow(sqrt_E - b_sqrt_E_bkT, 2) / akT;
   const Alpha b_a_max = std::pow(sqrt_E + b_sqrt_E_bkT, 2) / akT;
 
-  // Get partition which contains the sampled beta and get sampled beta index
-  // in that partition
+  // Get partition which contains the sampled beta and get local beta index in
+  // that partition
   const size_t P_s_i = std::distance(
-      alpha_partition_beta_ends.cbegin(),
-      std::upper_bound(
-          alpha_partition_beta_ends.cbegin(), alpha_partition_beta_ends.cend(),
-          b_s_i));
+                           alpha_partition_beta_begins.cbegin(),
+                           std::upper_bound(
+                               alpha_partition_beta_begins.cbegin(),
+                               alpha_partition_beta_begins.cend(), b_s_i)) -
+                       1;
   const auto& P_s = alpha_partitions.at(P_s_i);
-  // TODO: Change alpha_partition_beta_ends to alpha_partition_beta_begins to
-  // avoid this if statement
-  const size_t b_s_i_local =
-      P_s_i == 0 ? b_s_i : b_s_i - alpha_partition_beta_ends.at(P_s_i - 1);
-
+  const size_t b_s_i_local = b_s_i - alpha_partition_beta_begins.at(P_s_i);
   const auto& Fs = P_s.CDF_modes.GetAxis(0);
   // helper function to find the CDF value that would return `a`. (assuming
   // histogram PDF)

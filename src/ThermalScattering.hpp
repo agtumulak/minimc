@@ -109,8 +109,8 @@ private:
   const std::vector<AlphaPartition> alpha_partitions;
   // concatenated vector of all betas found in each partition_ends
   const std::vector<Beta> betas;
-  // A vector of one-past-the-last beta index for each partition
-  const std::vector<size_t> alpha_partition_beta_ends;
+  // Identifies the global beta index where each partition begins
+  const std::vector<size_t> alpha_partition_beta_begins;
   // Maximum value of beta which can be sampled
   const Beta beta_cutoff;
   // Maximum value of alpha which can be sampled
