@@ -197,11 +197,20 @@ ThermalScattering::Beta ThermalScattering::BetaPartition::Evaluate(
 
   // Reconstruct betas
   const size_t max_order = singular_values.GetAxis(0).size();
+
+  // handle single temperature case
   Beta beta_T_hi = 0;
-  Beta beta_T_lo = 0;
   for (size_t order = 0; order < max_order; order++) {
     beta_T_hi += singular_values.at(order) * CDF_modes.at(cdf_index, order) *
                  E_T_modes.at(E_index, T_hi_i, order);
+  }
+  if (T_hi_i == T_lo_i) {
+    return beta_T_hi;
+  }
+
+  // the muliple temperature case
+  Beta beta_T_lo = 0;
+  for (size_t order = 0; order < max_order; order++) {
     beta_T_lo += singular_values.at(order) * CDF_modes.at(cdf_index, order) *
                  E_T_modes.at(E_index, T_lo_i, order);
   }
@@ -209,9 +218,9 @@ ThermalScattering::Beta ThermalScattering::BetaPartition::Evaluate(
   // Linearly interpolate
   const Temperature T_hi = Ts.at(T_hi_i);
   const Temperature T_lo = Ts.at(T_lo_i);
-  const Real sampled_beta =
+  const Real interpolated_beta =
       beta_T_lo + (beta_T_hi - beta_T_lo) / (T_hi - T_lo) * (T - T_lo);
-  return sampled_beta;
+  return interpolated_beta;
 }
 
 // AlphaPartition
@@ -238,11 +247,20 @@ ThermalScattering::Alpha ThermalScattering::AlphaPartition::Evaluate(
 
   // Reconstruct alphas
   const size_t max_order = singular_values.GetAxis(0).size();
+
+  // handle single temperature case
   Alpha alpha_T_hi = 0;
-  Alpha alpha_T_lo = 0;
   for (size_t order = 0; order < max_order; order++) {
     alpha_T_hi += singular_values.at(order) * CDF_modes.at(cdf_index, order) *
                   beta_T_modes.at(beta_index, T_hi_i, order);
+  }
+  if (T_hi_i == T_lo_i) {
+    return alpha_T_hi;
+  }
+
+  // the multiple temperature case
+  Alpha alpha_T_lo = 0;
+  for (size_t order = 0; order < max_order; order++) {
     alpha_T_lo += singular_values.at(order) * CDF_modes.at(cdf_index, order) *
                   beta_T_modes.at(beta_index, T_lo_i, order);
   }
@@ -250,9 +268,9 @@ ThermalScattering::Alpha ThermalScattering::AlphaPartition::Evaluate(
   // Linearly interpolate
   const Temperature T_hi = Ts.at(T_hi_i);
   const Temperature T_lo = Ts.at(T_lo_i);
-  const Real sampled_alpha =
+  const Real interpolated_alpha =
       alpha_T_lo + (alpha_T_hi - alpha_T_lo) / (T_hi - T_lo) * (T - T_lo);
-  return sampled_alpha;
+  return interpolated_alpha;
 }
 
 // ThermalScattering
