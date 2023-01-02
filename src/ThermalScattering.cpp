@@ -208,7 +208,7 @@ ThermalScattering::Beta ThermalScattering::BetaPartition::Evaluate(
     return beta_T_hi;
   }
 
-  // the muliple temperature case
+  // the multiple temperature case
   Beta beta_T_lo = 0;
   for (size_t order = 0; order < max_order; order++) {
     beta_T_lo += singular_values.at(order) * CDF_modes.at(cdf_index, order) *
@@ -316,43 +316,34 @@ ThermalScattering::Beta ThermalScattering::SampleBeta(
   // this if statement
   const size_t E_s_i_local =
       P_s_i == 0 ? E_s_i : E_s_i - beta_partition_E_ends.at(P_s_i - 1);
-  // Keep sampling until a physical value of beta is obtained
-  for (size_t resamples = 0; resamples < constants::beta_resample_limit;
-       resamples++) {
-    // sample a CDF value
-    const Real F = std::uniform_real_distribution{}(p.rng);
-    // find index of CDF value strictly greater than sampled CDF value
-    const auto& Fs = P_s.CDF_modes.GetAxis(0);
-    const size_t F_hi_i =
-        std::distance(Fs.cbegin(), std::upper_bound(Fs.cbegin(), Fs.cend(), F));
+  // sample a CDF value
+  const Real F = std::uniform_real_distribution{}(p.rng);
+  // find index of CDF value strictly greater than sampled CDF value
+  const auto& Fs = P_s.CDF_modes.GetAxis(0);
+  const size_t F_hi_i =
+      std::distance(Fs.cbegin(), std::upper_bound(Fs.cbegin(), Fs.cend(), F));
 
-    // Evaluate nearest Fs on the sampled E grid.
-    const Real F_lo = F_hi_i != 0 ? Fs.at(F_hi_i - 1) : 0;
-    const Real F_hi = F_hi_i != Fs.size() ? Fs.at(F_hi_i) : 1;
+  // Evaluate nearest Fs on the sampled E grid.
+  const Real F_lo = F_hi_i != 0 ? Fs.at(F_hi_i - 1) : 0;
+  const Real F_hi = F_hi_i != Fs.size() ? Fs.at(F_hi_i) : 1;
 
-    // Evaluate nearest betas on the sampled E grid.
-    const ContinuousEnergy E_s_b_lo =
-        F_hi_i != 0 ? P_s.Evaluate(F_hi_i - 1, E_s_i_local, T)
-                    : -E_s / (constants::boltzmann * T);
-    const ContinuousEnergy E_s_b_hi = F_hi_i != Fs.size()
-                                          ? P_s.Evaluate(F_hi_i, E_s_i_local, T)
-                                          : beta_cutoff;
+  // Evaluate nearest betas on the sampled E grid.
+  const auto b_s_min = -E_s / (constants::boltzmann * T);
+  const ContinuousEnergy E_s_b_lo =
+      F_hi_i != 0 ? P_s.Evaluate(F_hi_i - 1, E_s_i_local, T) : b_s_min;
+  const ContinuousEnergy E_s_b_hi = F_hi_i != Fs.size()
+                                        ? P_s.Evaluate(F_hi_i, E_s_i_local, T)
+                                        : beta_cutoff;
 
-    // Evalute interpolated value of beta on the sampled E grid (assuming
-    // histogram PDF)
-    const auto b_prime =
-        E_s_b_lo + (F - F_lo) / (F_hi - F_lo) * (E_s_b_hi - E_s_b_lo);
+  // Evaluate interpolated value of beta on the sampled E grid (assuming
+  // histogram PDF)
+  const auto b_prime =
+      E_s_b_lo + (F - F_lo) / (F_hi - F_lo) * (E_s_b_hi - E_s_b_lo);
 
-    // TODO: fix strange behavior near b_prime = 0 while preserving thresholds
-    // Check if b_prime is above minimum allowed beta
-    const auto b_min = -E / (constants::boltzmann * T);
-    if (b_min <= b_prime) {
-      return b_prime;
-    }
-  }
-  throw std::runtime_error(
-      "Number of thermal scattering beta resamples exceeded limit: " +
-      std::to_string(constants::beta_resample_limit));
+  // TODO: fix strange behavior near b_prime = 0 while preserving thresholds
+  const auto b_min = -E / (constants::boltzmann * T);
+  return b_min +
+         (b_prime - b_s_min) / (beta_cutoff - b_s_min) * (beta_cutoff - b_min);
 }
 
 ThermalScattering::Alpha ThermalScattering::SampleAlpha(
