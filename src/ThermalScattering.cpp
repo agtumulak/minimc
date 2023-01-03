@@ -367,9 +367,9 @@ ThermalScattering::Alpha ThermalScattering::SampleAlpha(
   // Handle case where abs_b is less than the smallest beta provided, b_min
   const bool snap_to_min = b_hi_i == 0;
   // Determine interpolation factor and sample a beta grid to use, b_s
-  const Real r = snap_to_lower ? 0
-                 : snap_to_min
-                     ? 1
+  const Real r = snap_to_min ? 1
+                 : snap_to_lower
+                     ? 0
                      : (abs_b - betas.at(b_hi_i - 1) /
                                     (betas.at(b_hi_i) - betas.at(b_hi_i - 1)));
   const size_t b_s_i =
