@@ -27,7 +27,4 @@ constexpr Real neutron_mass = 1.045354912280858e-18;
 /// @brief Relative temperature difference below which temperatures are to be
 ///        considered equal for cross section evaluation purposes
 constexpr Real relative_temperature_difference_tolerance = 0.01;
-/// @brief Number of times to resample thermal scattering alpha when an
-///        unphysical value is encountered
-constexpr size_t alpha_resample_limit = 10;
 } // namespace constants
