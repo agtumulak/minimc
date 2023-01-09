@@ -27,6 +27,14 @@ public:
   using Beta = Real;
   /// @brief Dimensionless momentum transfer
   using Alpha = Real;
+  /// @brief Helper function to compute minimum allowable value of alpha
+  static Alpha MinAlpha(
+      const Real awr, const ContinuousEnergy E, const Beta b,
+      Temperature T) noexcept;
+  /// @brief Helper function to compute maximum allowable value of alpha
+  static Alpha MaxAlpha(
+      const Real awr, const ContinuousEnergy E, const Beta b,
+      Temperature T) noexcept;
   /// @brief Constructs thermal scattering data from a `tnsl` node
   ThermalScattering(const pugi::xml_node& tnsl_node) noexcept;
   /// @brief Returns true if Particle is Type::neutron and is strictly below
@@ -75,8 +83,13 @@ private:
     // Evaluates alpha using proper orthogonal decomposition and linear
     // interpolation in T
     Alpha Evaluate(
-        const size_t cdf_index, const size_t beta_index,
-        Temperature T) const ;
+        const size_t cdf_index, const size_t local_beta_index,
+        const size_t T_index) const;
+    // Returns a CDF value that would return the given value of alpha
+    Real FindCDF(
+        const Alpha a, const size_t b_s_i_local, const Real awr,
+        const ContinuousEnergy E, const Beta b,
+        const Temperature T) const noexcept;
     // Contains CDF modes
     const HDF5DataSet<2> CDF_modes;
     // Contains singular values
@@ -93,6 +106,10 @@ private:
   // Sample an outgoing cosine given an outgoing energy.
   Alpha SampleAlpha(
       Particle& p, const Beta& b, ContinuousEnergy E, Temperature T) const;
+  // https://en.wikipedia.org/wiki/Bilinear_interpolation#On_the_unit_square
+  Real BilinearInterpolation(
+      Real r0, Real r1, Real a_00, Real a_01, Real a_10,
+      Real a_11) const noexcept;
   // Majorant cross section
   const ContinuousMap<ContinuousEnergy, MicroscopicCrossSection> majorant;
   // Total scattering cross section POD coefficients

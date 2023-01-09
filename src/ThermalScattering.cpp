@@ -22,6 +22,22 @@
 
 //// public
 
+ThermalScattering::Alpha ThermalScattering::MinAlpha(
+    const Real awr, const ContinuousEnergy E, const Beta b,
+    Temperature T) noexcept {
+  return std::pow(
+             std::sqrt(E) - std::sqrt(E + b * constants::boltzmann * T), 2) /
+         (awr * constants::boltzmann * T);
+}
+
+ThermalScattering::Alpha ThermalScattering::MaxAlpha(
+    const Real awr, const ContinuousEnergy E, const Beta b,
+    Temperature T) noexcept {
+  return std::pow(
+             std::sqrt(E) + std::sqrt(E + b * constants::boltzmann * T), 2) /
+         (awr * constants::boltzmann * T);
+}
+
 ThermalScattering::ThermalScattering(const pugi::xml_node& tnsl_node) noexcept
     : majorant{HDF5DataSet<1>{tnsl_node.attribute("majorant").as_string()}
                    .ToContinuousMap()},
@@ -229,48 +245,227 @@ ThermalScattering::AlphaPartition::AlphaPartition(
     const pugi::xml_node& partition_node)
     : CDF_modes{partition_node.attribute("CDF").as_string()},
       singular_values{partition_node.attribute("S").as_string()},
-      beta_T_modes{partition_node.attribute("beta_T").as_string()} {}
+      beta_T_modes{partition_node.attribute("beta_T").as_string()} {
+  // The following assumptions about CDF values will be used in sampling
+  const auto& Fs = CDF_modes.GetAxis(0);
+  assert(Fs.size() > 0);
+}
 
 ThermalScattering::Alpha ThermalScattering::AlphaPartition::Evaluate(
-    const size_t cdf_index, const size_t beta_index, Temperature T) const {
+    const size_t cdf_index, const size_t local_beta_index,
+    const size_t T_index) const {
+  Alpha alpha = 0;
+  for (size_t order = 0; order < singular_values.GetAxis(0).size(); order++) {
+    alpha += singular_values.at(order) * CDF_modes.at(cdf_index, order) *
+             beta_T_modes.at(local_beta_index, T_index, order);
+  }
+  return alpha;
+}
 
-  // Find index of Temperature above and below target Temperature
+Real ThermalScattering::AlphaPartition::FindCDF(
+    const Alpha a, const size_t b_s_i_local, const Real awr,
+    const ContinuousEnergy E, const Beta b,
+    const Temperature T) const noexcept {
+  // Evaluate nearest temperatures on the sampled beta grid
   const auto& Ts = beta_T_modes.GetAxis(1);
-  const size_t candidate_T_hi_i =
+  // find neighboring temperature value indices
+  const size_t T_hi_i =
       std::distance(Ts.cbegin(), std::upper_bound(Ts.cbegin(), Ts.cend(), T));
-  // If T >= T_max, we use T_max for the upper value
-  const auto above_T_max = candidate_T_hi_i == Ts.size();
-  const size_t T_hi_i = above_T_max ? candidate_T_hi_i - 1 : candidate_T_hi_i;
-  // If T < T_min, we use T_min as the lower value
-  const auto below_T_min = T_hi_i == 0;
-  const size_t T_lo_i = below_T_min ? T_hi_i : T_hi_i - 1;
-
-  // Reconstruct alphas
-  const size_t max_order = singular_values.GetAxis(0).size();
-
-  // handle single temperature case
-  Alpha alpha_T_hi = 0;
-  for (size_t order = 0; order < max_order; order++) {
-    alpha_T_hi += singular_values.at(order) * CDF_modes.at(cdf_index, order) *
-                  beta_T_modes.at(beta_index, T_hi_i, order);
+  // identify two possible edge cases for temperature
+  const auto T_hi_exists = T_hi_i < Ts.size();
+  const auto T_lo_exists = T_hi_i != 0;
+  // find index of CDF value that evaluates to be strictly greater than `a`
+  const auto& Fs = CDF_modes.GetAxis(0);
+  // TODO: Factor out common terms
+  if (T_hi_exists && T_lo_exists) {
+    // the most common case
+    const size_t F_hi_i = std::distance(
+        Fs.cbegin(),
+        std::upper_bound(
+            Fs.cbegin(), Fs.cend(), a,
+            [this, &Fs, &b_s_i_local, &T_hi_i, &Ts,
+             &T](const Alpha& a, const Real& F) {
+              // https://en.cppreference.com/w/cpp/language/operator_arithmetic
+              const size_t F_i = &F - &Fs.front();
+              const auto a_T_hi = Evaluate(F_i, b_s_i_local, T_hi_i);
+              const auto a_T_lo = Evaluate(F_i, b_s_i_local, T_hi_i - 1);
+              // linearly interpolate in temperature
+              const auto T_hi = Ts.at(T_hi_i);
+              const auto T_lo = Ts.at(T_hi_i - 1);
+              return a <
+                     a_T_lo + (T - T_lo) / (T_hi - T_lo) * (a_T_hi - a_T_lo);
+            }));
+    // identify two possible edge cases for CDF
+    const auto F_hi_exists = F_hi_i < Fs.size();
+    const auto F_lo_exists = F_hi_i != 0;
+    if (F_hi_exists && F_lo_exists) {
+      // the most common case (1)
+      const auto a_F_hi_T_hi = Evaluate(F_hi_i, b_s_i_local, T_hi_i);
+      const auto a_F_hi_T_lo = Evaluate(F_hi_i, b_s_i_local, T_hi_i - 1);
+      const auto a_F_lo_T_hi = Evaluate(F_hi_i - 1, b_s_i_local, T_hi_i);
+      const auto a_F_lo_T_lo = Evaluate(F_hi_i - 1, b_s_i_local, T_hi_i - 1);
+      // linearly interpolate upper and lower value of F in temperature
+      const auto T_hi = Ts.at(T_hi_i);
+      const auto T_lo = Ts.at(T_hi_i - 1);
+      const auto r_T = (T - T_lo) / (T_hi - T_lo);
+      const auto a_F_hi = a_F_hi_T_lo + r_T * (a_F_hi_T_hi - a_F_hi_T_lo);
+      const auto a_F_lo = a_F_lo_T_lo + r_T * (a_F_lo_T_hi - a_F_lo_T_lo);
+      // return value of F that would return `a`
+      const auto r_a = (a - a_F_lo) / (a_F_hi - a_F_lo);
+      const auto F_hi = Fs.at(F_hi_i);
+      const auto F_lo = Fs.at(F_hi_i - 1);
+      return F_lo + r_a * (F_hi - F_lo);
+    }
+    else if (F_hi_exists && !F_lo_exists) {
+      // compute alpha at zero CDF (4)
+      const auto a_F_hi_T_hi = Evaluate(F_hi_i, b_s_i_local, T_hi_i);
+      const auto a_F_hi_T_lo = Evaluate(F_hi_i, b_s_i_local, T_hi_i - 1);
+      // linearly interpolate upper value of F in temperature
+      const auto T_hi = Ts.at(T_hi_i);
+      const auto T_lo = Ts.at(T_hi_i - 1);
+      const auto r_T = (T - T_lo) / (T_hi - T_lo);
+      const auto a_F_hi = a_F_hi_T_lo + r_T * (a_F_hi_T_hi - a_F_hi_T_lo);
+      const auto a_F_lo = MinAlpha(awr, E, b, T);
+      // return value of F that would return `a`
+      const auto r_a = (a - a_F_lo) / (a_F_hi - a_F_lo);
+      const auto F_hi = Fs.at(F_hi_i);
+      const Real F_lo = 0;
+      return F_lo + r_a * (F_hi - F_lo);
+    }
+    else if (!F_hi_exists && F_lo_exists) {
+      // compute alpha at unity CDF (5)
+      const auto a_F_lo_T_hi = Evaluate(F_hi_i - 1, b_s_i_local, T_hi_i);
+      const auto a_F_lo_T_lo = Evaluate(F_hi_i - 1, b_s_i_local, T_hi_i - 1);
+      // linearly interpolate lower value of F in temperature
+      const auto T_hi = Ts.at(T_hi_i);
+      const auto T_lo = Ts.at(T_hi_i - 1);
+      const auto r_T = (T - T_lo) / (T_hi - T_lo);
+      const auto a_F_hi = MaxAlpha(awr, E, b, T);
+      const auto a_F_lo = a_F_lo_T_lo + r_T * (a_F_lo_T_hi - a_F_lo_T_lo);
+      // return value of F that would return `a`
+      const auto r_a = (a - a_F_lo) / (a_F_hi - a_F_lo);
+      const Real F_hi = 1;
+      const auto F_lo = Fs.at(F_hi_i - 1);
+      return F_lo + r_a * (F_hi - F_lo);
+    }
+    else {
+      assert(false);
+    }
   }
-  if (T_hi_i == T_lo_i) {
-    return alpha_T_hi;
+  else if (T_hi_exists && !T_lo_exists) {
+    // snap to upper temperature (2)
+    const size_t F_hi_i = std::distance(
+        Fs.cbegin(),
+        std::upper_bound(
+            Fs.cbegin(), Fs.cend(), a,
+            [this, &Fs, &b_s_i_local, &T_hi_i](const Alpha& a, const Real& F) {
+              // https://en.cppreference.com/w/cpp/language/operator_arithmetic
+              const size_t F_i = &F - &Fs.front();
+              const auto a_T_hi = Evaluate(F_i, b_s_i_local, T_hi_i);
+              return a < a_T_hi;
+            }));
+    // identify two possible edge cases for CDF
+    const auto F_hi_exists = F_hi_i < Fs.size();
+    const auto F_lo_exists = F_hi_i != 0;
+    if (F_hi_exists && F_lo_exists) {
+      // the most common case (2)
+      const auto a_F_hi_T_hi = Evaluate(F_hi_i, b_s_i_local, T_hi_i);
+      const auto a_F_lo_T_hi = Evaluate(F_hi_i - 1, b_s_i_local, T_hi_i);
+      // snap to upper temperature
+      const auto a_F_hi = a_F_hi_T_hi;
+      const auto a_F_lo = a_F_lo_T_hi;
+      // return value of F that would return `a`
+      const auto r_a = (a - a_F_lo) / (a_F_hi - a_F_lo);
+      const auto F_hi = Fs.at(F_hi_i);
+      const auto F_lo = Fs.at(F_hi_i - 1);
+      return F_lo + r_a * (F_hi - F_lo);
+    }
+    else if (F_hi_exists && !F_lo_exists) {
+      // compute alpha at zero CDF (6)
+      const auto a_F_hi_T_hi = Evaluate(F_hi_i, b_s_i_local, T_hi_i);
+      // snap to upper temperature
+      const auto a_F_hi = a_F_hi_T_hi;
+      const auto a_F_lo = MinAlpha(awr, E, b, T);
+      // return value of F that would return `a`
+      const auto r_a = (a - a_F_lo) / (a_F_hi - a_F_lo);
+      const auto F_hi = Fs.at(F_hi_i);
+      const Real F_lo = 0;
+      return F_lo + r_a * (F_hi - F_lo);
+    }
+    else if (!F_hi_exists && F_lo_exists) {
+      // compute alpha at unity CDF (8)
+      const auto a_F_lo_T_hi = Evaluate(F_hi_i - 1, b_s_i_local, T_hi_i);
+      // snap to upper temperature
+      const auto a_F_hi = MaxAlpha(awr, E, b, T);
+      const auto a_F_lo = a_F_lo_T_hi;
+      // return value of F that would return `a`
+      const auto r_a = (a - a_F_lo) / (a_F_hi - a_F_lo);
+      const Real F_hi = 1;
+      const auto F_lo = Fs.at(F_hi_i - 1);
+      return F_lo + r_a * (F_hi - F_lo);
+    }
+    else {
+      assert(false);
+    }
   }
-
-  // the multiple temperature case
-  Alpha alpha_T_lo = 0;
-  for (size_t order = 0; order < max_order; order++) {
-    alpha_T_lo += singular_values.at(order) * CDF_modes.at(cdf_index, order) *
-                  beta_T_modes.at(beta_index, T_lo_i, order);
+  else if (!T_hi_exists && T_lo_exists) {
+    const size_t F_hi_i = std::distance(
+        Fs.cbegin(),
+        std::upper_bound(
+            Fs.cbegin(), Fs.cend(), a,
+            [this, &Fs, &b_s_i_local, &T_hi_i](const Alpha& a, const Real& F) {
+              // https://en.cppreference.com/w/cpp/language/operator_arithmetic
+              const size_t F_i = &F - &Fs.front();
+              const auto a_T_lo = Evaluate(F_i, b_s_i_local, T_hi_i - 1);
+              return a < a_T_lo;
+            }));
+    // identify two possible edge cases for CDF
+    const auto F_hi_exists = F_hi_i < Fs.size();
+    const auto F_lo_exists = F_hi_i != 0;
+    if (F_hi_exists && F_lo_exists) {
+      // the most common case (3)
+      const auto a_F_hi_T_lo = Evaluate(F_hi_i, b_s_i_local, T_hi_i - 1);
+      const auto a_F_lo_T_lo = Evaluate(F_hi_i - 1, b_s_i_local, T_hi_i - 1);
+      // snap to lower temperature
+      const auto a_F_hi = a_F_hi_T_lo;
+      const auto a_F_lo = a_F_lo_T_lo;
+      // return value of F that would return `a`
+      const auto r_a = (a - a_F_lo) / (a_F_hi - a_F_lo);
+      const auto F_hi = Fs.at(F_hi_i);
+      const auto F_lo = Fs.at(F_hi_i - 1);
+      return F_lo + r_a * (F_hi - F_lo);
+    }
+    else if (F_hi_exists && !F_lo_exists) {
+      // compute alpha at zero CDF (7)
+      const auto a_F_hi_T_lo = Evaluate(F_hi_i, b_s_i_local, T_hi_i - 1);
+      // snap to lower temperature
+      const auto a_F_hi = a_F_hi_T_lo;
+      const auto a_F_lo = MinAlpha(awr, E, b, T);
+      // return value of F that would return `a`
+      const auto r_a = (a - a_F_lo) / (a_F_hi - a_F_lo);
+      const auto F_hi = Fs.at(F_hi_i);
+      const Real F_lo = 0;
+      return F_lo + r_a * (F_hi - F_lo);
+    }
+    else if (!F_hi_exists && F_lo_exists) {
+      // compute alpha at unity CDF (9)
+      const auto a_F_lo_T_lo = Evaluate(F_hi_i - 1, b_s_i_local, T_hi_i - 1);
+      // snap to lower temperature
+      const auto a_F_hi = MaxAlpha(awr, E, b, T);
+      const auto a_F_lo = a_F_lo_T_lo;
+      // return value of F that would return `a`
+      const auto r_a = (a - a_F_lo) / (a_F_hi - a_F_lo);
+      const Real F_hi = 1;
+      const auto F_lo = Fs.at(F_hi_i - 1);
+      return F_lo + r_a * (F_hi - F_lo);
+    }
+    else {
+      assert(false);
+    }
   }
-
-  // Linearly interpolate
-  const Temperature T_hi = Ts.at(T_hi_i);
-  const Temperature T_lo = Ts.at(T_lo_i);
-  const Real interpolated_alpha =
-      alpha_T_lo + (alpha_T_hi - alpha_T_lo) / (T_hi - T_lo) * (T - T_lo);
-  return interpolated_alpha;
+  else {
+    assert(false);
+  }
 }
 
 // ThermalScattering
@@ -393,49 +588,138 @@ ThermalScattering::Alpha ThermalScattering::SampleAlpha(
                        1;
   const auto& P_s = alpha_partitions.at(P_s_i);
   const size_t b_s_i_local = b_s_i - alpha_partition_beta_begins.at(P_s_i);
-  const auto& Fs = P_s.CDF_modes.GetAxis(0);
-  // helper function to find the CDF value that would return `a`. (assuming
-  // histogram PDF)
-  const auto find_cdf = [this, &Fs, &P_s, &b_s_i_local,
-                         &T](const Alpha& a) -> Real {
-    // find index of CDF value that evaluates to be strictly greater than `a`
-    const size_t F_a_hi_i = std::distance(
-        Fs.cbegin(),
-        std::upper_bound(
-            Fs.cbegin(), Fs.cend(), a,
-            [&Fs, &P_s, &b_s_i_local, &T](const Alpha& a, const Real& cdf) {
-              // https://en.cppreference.com/w/cpp/language/operator_arithmetic
-              const size_t cdf_i = &cdf - &Fs.front();
-              return a < P_s.Evaluate(cdf_i, b_s_i_local, T);
-            }));
-    // evaluate nearest CDFs
-    const Real F_a_lo = F_a_hi_i != 0 ? Fs.at(F_a_hi_i - 1) : 0;
-    const Real F_a_hi = F_a_hi_i != Fs.size() ? Fs.at(F_a_hi_i) : 1;
-    // evaluate nearest alphas
-    const Alpha a_lo =
-        F_a_hi_i != 0 ? P_s.Evaluate(F_a_hi_i - 1, b_s_i_local, T) : 0;
-    const Alpha a_hi = F_a_hi_i != Fs.size()
-                           ? P_s.Evaluate(F_a_hi_i, b_s_i_local, T)
-                           : alpha_cutoff;
-    // assume histogram PDF
-    return F_a_lo + (a - a_lo) * (F_a_hi - F_a_lo) / (a_hi - a_lo);
-  };
   // CDFs corresponding to b_a_min and b_a_max
-  const auto F_min = find_cdf(b_a_min);
-  const auto F_max = find_cdf(b_a_max);
-  // sample a CDF value which is scaled to return a result in [b_a_min, b_a_max]
+  const auto F_min = P_s.FindCDF(b_a_min, b_s_i_local, awr, E, b, T);
+  const auto F_max = P_s.FindCDF(b_a_max, b_s_i_local, awr, E, b, T);
+  // sample a CDF value which is scaled to return a result in [b_a_min, b_a_max)
   const auto F =
       F_min + std::uniform_real_distribution{}(p.rng) * (F_max - F_min);
-  // find index of CDF value strictly greater than sampled CDF value
+  // find neighboring CDF value indices
+  const auto& Fs = P_s.CDF_modes.GetAxis(0);
   const size_t F_hi_i =
       std::distance(Fs.cbegin(), std::upper_bound(Fs.cbegin(), Fs.cend(), F));
-  // Evaluate nearest CDFs on the sampled beta grid
-  const Real F_hi = F_hi_i != Fs.size() ? Fs.at(F_hi_i) : 1;
-  const Real F_lo = F_hi_i != 0 ? Fs.at(F_hi_i - 1) : 0;
-  // Evaluate alpha at corresponding CDF values
-  const Real a_hi =
-      F_hi_i != Fs.size() ? P_s.Evaluate(F_hi_i, b_s_i_local, T) : alpha_cutoff;
-  const Real a_lo = F_hi_i != 0 ? P_s.Evaluate(F_hi_i - 1, b_s_i_local, T) : 0;
-  // Evalute interpolated value of alpha (assuming histogram PDF)
-  return a_lo + (F - F_lo) / (F_hi - F_lo) * (a_hi - a_lo);
+  // identify two possible edge cases for CDF
+  const auto F_hi_exists = F_hi_i < Fs.size();
+  const auto F_lo_exists = F_hi_i != 0;
+
+  // Evaluate nearest temperatures on the sampled beta grid
+  const auto& Ts = P_s.beta_T_modes.GetAxis(1);
+  // find neighboring temperature value indices
+  const size_t T_hi_i =
+      std::distance(Ts.cbegin(), std::upper_bound(Ts.cbegin(), Ts.cend(), T));
+  // identify two possible edge cases for temperature
+  const auto T_hi_exists = T_hi_i < Ts.size();
+  const auto T_lo_exists = T_hi_i != 0;
+
+  // there are a total of 9 valid combinations; handle each one
+  // TODO: Factor out common terms
+  if (F_hi_exists && F_lo_exists && T_hi_exists && T_lo_exists){
+    // the most common case (1)
+    const auto a_F_hi_T_hi = P_s.Evaluate(F_hi_i, b_s_i_local, T_hi_i);
+    const auto a_F_hi_T_lo = P_s.Evaluate(F_hi_i, b_s_i_local, T_hi_i - 1);
+    const auto a_F_lo_T_hi = P_s.Evaluate(F_hi_i - 1, b_s_i_local, T_hi_i);
+    const auto a_F_lo_T_lo = P_s.Evaluate(F_hi_i - 1, b_s_i_local, T_hi_i - 1);
+    // interpolation fractions
+    const auto T_hi = Ts.at(T_hi_i);
+    const auto T_lo = Ts.at(T_hi_i - 1);
+    const auto r_T = (T - T_lo) / (T_hi - T_lo);
+    const auto F_hi = Fs.at(F_hi_i);
+    const auto F_lo = Fs.at(F_hi_i - 1);
+    const auto r_F = (F - F_hi) / (F_hi - F_lo);
+    // bilinearly interpolate
+    return BilinearInterpolation(
+        r_F, r_T, a_F_lo_T_lo, a_F_lo_T_hi, a_F_hi_T_lo, a_F_hi_T_hi);
+  }
+  else if (F_hi_exists && F_lo_exists && T_hi_exists && !T_lo_exists){
+    // snap to upper temperature (2)
+    const auto a_F_hi_T_hi = P_s.Evaluate(F_hi_i, b_s_i_local, T_hi_i);
+    const auto a_F_lo_T_hi = P_s.Evaluate(F_hi_i - 1, b_s_i_local, T_hi_i);
+    // interpolation fractions
+    const auto F_hi = Fs.at(F_hi_i);
+    const auto F_lo = Fs.at(F_hi_i - 1);
+    const auto r_F = (F - F_hi) / (F_hi - F_lo);
+    // linearly interpolate in CDF
+    return a_F_lo_T_hi + r_F * (a_F_hi_T_hi - a_F_lo_T_hi);
+  }
+  else if (F_hi_exists && F_lo_exists && !T_hi_exists && T_lo_exists){
+    // snap to lower temperature (3)
+    const auto a_F_hi_T_lo = P_s.Evaluate(F_hi_i, b_s_i_local, T_hi_i - 1);
+    const auto a_F_lo_T_lo = P_s.Evaluate(F_hi_i - 1, b_s_i_local, T_hi_i - 1);
+    // interpolation fractions
+    const auto F_hi = Fs.at(F_hi_i);
+    const auto F_lo = Fs.at(F_hi_i - 1);
+    const auto r_F = (F - F_hi) / (F_hi - F_lo);
+    // linearly interpolate in CDF
+    return a_F_lo_T_lo + r_F * (a_F_hi_T_lo - a_F_lo_T_lo);
+  }
+  else if (F_hi_exists && !F_lo_exists && T_hi_exists && T_lo_exists){
+    // compute alpha at zero CDF (4)
+    const auto a_F_hi_T_hi = P_s.Evaluate(F_hi_i, b_s_i_local, T_hi_i);
+    const auto a_F_hi_T_lo = P_s.Evaluate(F_hi_i, b_s_i_local, T_hi_i - 1);
+    // interpolation fractions
+    const auto T_hi = Ts.at(T_hi_i);
+    const auto T_lo = Ts.at(T_hi_i - 1);
+    const auto r_T = (T - T_lo) / (T_hi - T_lo);
+    // linearly interpolate in temperature
+    const auto a_F_hi = a_F_hi_T_lo + r_T * (a_F_hi_T_hi - a_F_hi_T_lo);
+    const auto a_F_lo = MinAlpha(awr, E, b, T);
+    // linearly interpolate in CDF; note F_lo = 0
+    return a_F_lo + F / a_F_hi * (a_F_hi - a_F_lo);
+  }
+  else if (!F_hi_exists && F_lo_exists && T_hi_exists && T_lo_exists){
+    // compute alpha at unity CDF (5)
+    const auto a_F_lo_T_hi = P_s.Evaluate(F_hi_i - 1, b_s_i_local, T_hi_i);
+    const auto a_F_lo_T_lo = P_s.Evaluate(F_hi_i - 1, b_s_i_local, T_hi_i - 1);
+    // interpolation fractions
+    const auto T_hi = Ts.at(T_hi_i);
+    const auto T_lo = Ts.at(T_hi_i - 1);
+    const auto r_T = (T - T_lo) / (T_hi - T_lo);
+    // linearly interpolate in temperature
+    const auto a_F_hi = MaxAlpha(awr, E, b, T);
+    const auto a_F_lo = a_F_lo_T_lo + r_T * (a_F_lo_T_hi - a_F_lo_T_lo);
+    // linearly interpolate in CDF; note F_hi = 1
+    const auto F_lo = Fs.at(F_hi_i - 1);
+    return a_F_lo + (F - F_lo) / (1 - F_lo) * (a_F_hi - a_F_lo);
+  }
+  else if (F_hi_exists && !F_lo_exists && T_hi_exists && !T_lo_exists){
+    // snap to upper temperature, compute alpha at zero CDF (6)
+    const auto a_F_hi = P_s.Evaluate(F_hi_i, b_s_i_local, T_hi_i);
+    const auto a_F_lo = MinAlpha(awr, E, b, T);
+    // linearly interpolate in CDF; note F_lo = 0
+    return a_F_lo + F / a_F_hi * (a_F_hi - a_F_lo);
+  }
+  else if (F_hi_exists && !F_lo_exists && !T_hi_exists && T_lo_exists){
+    // snap to lower temperature, compute alpha at zero CDF (7)
+    const auto a_F_hi = P_s.Evaluate(F_hi_i, b_s_i_local, T_hi_i - 1);
+    const auto a_F_lo = MinAlpha(awr, E, b, T);
+    // linearly interpolate in CDF; note F_lo = 0
+    return a_F_lo + F / a_F_hi * (a_F_hi - a_F_lo);
+  }
+  else if (!F_hi_exists && F_lo_exists && T_hi_exists && !T_lo_exists){
+    // snap to upper temperature, compute alpha at unity CDF (8)
+    const auto a_F_hi = MaxAlpha(awr, E, b, T);
+    const auto a_F_lo = P_s.Evaluate(F_hi_i - 1, b_s_i_local, T_hi_i);
+    // linearly interpolate in CDF; note F_hi = 1
+    const auto F_lo = Fs.at(F_hi_i - 1);
+    return a_F_lo + (F - F_lo) / (1 - F_lo) * (a_F_hi - a_F_lo);
+  }
+  else if (!F_hi_exists && F_lo_exists && !T_hi_exists && T_lo_exists) {
+    // snap to lower temperature, compute alpha at unity CDF (9)
+    const auto a_F_hi = MaxAlpha(awr, E, b, T);
+    const auto a_F_lo = P_s.Evaluate(F_hi_i - 1, b_s_i_local, T_hi_i - 1);
+    // linearly interpolate in CDF; note F_hi = 1
+    const auto F_lo = Fs.at(F_hi_i - 1);
+    return a_F_lo + (F - F_lo) / (1 - F_lo) * (a_F_hi - a_F_lo);
+  }
+  else {
+    // your nuclear data is bad and you should feel bad
+    assert(false);
+  }
+}
+
+Real ThermalScattering::BilinearInterpolation(
+    Real r0, Real r1, Real a_00, Real a_01, Real a_10,
+    Real a_11) const noexcept {
+  return a_00 * (1 - r0) * (1 - r1) + a_01 * (1 - r0) * r1 +
+         a_10 * r0 * (1 - r1) + a_11 * r0 * r1;
 }
