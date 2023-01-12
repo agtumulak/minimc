@@ -3,6 +3,7 @@
 #include "Cell.hpp"
 #include "Constants.hpp"
 #include "HDF5DataSet.hpp"
+#include "Nuclide.hpp"
 #include "Particle.hpp"
 #include "Point.hpp"
 #include "Reaction.hpp"
@@ -16,14 +17,13 @@
 #include <stdexcept>
 #include <string>
 #include <variant>
-#include <iostream>
 
 // ContinuousReaction
 
 //// public
 
-std::unique_ptr<const ContinuousReaction>
-ContinuousReaction::Create(const pugi::xml_node& reaction_node) {
+std::unique_ptr<const ContinuousReaction> ContinuousReaction::Create(
+    const pugi::xml_node& reaction_node, const Nuclide& parent) {
   switch (ToReaction(reaction_node.name())) {
   case Reaction::birth:
     assert(false); // this should have been caught by the validator
@@ -31,7 +31,7 @@ ContinuousReaction::Create(const pugi::xml_node& reaction_node) {
   case Reaction::capture:
     return std::make_unique<const ContinuousCapture>(reaction_node);
   case Reaction::scatter:
-    return std::make_unique<const ContinuousScatter>(reaction_node);
+    return std::make_unique<const ContinuousScatter>(reaction_node, parent);
   case Reaction::fission:
     return std::make_unique<const ContinuousFission>(reaction_node);
   case Reaction::leak:
@@ -73,10 +73,23 @@ void ContinuousCapture::Interact(
 
 //// public
 
-ContinuousScatter::ContinuousScatter(const pugi::xml_node& scatter_node)
+ContinuousScatter::ContinuousScatter(
+    const pugi::xml_node& scatter_node, const Nuclide& target)
     : ContinuousReaction{scatter_node.child("xs")},
-      tnsl{ReadPandasSAB(scatter_node.child("tnsl"))},
-      awr{scatter_node.parent().parent().attribute("awr").as_double()} {}
+      tnsl{[&scatter_node, &target]() -> std::optional<ThermalScattering> {
+        const auto& tnsl_node = scatter_node.child("tnsl");
+        if (!tnsl_node) {
+          return std::nullopt;
+        }
+        if (Particle::ToType(tnsl_node.parent().parent().name()) !=
+            Particle::Type::neutron) {
+          throw std::runtime_error(
+              tnsl_node.path() +
+              ": Only neutrons may have a thermal scattering library node");
+        }
+        return ThermalScattering{tnsl_node, target};
+      }()},
+      target{target} {}
 
 bool ContinuousScatter::ModifiesTotal(const Particle& p) const noexcept {
   return tnsl.has_value() && tnsl->IsValid(p);
@@ -143,6 +156,7 @@ void ContinuousScatter::Interact(
     const auto s_n = std::sqrt(2. * E / m_n);
     const auto v_n = s_n * p.GetDirection();
     // beta has units of s / cm
+    const auto awr = target.awr;
     const auto beta = std::sqrt(
         (awr * m_n) / (2. * constants::boltzmann *
                        p.GetCell().temperature->at(p.GetPosition())));
@@ -201,22 +215,9 @@ void ContinuousScatter::Interact(
 
 //// private
 
-std::optional<ThermalScattering>
-ContinuousScatter::ReadPandasSAB(const pugi::xml_node& tnsl_node) {
-  if (!tnsl_node) {
-    return std::nullopt;
-  }
-  if (Particle::ToType(tnsl_node.parent().parent().name()) !=
-      Particle::Type::neutron) {
-    throw std::runtime_error(
-        tnsl_node.path() +
-        ": Only neutrons may have a thermal scattering library node");
-  }
-  return ThermalScattering{tnsl_node};
-}
-
 bool ContinuousScatter::IsFreeGasScatteringValid(
     const Particle& p, const Temperature& T) const noexcept {
+  const auto awr = target.awr;
   if (p.type != Particle::Type::neutron) {
     return false;
   }
@@ -241,7 +242,7 @@ Real ContinuousScatter::GetFreeGasScatterAdjustment(
   else {
     const auto E = std::get<ContinuousEnergy>(p.GetEnergy());
     const auto x = std::sqrt(E / (constants::boltzmann * T));
-    const auto arg = awr * x * x;
+    const auto arg = target.awr * x * x;
     return (1 + 1 / (2 * arg)) * std::erf(std::sqrt(arg)) +
            std::exp(-arg) / std::sqrt(constants::pi * arg);
   }

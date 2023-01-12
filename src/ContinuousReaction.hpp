@@ -15,6 +15,7 @@ class Proxy;
 namespace pugi {
 class xml_node;
 }
+class Nuclide;
 class Particle;
 
 /// @brief Abstract interface for reactions which update the state of a
@@ -22,9 +23,9 @@ class Particle;
 class ContinuousReaction {
 public:
   /// @brief Factory method to create a new ContinuousReaction from an XML
-  ///        document
+  ///        document and parent Nuclide
   static std::unique_ptr<const ContinuousReaction>
-  Create(const pugi::xml_node& reaction_node);
+  Create(const pugi::xml_node& reaction_node, const Nuclide& parent);
   /// @brief Constructs ContinuousReaction from a reaction node of an XML
   ///        document
   ContinuousReaction(const pugi::xml_node& reaction_node);
@@ -76,8 +77,10 @@ public:
 class ContinuousScatter : public ContinuousReaction {
 public:
   /// @brief Constructs ContinuousScatter from a `scatter` node of an XML
-  ///        document, loading thermal scattering data if found
-  ContinuousScatter(const pugi::xml_node& scatter_node);
+  ///        document and parent Nuclide
+  /// @details If present, thermal neutron scattering law data is found and
+  ///          associated with the parent Nuclide
+  ContinuousScatter(const pugi::xml_node& scatter_node, const Nuclide& target);
   /// @brief Returns true if thermal scattering is present
   bool ModifiesTotal(const Particle& p) const noexcept override;
   /// @brief Returns largest scattering cross section that may be found within
@@ -98,9 +101,6 @@ public:
       const noexcept override;
 
 private:
-  // Helper function for constructing thermal scattering data S(a,b,T) if found
-  static std::optional<ThermalScattering>
-  ReadPandasSAB(const pugi::xml_node& ts_node);
   // Returns true if free gas scattering adjustments are applicable. Because
   // downscattering is always possible if the target is hydrogen-1, free gas
   // adjustments are always made if the atomic weight ratio is less than one.
@@ -111,8 +111,8 @@ private:
   GetFreeGasScatterAdjustment(const Particle& p, Temperature T) const noexcept;
   // Thermal neutron scattering law S(a,b,T)
   const std::optional<ThermalScattering> tnsl;
-  // Atomic weight ratio of target, yes this is duplicated in tnsl::awr
-  const Real awr;
+  // Nuclide which as scattering target
+  const Nuclide& target;
 };
 
 /// @brief Contains data required to perform a fission interaction
