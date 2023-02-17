@@ -54,6 +54,7 @@ FixedSource::Solve() const {
   // save estimator results to file
   if (!output_filepath.empty()) {
     std::ofstream output_file{output_filepath};
+    output_file << total_weight << std::endl << std::endl;
     for (const auto& estimator : estimators) {
       output_file << estimator->to_string(total_weight);
     }
