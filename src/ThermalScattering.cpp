@@ -565,8 +565,8 @@ ThermalScattering::Alpha ThermalScattering::SampleAlpha(
   const Real r = snap_to_min ? 1
                  : snap_to_lower
                      ? 0
-                     : (abs_b - betas.at(b_hi_i - 1) /
-                                    (betas.at(b_hi_i) - betas.at(b_hi_i - 1)));
+                     : (abs_b - betas.at(b_hi_i - 1)) /
+                           (betas.at(b_hi_i) - betas.at(b_hi_i - 1));
   const size_t b_s_i =
       r <= std::uniform_real_distribution{}(p.rng) ? b_hi_i - 1 : b_hi_i;
 
