@@ -625,7 +625,7 @@ ThermalScattering::Alpha ThermalScattering::SampleAlpha(
     const auto r_T = (T - T_lo) / (T_hi - T_lo);
     const auto F_hi = Fs.at(F_hi_i);
     const auto F_lo = Fs.at(F_hi_i - 1);
-    const auto r_F = (F - F_hi) / (F_hi - F_lo);
+    const auto r_F = (F - F_lo) / (F_hi - F_lo);
     // bilinearly interpolate
     return BilinearInterpolation(
         r_F, r_T, a_F_lo_T_lo, a_F_lo_T_hi, a_F_hi_T_lo, a_F_hi_T_hi);
@@ -637,7 +637,7 @@ ThermalScattering::Alpha ThermalScattering::SampleAlpha(
     // interpolation fractions
     const auto F_hi = Fs.at(F_hi_i);
     const auto F_lo = Fs.at(F_hi_i - 1);
-    const auto r_F = (F - F_hi) / (F_hi - F_lo);
+    const auto r_F = (F - F_lo) / (F_hi - F_lo);
     // linearly interpolate in CDF
     return a_F_lo_T_hi + r_F * (a_F_hi_T_hi - a_F_lo_T_hi);
   }
@@ -648,7 +648,7 @@ ThermalScattering::Alpha ThermalScattering::SampleAlpha(
     // interpolation fractions
     const auto F_hi = Fs.at(F_hi_i);
     const auto F_lo = Fs.at(F_hi_i - 1);
-    const auto r_F = (F - F_hi) / (F_hi - F_lo);
+    const auto r_F = (F - F_lo) / (F_hi - F_lo);
     // linearly interpolate in CDF
     return a_F_lo_T_lo + r_F * (a_F_hi_T_lo - a_F_lo_T_lo);
   }
