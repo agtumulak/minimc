@@ -87,9 +87,8 @@ private:
         const size_t T_index) const;
     // Returns a CDF value that would return the given value of alpha
     Real FindCDF(
-        const Alpha a, const size_t b_s_i_local, const Real awr,
-        const ContinuousEnergy E, const Beta b,
-        const Temperature T) const noexcept;
+        const Alpha a, const size_t b_s_i_local, const Temperature T,
+        const Alpha alpha_cutoff) const noexcept;
     // Contains CDF modes
     const HDF5DataSet<2> CDF_modes;
     // Contains singular values
