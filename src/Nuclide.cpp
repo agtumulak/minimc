@@ -7,13 +7,16 @@
 #include <map>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 
 // Nuclide
 
 //// public
 
 Nuclide::Nuclide(const pugi::xml_node& nuclide_node)
-    : name{nuclide_node.attribute("name").as_string()}, xs{[&nuclide_node]() {
+    : name{nuclide_node.attribute("name").as_string()},
+      awr{nuclide_node.attribute("awr").as_double()}, xs{[this,
+                                                          &nuclide_node]() {
         std::map<Particle::Type, std::unique_ptr<const InteractionDelegate>> xs;
         std::stringstream particle_name_list{
             nuclide_node.root()
@@ -37,7 +40,7 @@ Nuclide::Nuclide(const pugi::xml_node& nuclide_node)
           else if (energy_type == "continuous") {
             xs.emplace(
                 Particle::ToType(particle_name),
-                std::make_unique<const Continuous>(particle_node));
+                std::make_unique<const Continuous>(particle_node, *this));
           }
           else {
             assert(false); // this should have been caught by the validator
@@ -58,4 +61,8 @@ void Nuclide::Interact(
     Particle& p,
     std::vector<Estimator::Proxy>& estimator_proxies) const noexcept {
   xs.at(p.type)->Interact(p, estimator_proxies);
+}
+
+const std::optional<ThermalScattering>& Nuclide::GetTNSL() const {
+  return xs.at(Particle::Type::neutron)->GetTNSL();
 }

@@ -6,8 +6,9 @@
 #include <memory>
 #include <vector>
 
+class Nuclide;
+
 namespace Perturbation {
-class Interface;
 namespace IndirectEffect {
 
 class Visitor;
@@ -38,8 +39,7 @@ public:
   ///        of a nuclide
   TotalCrossSection(
       const Perturbation::TotalCrossSection& perturbation) noexcept;
-  /// @brief Calls IndirectEffect::Visit for updating
-  ///        TotalCrossSectionPerturbationIndirectEffect::running_total
+  /// @brief Implements interface
   void Visit(const Visitor& visitor) noexcept final;
   /// @brief Returns a new total cross section perturbation instance
   std::unique_ptr<Interface> Clone() const noexcept final;
@@ -48,5 +48,20 @@ public:
   ///          Material::afracs
   const std::shared_ptr<const Nuclide> nuclide;
 };
+
+/// @brief Indirect effect for Perturbation::TNSL
+class TNSL : public Interface {
+public:
+  /// @brief Constructs indirect effect for a thermal neutron scattering law
+  ///        perturbation of a nuclide
+  TNSL(const Perturbation::TNSL& perturbation) noexcept;
+  /// @brief Implements interface
+  void Visit(const Visitor& visitor) noexcept final;
+  /// @brief Returns a new TNSL perturbation instance
+  std::unique_ptr<Interface> Clone() const noexcept final;
+  /// @brief The original perturbation
+  const Perturbation::TNSL& perturbation;
+};
+
 }; // namespace IndirectEffect
 }; // namespace Perturbation

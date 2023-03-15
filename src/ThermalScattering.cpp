@@ -2,7 +2,10 @@
 
 #include "Cell.hpp"
 #include "Constants.hpp"
+#include "Nuclide.hpp"
 #include "Particle.hpp"
+#include "Perturbation/IndirectEffect/IndirectEffect.hpp"
+#include "Perturbation/IndirectEffect/Visitor.hpp"
 #include "ScalarField.hpp"
 #include "pugixml.hpp"
 
@@ -13,8 +16,6 @@
 #include <iterator>
 #include <memory>
 #include <random>
-#include <stdexcept>
-#include <string>
 #include <type_traits>
 #include <variant>
 
@@ -22,9 +23,14 @@
 
 //// public
 
+Real ThermalScattering::BilinearForm(
+    const Real x0, const Real x1, const Real a00, const Real a01,
+    const Real a10, const Real a11, const Real y0, const Real y1) noexcept {
+  return x0 * a00 * y0 + x0 * a01 * y1 + x1 * a10 * y0 + x1 * a11 * y1;
 }
 
-ThermalScattering::ThermalScattering(const pugi::xml_node& tnsl_node) noexcept
+ThermalScattering::ThermalScattering(
+    const pugi::xml_node& tnsl_node, const Nuclide& target) noexcept
     : majorant{HDF5DataSet<1>{tnsl_node.attribute("majorant").as_string()}
                    .ToContinuousMap()},
       scatter_xs_T{tnsl_node.attribute("total_T").as_string()},
@@ -98,7 +104,7 @@ ThermalScattering::ThermalScattering(const pugi::xml_node& tnsl_node) noexcept
       }()},
       beta_cutoff{tnsl_node.attribute("beta_cutoff").as_double()},
       alpha_cutoff{tnsl_node.attribute("alpha_cutoff").as_double()},
-      awr{tnsl_node.parent().parent().parent().attribute("awr").as_double()} {}
+      target{target} {}
 
 bool ThermalScattering::IsValid(const Particle& p) const noexcept {
   const auto E = std::get<ContinuousEnergy>(p.GetEnergy());
@@ -158,7 +164,7 @@ ThermalScattering::GetTotal(const Particle& p) const noexcept {
   return xs_T_lo + r_T * (xs_T_hi - xs_T_lo);
 }
 
-void ThermalScattering::Scatter(Particle& p) const {
+void ThermalScattering::Scatter(Particle& p) const noexcept {
   // get incident energy and target temperature
   const auto E = std::get<ContinuousEnergy>(p.GetEnergy());
   const Temperature T = p.GetCell().temperature->at(p.GetPosition());
@@ -167,7 +173,7 @@ void ThermalScattering::Scatter(Particle& p) const {
   const auto alpha = SampleAlpha(p, beta, E, T);
   // convert to outgoing energy and cosine
   const auto E_p = E + beta * constants::boltzmann * T;
-  const auto mu = (E + E_p - alpha * awr * constants::boltzmann * T) /
+  const auto mu = (E + E_p - alpha * target.awr * constants::boltzmann * T) /
                   (2 * std::sqrt(E * E_p));
   p.Scatter(mu, E_p);
 }
@@ -557,6 +563,7 @@ ThermalScattering::Alpha ThermalScattering::SampleAlpha(
 
   // compute minimum and maximum possible value of alpha
   const auto sqrt_E = std::sqrt(E);
+  const auto awr = target.awr;
   const auto b_sqrt_E_bkT = std::sqrt(E + b * constants::boltzmann * T);
   const auto akT = awr * constants::boltzmann * T;
   // minimum and maximum alpha values at beta
@@ -611,9 +618,103 @@ ThermalScattering::Alpha ThermalScattering::SampleAlpha(
     const auto F_hi = Fs.at(F_hi_i);
     const auto F_lo = Fs.at(F_hi_i - 1);
     const auto r_F = (F - F_lo) / (F_hi - F_lo);
-    // bilinearly interpolate
-    return BilinearInterpolation(
-        r_F, r_T, a_F_lo_T_lo, a_F_lo_T_hi, a_F_hi_T_lo, a_F_hi_T_hi);
+    // linearly interpolate in temperature
+    const auto a_F_hi = a_F_hi_T_lo + r_T * (a_F_hi_T_hi - a_F_hi_T_lo);
+    const auto a_F_lo = a_F_lo_T_lo + r_T * (a_F_lo_T_hi - a_F_lo_T_lo);
+    // update indirect effects
+    for (auto& indirect_effect : p.indirect_effects) {
+      class Visitor : public Perturbation::IndirectEffect::Visitor {
+      public:
+        // TODO: Optimize variables passed once debugging is done
+        Visitor(
+            const Nuclide& target, const ThermalScattering::AlphaPartition& P_s,
+            const size_t P_s_i, const size_t b_s_i_local, const size_t F_hi_i,
+            const size_t T_hi_i, const Real r_T,
+            const Real delta_a)
+            : target{target}, P_s{P_s}, P_s_i{P_s_i},
+              b_s_i_local{b_s_i_local}, F_hi_i{F_hi_i},
+              T_hi_i{T_hi_i}, r_T{r_T}, delta_a{delta_a} {}
+        void Visit(Perturbation::IndirectEffect::TNSL& indirect_effect)
+            const noexcept final {
+          // if current TNSL indirect effect is for a Nuclide that does not
+          // match the enclosing scope's target Nuclide, skip
+          if (&indirect_effect.perturbation.nuclide != &target) {
+            return;
+          }
+          // Compute indirect effects due to each parameter which influences
+          // TNSL dynamics. In an attempt to preserve memory locality, indirect
+          // effects are computed in the following order:
+          //   -# Singular values (diagonal entries of Sigma matrix)
+          //   -# CDF coefficients (two rows of U matrix)
+          //   -# Temperature coefficients (two rows of V matrix)
+          // You should probably profile to see if this looping scheme actually
+          // makes a difference.
+          const size_t rank = P_s.singular_values.size();
+          // compute indirect effects from perturbing singular values
+          const size_t partition_offset =
+              indirect_effect.perturbation.partition_offsets.at(P_s_i);
+          for (size_t r = 0; r < rank; r++) {
+            // retrieve coefficients
+            const auto u_F_hi = P_s.CDF_modes.at(F_hi_i, r);
+            const auto u_F_lo = P_s.CDF_modes.at(F_hi_i - 1, r);
+            const auto v_T_hi = P_s.beta_T_modes.at(b_s_i_local, T_hi_i, r);
+            const auto v_T_lo = P_s.beta_T_modes.at(b_s_i_local, T_hi_i - 1, r);
+            // update indirect effect
+            indirect_effect.indirect_effects.at(partition_offset + r) +=
+                -ThermalScattering::BilinearForm(
+                    -1, +1, u_F_lo * v_T_lo, u_F_lo * v_T_hi, u_F_hi * v_T_lo,
+                    u_F_hi * v_T_hi, 1 - r_T, r_T) /
+                delta_a;
+          }
+          // compute indirect effects from perturbing CDF coefficients
+          const size_t CDF_offset =
+              partition_offset + rank + (F_hi_i - 1) * rank;
+          for (size_t r = 0; r < rank; r++){
+            // retrieve coefficients
+            const auto s_r = P_s.singular_values.at(r);
+            const auto v_T_hi = P_s.beta_T_modes.at(b_s_i_local, T_hi_i, r);
+            const auto v_T_lo = P_s.beta_T_modes.at(b_s_i_local, T_hi_i - 1, r);
+            // update indirect effects
+            const auto x = -s_r * (v_T_lo * (1 - r_T) + v_T_hi * r_T) / delta_a;
+            indirect_effect.indirect_effects.at(CDF_offset + r) += -x;
+            indirect_effect.indirect_effects.at(CDF_offset + rank + r) += x;
+          }
+          // compute indirect effects from perturbing beta/temperature
+          // coefficients
+          const auto& Ts = P_s.beta_T_modes.GetAxis(1);
+          const size_t beta_T_offset =
+              partition_offset + rank + P_s.CDF_modes.size() +
+              b_s_i_local * Ts.size() * rank + (T_hi_i - 1) * rank;
+          for (size_t r = 0; r < rank; r++){
+            // retrieve coefficeints
+            const auto s_r = P_s.singular_values.at(r);
+            const auto u_F_hi = P_s.CDF_modes.at(F_hi_i, r);
+            const auto u_F_lo = P_s.CDF_modes.at(F_hi_i - 1, r);
+            // update indirect effects
+            const auto x = -s_r * (-u_F_lo + u_F_hi) / delta_a;
+            indirect_effect.indirect_effects.at(beta_T_offset + r) +=
+                (1 - r_T) * x;
+            indirect_effect.indirect_effects.at(beta_T_offset + rank + r) +=
+                r_T * x;
+          }
+        }
+
+      private:
+        const Nuclide& target;
+        const ThermalScattering::AlphaPartition& P_s;
+        const size_t P_s_i;
+        const size_t b_s_i_local;
+        const size_t F_hi_i;
+        const size_t T_hi_i;
+        const Real r_T;
+        const Real delta_a;
+      };
+      indirect_effect->Visit(Visitor{
+          target, P_s, P_s_i, b_s_i_local, F_hi_i, T_hi_i, r_T,
+          a_F_hi - a_F_lo});
+    }
+    // linearly interpolate in temperature
+    return a_F_lo + r_F * (a_F_lo - a_F_hi);
   }
   else if (F_hi_exists && F_lo_exists && T_hi_exists && !T_lo_exists){
     // snap to upper temperature (2)
@@ -700,11 +801,4 @@ ThermalScattering::Alpha ThermalScattering::SampleAlpha(
     // your nuclear data is bad and you should feel bad
     assert(false);
   }
-}
-
-Real ThermalScattering::BilinearInterpolation(
-    Real r0, Real r1, Real a_00, Real a_01, Real a_10,
-    Real a_11) const noexcept {
-  return a_00 * (1 - r0) * (1 - r1) + a_01 * (1 - r0) * r1 +
-         a_10 * r0 * (1 - r1) + a_11 * r0 * r1;
 }

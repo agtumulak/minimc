@@ -117,3 +117,45 @@ TotalCrossSection::to_string(const Real total_weight) const noexcept {
   result += sstream.str();
   return result;
 }
+
+// TNSL
+
+//// public
+
+TNSL::TNSL(
+    const Estimator::Interface& estimator,
+    const Perturbation::Interface& perturbation) noexcept
+    : Interface{estimator, perturbation} {}
+
+std::unique_ptr<Interface> TNSL::Clone() const noexcept {
+  return std::make_unique<TNSL>(*this);
+}
+
+std::unique_ptr<Proxy::Interface> TNSL::CreateProxy() noexcept {
+  return std::make_unique<Perturbation::Sensitivity::Proxy::TNSL>(*this);
+}
+
+std::string TNSL::to_string(const Real total_weight) const noexcept {
+  std::string result;
+  // add header
+  result += name + "\n" + std::string(name.size(), '=') + "\n\n";
+  // add mean
+  std::stringstream sstream;
+  sstream << "mean\n----\n";
+  sstream << std::scientific;
+  for (const auto& sum : sums) {
+    sstream << sum / total_weight << ", ";
+  }
+  sstream << "\n\n";
+  // add standard deviation
+  sstream << "std dev\n-------\n";
+  for (BinIndex i = 0; i < sums.size(); i++) {
+    const auto& sum = sums[i];
+    const auto& sum_square = sum_squares[i];
+    sstream << std::sqrt(sum_square - sum * sum / total_weight) / total_weight
+            << ", ";
+  }
+  sstream << "\n\n";
+  result += sstream.str();
+  return result;
+}

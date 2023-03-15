@@ -1,7 +1,9 @@
 #include "Perturbation.hpp"
 
+#include "Nuclide.hpp"
 #include "Perturbation/IndirectEffect/IndirectEffect.hpp"
 #include "Perturbation/Sensitivity/Sensitivity.hpp"
+#include "ThermalScattering.hpp"
 #include "World.hpp"
 #include "pugixml.hpp"
 
@@ -18,6 +20,9 @@ std::unique_ptr<Interface> Interface::Create(
   const std::string perturbation_type = perturbation_node.name();
   if (perturbation_type == "totalxs") {
     return std::make_unique<TotalCrossSection>(perturbation_node, world);
+  }
+  else if (perturbation_type == "tnsl") {
+    return std::make_unique<TNSL>(perturbation_node, world);
   }
   else {
     assert(false); // this should have been caught by the validator
@@ -54,3 +59,55 @@ std::unique_ptr<IndirectEffect::Interface>
 TotalCrossSection::CreateIndirectEffect() const noexcept {
   return std::make_unique<IndirectEffect::TotalCrossSection>(*this);
 };
+
+// TNSL
+
+//// public
+
+TNSL::TNSL(const pugi::xml_node& tnsl_node, const World& world)
+  : Interface{
+      tnsl_node,
+      // IIFE
+      [&tnsl_node, &world](){
+        // check if TNSL data exists
+        const auto& nuclide_name = tnsl_node.attribute("nuclide").as_string();
+        const auto& tnsl = world.FindNuclideByName(nuclide_name)->GetTNSL();
+        if (!tnsl.has_value()) {
+          throw std::runtime_error(
+              tnsl_node.path() + ": \"" + nuclide_name +
+              "\" has no thermal neutron scattering law data");
+        }
+        return std::accumulate(
+            tnsl->alpha_partitions.cbegin(), tnsl->alpha_partitions.cend(),
+            size_t{0},
+            [](const auto& accumulated, const auto& alpha_partition) {
+              return accumulated + alpha_partition.CDF_modes.size() +
+                     alpha_partition.singular_values.size() +
+                     alpha_partition.beta_T_modes.size();
+            });
+      }()
+    },
+    nuclide{*world.FindNuclideByName(tnsl_node.attribute("nuclide").as_string())},
+    // construction of Interface has already checked that TNSL data exists
+    tnsl{nuclide.GetTNSL().value()},
+    // IIFE
+    partition_offsets{[this]() noexcept {
+      std::vector<size_t> result {0};
+      for (const auto& alpha_partition: tnsl.alpha_partitions){
+        result.push_back(
+            result.back() + alpha_partition.CDF_modes.size() +
+            alpha_partition.singular_values.size() +
+            alpha_partition.beta_T_modes.size());
+      }
+      return result;
+    }()} {}
+
+std::unique_ptr<Sensitivity::Interface>
+TNSL::CreateSensitivity(const Estimator::Interface& estimator) const noexcept {
+  return std::make_unique<Sensitivity::TNSL>(estimator, *this);
+}
+
+std::unique_ptr<IndirectEffect::Interface>
+TNSL::CreateIndirectEffect() const noexcept {
+  return std::make_unique<IndirectEffect::TNSL>(*this);
+}

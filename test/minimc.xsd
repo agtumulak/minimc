@@ -167,6 +167,15 @@
                 </xs:complexContent>
               </xs:complexType>
             </xs:element>
+            <xs:element name="tnsl">
+              <xs:complexType>
+                <xs:complexContent>
+                  <xs:extension base="PerturbationBase">
+                    <xs:attribute name="nuclide" type="xs:normalizedString" use="required"/>
+                  </xs:extension>
+                </xs:complexContent>
+              </xs:complexType>
+            </xs:element>
           </xs:choice>
         </xs:complexType>
         <xs:unique name="unique-perturbation-name">

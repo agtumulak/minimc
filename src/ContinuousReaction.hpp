@@ -3,7 +3,6 @@
 #include "BasicTypes.hpp"
 #include "ContinuousEvaluation.hpp"
 #include "ContinuousMap.hpp"
-#include "ThermalScattering.hpp"
 
 #include <memory>
 #include <optional>
@@ -17,18 +16,21 @@ class xml_node;
 }
 class Nuclide;
 class Particle;
+class ThermalScattering;
 
 /// @brief Abstract interface for reactions which update the state of a
 ///        Particle
 class ContinuousReaction {
 public:
   /// @brief Factory method to create a new ContinuousReaction from an XML
-  ///        document and parent Nuclide
-  static std::unique_ptr<const ContinuousReaction>
-  Create(const pugi::xml_node& reaction_node, const Nuclide& parent);
+  ///        document and target Nuclide
+  static std::unique_ptr<const ContinuousReaction> Create(
+      const pugi::xml_node& reaction_node, const Nuclide& target,
+      const std::optional<ThermalScattering>& tnsl);
   /// @brief Constructs ContinuousReaction from a reaction node of an XML
   ///        document
-  ContinuousReaction(const pugi::xml_node& reaction_node);
+  ContinuousReaction(
+      const pugi::xml_node& reaction_node, const Nuclide& target);
   /// @brief Virtual destructor (C++ Core Guidelines C.127)
   virtual ~ContinuousReaction() noexcept;
   /// @brief Returns true if the reaction's cross section will change the
@@ -56,6 +58,8 @@ public:
       std::vector<Estimator::Proxy>& estimator_proxies) const noexcept = 0;
 
 protected:
+  /// @brief Reference to target Nuclide
+  const Nuclide& target;
   /// @brief Cross section data associated with reaction
   const ContinuousEvaluation evaluation;
 };
@@ -64,8 +68,8 @@ protected:
 class ContinuousCapture : public ContinuousReaction {
 public:
   /// @brief Constructs a ContinuousCapture from a `capture` node of an XML
-  ///        document
-  ContinuousCapture(const pugi::xml_node& capture_node);
+  ///        document and target Nuclide
+  ContinuousCapture(const pugi::xml_node& capture_node, const Nuclide& target);
   /// @brief Captures the Particle, ending its history
   void Interact(Particle& p, std::vector<Estimator::Proxy>& estimator_proxies)
       const noexcept override;
@@ -77,10 +81,11 @@ public:
 class ContinuousScatter : public ContinuousReaction {
 public:
   /// @brief Constructs ContinuousScatter from a `scatter` node of an XML
-  ///        document and parent Nuclide
-  /// @details If present, thermal neutron scattering law data is found and
-  ///          associated with the parent Nuclide
-  ContinuousScatter(const pugi::xml_node& scatter_node, const Nuclide& target);
+  ///        document and target Nuclide
+  /// @details If present, thermal neutron scattering law data will be added
+  ContinuousScatter(
+      const pugi::xml_node& scatter_node, const Nuclide& target,
+      const std::optional<ThermalScattering>& tnsl);
   /// @brief Returns true if thermal scattering is present
   bool ModifiesTotal(const Particle& p) const noexcept override;
   /// @brief Returns largest scattering cross section that may be found within
@@ -109,18 +114,16 @@ private:
   // Returns adjusted free gas scattering cross section for given temperature
   MicroscopicCrossSection
   GetFreeGasScatterAdjustment(const Particle& p, Temperature T) const noexcept;
-  // Thermal neutron scattering law S(a,b,T)
-  const std::optional<ThermalScattering> tnsl;
-  // Nuclide which as scattering target
-  const Nuclide& target;
+  // Thermal neutron scattering law S(a,b,T) of InteractionDelegate of Nuclide
+  const std::optional<ThermalScattering>& tnsl;
 };
 
 /// @brief Contains data required to perform a fission interaction
 class ContinuousFission : public ContinuousReaction {
 public:
   /// @brief Constructs ContinuousFission from a `fission` node of an XML
-  ///        document
-  ContinuousFission(const pugi::xml_node& fission_node);
+  ///        document and target Nuclide
+  ContinuousFission(const pugi::xml_node& fission_node, const Nuclide& target);
   /// @brief Induces a fission event, possibly producing secondary particles
   void Interact(Particle& p, std::vector<Estimator::Proxy>& estimator_proxies)
       const noexcept override;

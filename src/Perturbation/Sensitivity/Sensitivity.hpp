@@ -88,5 +88,25 @@ public:
   ///        suitable for printing
   std::string to_string(const Real total_weight) const noexcept final;
 };
+
+/// @brief Estimates the sensitivity with respect to all parameters of a
+///        thermal neutron scattering law dataset
+class TNSL : public Interface {
+public:
+  /// @brief Constructs a thermal neutron scattering law perturbation
+  ///        sensitivity from an estimator and perturbation
+  TNSL(
+      const Estimator::Interface& estimator,
+      const Perturbation::Interface& perturbation)
+  noexcept;
+  /// @brief Virtual copy constructor
+  std::unique_ptr<Interface> Clone() const noexcept final;
+  /// @brief Create a proxy for this sensitivity
+  std::unique_ptr<Proxy::Interface> CreateProxy() noexcept final;
+  /// @brief Returns a string of thermal neutron scattering law perturbation
+  ///        sensitivites suitable for printing
+  std::string to_string(const Real total_weight) const noexcept final;
+};
+
 }; // namespace Sensitivity
 }; // namespace Perturbation

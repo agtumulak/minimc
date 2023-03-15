@@ -5,6 +5,7 @@
 
 #include <iosfwd>
 #include <memory>
+#include <type_traits>
 #include <vector>
 
 namespace Perturbation {
@@ -21,6 +22,7 @@ class xml_node;
 }
 class CSGSurface;
 class Particle;
+class ParticleBins;
 class World;
 
 namespace Estimator {
@@ -46,8 +48,7 @@ public:
   /// @brief Each Estimator must define direct effect for a Perturbation
   virtual std::unique_ptr<const Perturbation::Sensitivity::Proxy::Visitor>
   GetSensitivityProxyVisitor(
-      const Particle& p, const BinIndex i, const Score s,
-      const bool add_to_existing) const noexcept = 0;
+      const Particle& p, const BinIndex i, const Score s) const noexcept = 0;
   /// @brief Adds score to given index
   void AddScore(const BinIndex i, const Score s) noexcept;
   /// @brief Returns score at index; primarily for unit testing
@@ -98,8 +99,7 @@ public:
   /// @brief Implements Interface method
   std::unique_ptr<const Perturbation::Sensitivity::Proxy::Visitor>
   GetSensitivityProxyVisitor(
-      const Particle& p, const BinIndex i, const Score s,
-      const bool add_to_existing) const noexcept final;
+      const Particle& p, const BinIndex i, const Score s) const noexcept final;
   /// @brief CSGSurface which this estimator is associated with (C++ Core
   ///        Guidelines C.131). Pointer makes comparison fast.
   const std::shared_ptr<const CSGSurface> surface;

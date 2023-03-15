@@ -3,6 +3,7 @@
 #include "BasicTypes.hpp"
 #include "ContinuousEvaluation.hpp"
 #include "ContinuousReaction.hpp"
+#include "ThermalScattering.hpp"
 
 #include <map>
 #include <memory>
@@ -15,6 +16,7 @@ class Proxy;
 namespace pugi {
 class xml_node;
 }
+class Nuclide;
 class Particle;
 enum class Reaction;
 
@@ -24,6 +26,10 @@ class InteractionDelegate {
 public:
   /// @brief Virtual destructor (C++ Core Guidelines C.127)
   virtual ~InteractionDelegate() noexcept;
+  /// @brief Returns reference to thermal neutron scattering law data
+  /// @exception std::runtime_error Thermal neutron scattering law data
+  ///                               undefined for multigroup physics
+  virtual const std::optional<ThermalScattering>& GetTNSL() const = 0;
   /// @brief Returns the majorant cross section for a given Particle
   virtual MicroscopicCrossSection
   GetMajorant(const Particle& p) const noexcept = 0;
@@ -40,8 +46,10 @@ public:
 class Continuous : public InteractionDelegate {
 public:
   /// @brief Constructs continuous energy nuclear data from a particle node of
-  ///        an XML document
-  Continuous(const pugi::xml_node& particle_node);
+  ///        an XML document and a target Nuclide
+  Continuous(const pugi::xml_node& particle_node, const Nuclide& target);
+  /// @brief Returns reference to optional thermal neutron scattering law data
+  const std::optional<ThermalScattering>& GetTNSL() const final;
   /// @brief Returns the largest cross section that may be found within the
   ///        current Cell
   /// @details Currently this is the cross section at the majorant temperature
@@ -58,12 +66,12 @@ public:
       const noexcept override;
 
 private:
-  // Helper function for reaction cross section construction
-  static std::vector<std::unique_ptr<const ContinuousReaction>>
-  CreateReactions(const pugi::xml_node& particle_node);
   // Returns true if any reaction modifies the total cross section even if the
   // total cross section was evaluated at the target temperature
   bool ReactionsModifyTotal(const Particle& p) const noexcept;
+  // Thermal neutron scattering law S(a,b,T). Must be initialized before
+  // `reactions` since ContinuousScatter uses a reference to `tnsl`
+  const std::optional<ThermalScattering> tnsl;
   // Cross section data for mutually exclusive reactions
   const std::vector<std::unique_ptr<const ContinuousReaction>> reactions;
   // Total cross section provided in nuclear data files
@@ -85,6 +93,8 @@ public:
   /// @exception std::runtime_error Number of entries is not consistent with
   ///            number of groups
   Multigroup(const pugi::xml_node& particle_node);
+  /// @brief Throws an exception for multigroup physics
+  const std::optional<ThermalScattering>& GetTNSL() const final;
   /// @brief Returns the total cross section for a given Particle, currently
   ///        the same as GetTotal().
   MicroscopicCrossSection

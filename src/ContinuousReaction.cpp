@@ -8,14 +8,14 @@
 #include "Point.hpp"
 #include "Reaction.hpp"
 #include "ScalarField.hpp"
+#include "ThermalScattering.hpp"
 #include "pugixml.hpp"
 
 #include <cassert>
 #include <cmath>
 #include <cstddef>
 #include <random>
-#include <stdexcept>
-#include <string>
+#include <type_traits>
 #include <variant>
 
 // ContinuousReaction
@@ -23,25 +23,27 @@
 //// public
 
 std::unique_ptr<const ContinuousReaction> ContinuousReaction::Create(
-    const pugi::xml_node& reaction_node, const Nuclide& parent) {
+    const pugi::xml_node& reaction_node, const Nuclide& target,
+    const std::optional<ThermalScattering>& tnsl) {
   switch (ToReaction(reaction_node.name())) {
   case Reaction::birth:
     assert(false); // this should have been caught by the validator
     return {};
   case Reaction::capture:
-    return std::make_unique<const ContinuousCapture>(reaction_node);
+    return std::make_unique<const ContinuousCapture>(reaction_node, target);
   case Reaction::scatter:
-    return std::make_unique<const ContinuousScatter>(reaction_node, parent);
+    return std::make_unique<const ContinuousScatter>(reaction_node, target, tnsl);
   case Reaction::fission:
-    return std::make_unique<const ContinuousFission>(reaction_node);
+    return std::make_unique<const ContinuousFission>(reaction_node, target);
   case Reaction::leak:
     assert(false); // this should have been caught by the validator
     return {};
   }
 }
 
-ContinuousReaction::ContinuousReaction(const pugi::xml_node& reaction_node)
-    : evaluation{reaction_node} {}
+ContinuousReaction::ContinuousReaction(
+    const pugi::xml_node& reaction_node, const Nuclide& target)
+    : target{target}, evaluation{reaction_node} {}
 
 ContinuousReaction::~ContinuousReaction() noexcept {}
 
@@ -61,8 +63,9 @@ ContinuousReaction::GetCrossSection(const Particle& p) const noexcept {
 
 // ContinuousCapture
 
-ContinuousCapture::ContinuousCapture(const pugi::xml_node& capture_node)
-    : ContinuousReaction{capture_node} {}
+ContinuousCapture::ContinuousCapture(
+    const pugi::xml_node& capture_node, const Nuclide& target)
+    : ContinuousReaction{capture_node, target} {}
 
 void ContinuousCapture::Interact(
     Particle& p, std::vector<Estimator::Proxy>&) const noexcept {
@@ -74,22 +77,9 @@ void ContinuousCapture::Interact(
 //// public
 
 ContinuousScatter::ContinuousScatter(
-    const pugi::xml_node& scatter_node, const Nuclide& target)
-    : ContinuousReaction{scatter_node.child("xs")},
-      tnsl{[&scatter_node, &target]() -> std::optional<ThermalScattering> {
-        const auto& tnsl_node = scatter_node.child("tnsl");
-        if (!tnsl_node) {
-          return std::nullopt;
-        }
-        if (Particle::ToType(tnsl_node.parent().parent().name()) !=
-            Particle::Type::neutron) {
-          throw std::runtime_error(
-              tnsl_node.path() +
-              ": Only neutrons may have a thermal scattering library node");
-        }
-        return ThermalScattering{tnsl_node, target};
-      }()},
-      target{target} {}
+    const pugi::xml_node& scatter_node, const Nuclide& target,
+    const std::optional<ThermalScattering>& tnsl)
+    : ContinuousReaction{scatter_node.child("xs"), target}, tnsl{tnsl} {}
 
 bool ContinuousScatter::ModifiesTotal(const Particle& p) const noexcept {
   return tnsl.has_value() && tnsl->IsValid(p);
@@ -252,8 +242,9 @@ Real ContinuousScatter::GetFreeGasScatterAdjustment(
 
 //// public
 
-ContinuousFission::ContinuousFission(const pugi::xml_node& fission_node)
-    : ContinuousReaction{fission_node.child("xs")},
+ContinuousFission::ContinuousFission(
+    const pugi::xml_node& fission_node, const Nuclide& target)
+    : ContinuousReaction{fission_node.child("xs"), target},
       nubar{
           fission_node.child("nubar")
               ? std::make_optional(HDF5DataSet<1>{

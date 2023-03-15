@@ -1,8 +1,11 @@
 #include "Estimator/Proxy.hpp"
 
+#include "Estimator/Estimator.hpp"
 #include "Estimator/Visitor.hpp"
 #include "Perturbation/Sensitivity/Proxy/Visitor.hpp"
 #include "Perturbation/Sensitivity/Sensitivity.hpp"
+
+#include <type_traits>
 
 using namespace Estimator;
 
@@ -33,20 +36,13 @@ void Proxy::Visit(const Visitor& visitor) noexcept {
   const auto score = estimator.Visit(visitor);
   if (score != 0) {
     const auto bin = estimator.bins->GetIndex(visitor.particle);
-    // check if the bin has already been scored to
-    const auto it = pending_scores.find(bin);
-    const auto add_to_existing = it != pending_scores.cend();
     // update pending scores
-    if (add_to_existing) {
-      it->second += score;
-    }
-    else {
-      pending_scores.insert(std::make_pair(bin, score));
-    }
+    // https://stackoverflow.com/a/12965621/5101335
+    pending_scores[bin] += score;
     // update all sensitivty proxies
     for (auto& sensitivity_proxy : sensitivity_proxies) {
-      sensitivity_proxy->Visit(*estimator.GetSensitivityProxyVisitor(
-          visitor.particle, bin, score, add_to_existing));
+      sensitivity_proxy->Visit(
+          *estimator.GetSensitivityProxyVisitor(visitor.particle, bin, score));
     }
   }
 }

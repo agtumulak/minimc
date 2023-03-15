@@ -1,5 +1,6 @@
 #include "Estimator/Estimator.hpp"
 
+#include "Bins.hpp"
 #include "Estimator/Visitor.hpp"
 #include "Perturbation/Sensitivity/Proxy/Proxy.hpp"
 #include "Perturbation/Sensitivity/Proxy/Visitor.hpp"
@@ -11,8 +12,10 @@
 #include <cassert>
 #include <cmath>
 #include <functional>
+#include <map>
 #include <sstream>
 #include <string>
+#include <utility>
 
 using namespace Estimator;
 
@@ -150,21 +153,34 @@ Score Current::Visit(const Visitor& visitor) const noexcept {
 
 std::unique_ptr<const Perturbation::Sensitivity::Proxy::Visitor>
 Current::GetSensitivityProxyVisitor(
-    const Particle& p, const BinIndex i, const Score s,
-    const bool add_to_existing) const noexcept {
+    const Particle& p, const BinIndex i, const Score s) const noexcept {
   class Visitor : public Perturbation::Sensitivity::Proxy::Visitor {
   public:
-    Visitor(
-        const Particle& p, const BinIndex i, const Score s,
-        const bool add_to_existing) noexcept
-        : Perturbation::Sensitivity::Proxy::Visitor{
-              p, i, s, add_to_existing} {};
+    Visitor(const Particle& p, const BinIndex i, const Score s) noexcept
+        : Perturbation::Sensitivity::Proxy::Visitor{p, i, s} {};
     void Visit(Perturbation::Sensitivity::Proxy::TotalCrossSection& proxy)
         const noexcept final {
       // perturbing the total cross section only has an indirect effect
-      const auto& indirect_effect = proxy.GetIndirectEfects().front();
+      const auto& indirect_effect = proxy.GetIndirectEffects().front();
       proxy.pending_scores[index] += indirect_effect * score;
     }
+    void
+    Visit(Perturbation::Sensitivity::Proxy::TNSL& proxy) const noexcept final {
+      // perturbing TNSL only has an indirect effect
+      const auto& indirect_effect = proxy.GetIndirectEffects();
+      // check if bin has been scored to
+      const auto it = proxy.pending_scores.find(index);
+      if (it == proxy.pending_scores.cend()) {
+        // elements must be constructed
+        proxy.pending_scores[index] = indirect_effect;
+      }
+      else {
+        // increment elementwise
+        std::transform(
+            indirect_effect.cbegin(), indirect_effect.cend(),
+            it->second.cbegin(), it->second.begin(), std::plus<Score>());
+      }
+    }
   };
-  return std::make_unique<Visitor>(p, i, s, add_to_existing);
+  return std::make_unique<Visitor>(p, i, s);
 }

@@ -4,12 +4,13 @@
 #include "ContinuousMap.hpp"
 #include "HDF5DataSet.hpp"
 
-#include <vector>
 #include <cstddef>
+#include <vector>
 
 namespace pugi {
 class xml_node;
 }
+class Nuclide;
 class Particle;
 
 /// @brief Models temperature-dependent thermal scattering data S(a,b,T)
@@ -27,16 +28,14 @@ public:
   using Beta = Real;
   /// @brief Dimensionless momentum transfer
   using Alpha = Real;
-  /// @brief Helper function to compute minimum allowable value of alpha
-  static Alpha MinAlpha(
-      const Real awr, const ContinuousEnergy E, const Beta b,
-      Temperature T) noexcept;
-  /// @brief Helper function to compute maximum allowable value of alpha
-  static Alpha MaxAlpha(
-      const Real awr, const ContinuousEnergy E, const Beta b,
-      Temperature T) noexcept;
-  /// @brief Constructs thermal scattering data from a `tnsl` node
-  ThermalScattering(const pugi::xml_node& tnsl_node) noexcept;
+  // https://en.wikipedia.org/wiki/Bilinear_form#Coordinate_representation
+  static Real BilinearForm(
+      const Real x0, const Real x1, const Real a00, const Real a01,
+      const Real a10, const Real a11, const Real y0, const Real y1) noexcept;
+  /// @brief Constructs thermal scattering data from a `tnsl` node and target
+  ///        Nuclide
+  ThermalScattering(
+      const pugi::xml_node& tnsl_node, const Nuclide& target) noexcept;
   /// @brief Returns true if Particle is Type::neutron and is strictly below
   ///        the cutoff energy
   bool IsValid(const Particle& p) const noexcept;
@@ -53,14 +52,29 @@ public:
   ///       coefficients are adjacent in memory
   MicroscopicCrossSection GetTotal(const Particle& p) const noexcept;
   /// @brief The raison d'etre of this class
-  /// @exception std::runtime_error Resample limit for beta exceeded
-  void Scatter(Particle& p) const;
+  void Scatter(Particle& p) const noexcept;
 
 private:
+  // Evaluates the inelastic scattering cross section.
+  MacroscopicCrossSection
+  EvaluateInelastic(const size_t E_index, const size_t T_index) const noexcept;
+  // Sample an outgoing energy. Requires Particle energy is strictly below
+  // ThermalScattering::cutoff_energy. Uses histogram interpolation in PDF.
+  Beta SampleBeta(Particle& p, ContinuousEnergy E, Temperature T) const;
+  // Sample an outgoing cosine given an outgoing energy.
+  Alpha SampleAlpha(
+      Particle& p, const Beta& b, ContinuousEnergy E, Temperature T) const;
+  // Majorant cross section
+  const ContinuousMap<ContinuousEnergy, MicroscopicCrossSection> majorant;
+  // Total scattering cross section POD coefficients
+  const HDF5DataSet<2> scatter_xs_T;
+  const HDF5DataSet<1> scatter_xs_S;
+  const HDF5DataSet<2> scatter_xs_E;
+
+public:
   // Encapsulates data required to sample a value of beta using proper
   // orthogonal decomposition; limited to a given incident energy range
-  class BetaPartition {
-  public:
+  struct BetaPartition {
     // Constructs a BetaPartition from a `partition` node
     BetaPartition(const pugi::xml_node& partition_node);
     // Evaluates beta using proper orthogonal decomposition and linear
@@ -74,10 +88,19 @@ private:
     // Contains energy and temperature modes
     const HDF5DataSet<3> E_T_modes;
   };
+  // beta proper orthogonal decomposition coefficients
+  const std::vector<BetaPartition> beta_partitions;
+
+private:
+  // concatenated vector of all incident energies found in each partition
+  const std::vector<ContinuousEnergy> Es;
+  // A vector of one-past-the-last energy index for each partition
+  const std::vector<size_t> beta_partition_E_ends;
+
+public:
   // Encapsulates data required to sample a value of alpha using proper
   // orthogonal decomposition; limited to a given beta range
-  class AlphaPartition {
-  public:
+  struct AlphaPartition {
     // Constructs an AlphaPartition from a `partition` node
     AlphaPartition(const pugi::xml_node& partition_node);
     // Evaluates alpha using proper orthogonal decomposition and linear
@@ -96,33 +119,10 @@ private:
     // Contains beta and temperature modes
     const HDF5DataSet<3> beta_T_modes;
   };
-  // Evaluates the inelastic scattering cross section.
-  MacroscopicCrossSection
-  EvaluateInelastic(const size_t E_index, const size_t T_index) const noexcept;
-  // Sample an outgoing energy. Requires Particle energy is strictly below
-  // ThermalScattering::cutoff_energy. Uses histogram interpolation in PDF.
-  Beta SampleBeta(Particle& p, ContinuousEnergy E, Temperature T) const;
-  // Sample an outgoing cosine given an outgoing energy.
-  Alpha SampleAlpha(
-      Particle& p, const Beta& b, ContinuousEnergy E, Temperature T) const;
-  // https://en.wikipedia.org/wiki/Bilinear_interpolation#On_the_unit_square
-  Real BilinearInterpolation(
-      Real r0, Real r1, Real a_00, Real a_01, Real a_10,
-      Real a_11) const noexcept;
-  // Majorant cross section
-  const ContinuousMap<ContinuousEnergy, MicroscopicCrossSection> majorant;
-  // Total scattering cross section POD coefficients
-  const HDF5DataSet<2> scatter_xs_T;
-  const HDF5DataSet<1> scatter_xs_S;
-  const HDF5DataSet<2> scatter_xs_E;
-  // beta proper orthogonal decomposition coefficients
-  const std::vector<BetaPartition> beta_partitions;
-  // concatenated vector of all incident energies found in each partition
-  const std::vector<ContinuousEnergy> Es;
-  // A vector of one-past-the-last energy index for each partition
-  const std::vector<size_t> beta_partition_E_ends;
   // alpha proper orthogonal decomposition coefficients
   const std::vector<AlphaPartition> alpha_partitions;
+
+private:
   // concatenated vector of all betas found in each partition_ends
   const std::vector<Beta> betas;
   // Identifies the global beta index where each partition begins
@@ -131,13 +131,11 @@ private:
   const Beta beta_cutoff;
   // Maximum value of alpha which can be sampled
   const Alpha alpha_cutoff;
-  // Atomic weight ratio of target, yes this is a copy rather than giving a
-  // pointer to the parent Nuclide
-  const Real awr;
+  // the target Nuclide
+  const Nuclide& target;
 
 public:
   /// @brief Neutrons above the cutoff energy do not get the thermal scattering
   ///        treatment
-  const ContinuousEnergy cutoff_energy =
-      scatter_xs_E.GetAxis(0).back();
+  const ContinuousEnergy cutoff_energy = scatter_xs_E.GetAxis(0).back();
 };

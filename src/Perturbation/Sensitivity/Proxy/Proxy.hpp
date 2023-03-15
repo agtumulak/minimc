@@ -2,6 +2,7 @@
 
 #include "BasicTypes.hpp"
 
+#include <cstddef>
 #include <map>
 #include <memory>
 #include <vector>
@@ -39,7 +40,7 @@ public:
   /// @brief Sets this proxy's indirect effects to those of the current particle
   void SetIndirectEffects(const Particle& p) noexcept;
   /// @brief Returns a reference to the indirect effects
-  const std::vector<Real>& GetIndirectEfects() const noexcept;
+  const std::vector<Real>& GetIndirectEffects() const noexcept;
 
 protected:
   /// @brief Care must be taken to reassign indirect effects whenever a new
@@ -49,7 +50,8 @@ protected:
   Sensitivity::Interface& sensitivity;
 };
 
-/// @brief Accumulates sensitivities for the original sensitivity
+/// @brief Buffers sensitivities for the original TotalCrossSection sensitivity
+///        before comitting the history
 class TotalCrossSection : public Interface {
 public:
   /// @brief Constructs a sensitivity proxy for a total cross section sensitivty
@@ -61,6 +63,24 @@ public:
   /// @brief TotalCrossSection only perturbs one parameter so indices correspond
   ///        to bin index
   std::map<BinIndex, Score> pending_scores;
+};
+
+/// @brief Buffers sensitivities for the original TNSL sensitivity before
+///        comitting the history
+class TNSL : public Interface {
+public:
+  /// @brief Constructs a sensitivity proxy for a thermal neutron scattering
+  ///        law sensitivity
+  TNSL(Sensitivity::Interface& sensitivity) noexcept;
+  /// @brief Implements Interface method
+  void Visit(const Visitor& visitor) noexcept final;
+  /// @brief Implements Interface method
+  void CommitHistory() const noexcept final;
+  /// @brief TNSL perturbs multiple parameters at a time
+  std::map<BinIndex, std::vector<Score>> pending_scores;
+  /// @brief The total number of perturbations being perturbed (C++ Core
+  ///        Guidelines C.131)
+  const size_t n_perturbations;
 };
 
 }; // namespace Proxy

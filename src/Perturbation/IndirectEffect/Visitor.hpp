@@ -13,8 +13,10 @@ class Visitor {
 public:
   /// @brief Virtual destructor (C++ Core Guidelines C.127)
   virtual ~Visitor() noexcept;
-  /// @brief Interface for double dispatch implementations
-  virtual void Visit(TotalCrossSection& indirect_effect) const noexcept = 0;
+  /// @brief Interface for interacting with TotalCrossSection
+  virtual void Visit(TotalCrossSection& indirect_effect) const noexcept;
+  /// @brief Interface for interacting with TNSL
+  virtual void Visit(TNSL& indirect_effect) const noexcept;
 };
 } // namespace IndirectEffect
 } // namespace Perturbation

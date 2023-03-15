@@ -4,6 +4,7 @@
 #include <iosfwd>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace Estimator {
 class Interface;
@@ -12,6 +13,7 @@ namespace pugi {
 class xml_node;
 }
 class Nuclide;
+class ThermalScattering;
 class World;
 
 namespace Perturbation {
@@ -61,8 +63,8 @@ protected:
 ///        \delta \sigma @f$
 class TotalCrossSection : public Interface {
 public:
-  /// @brief Constructs a TotalCrossSection from a `totalxs` node of an XML
-  ///        document
+  /// @brief Constructs a TotalCrossSection from a `perturbations/totalxs` node
+  ///        of an XML document
   /// @exception std::runtime_error Perturbed Nuclide name not found in World
   TotalCrossSection(const pugi::xml_node& totalxs_node, const World& world);
   /// @brief Returns a Sensitiviity::TotalCrossSection
@@ -73,6 +75,27 @@ public:
   CreateIndirectEffect() const noexcept final;
   /// @brief Nuclide whose microscopic total cross section is being perturbed
   const std::shared_ptr<const Nuclide> nuclide;
+};
+
+/// @brief Models a perturbation in all parameters of a thermal neutron
+///        scattering law dataset. See @ref estimators_dos_pod_tnsl
+class TNSL : public Interface {
+public:
+  /// @brief Constructs a TNSL from a `perturbations/tnsl` node of an XML
+  ///        document
+  TNSL(const pugi::xml_node& tnsl_node, const World& world);
+  /// @brief Returns a Sensitiviity::TNSL
+  std::unique_ptr<Sensitivity::Interface>
+  CreateSensitivity(const Estimator::Interface& estimator) const noexcept final;
+  /// @brief Returns a IndirectEffect::TNSL
+  std::unique_ptr<IndirectEffect::Interface>
+  CreateIndirectEffect() const noexcept final;
+  /// @brief The nuclide whose TNSL data is being perturbed
+  const Nuclide& nuclide;
+  /// @brief TNSL data whose parameters are being perturbed
+  const ThermalScattering& tnsl;
+  /// @brief Flattened offsets of each alpha partition
+  const std::vector<size_t> partition_offsets;
 };
 
 }; // namespace Perturbation

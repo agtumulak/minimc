@@ -79,6 +79,8 @@ public:
   const std::vector<double>& GetAxis(size_t level) const noexcept {
     return axes.at(level);
   }
+  /// @brief Returns total number of elements in dataset
+  size_t size() const noexcept { return values.size(); }
 
 private:
   // Helper function to read HDF5 file from pandas and return flattened array.

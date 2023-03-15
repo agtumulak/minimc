@@ -7,7 +7,7 @@
 #include <iosfwd>
 #include <map>
 #include <memory>
-#include <string>
+#include <optional>
 #include <vector>
 
 namespace Estimator {
@@ -16,7 +16,7 @@ class Proxy;
 namespace pugi {
 class xml_node;
 }
-class InteractionDelegate;
+class ThermalScattering;
 
 /// @brief Aggregates cross sections for all reactions and related nuclear data
 class Nuclide {
@@ -35,8 +35,15 @@ public:
   /// @brief Interact with a Particle, updating its state
   void Interact(Particle& p, std::vector<Estimator::Proxy>& estimator_proxies)
       const noexcept;
+  /// @brief Return reference to optional thermal neutron scattering law data
+  /// @details Currently only used for assigning members
+  /// @exception std::runtime_error Thermal neutron scattering law data
+  ///                               undefined for multigroup physics
+  const std::optional<ThermalScattering>& GetTNSL() const;
   /// @brief Unique, user-defined identifier (C++ Core Guidelines C.131)
   const std::string name;
+  /// @brief Ratio of nuclide mass to neutron mass
+  const Real awr;
 
 private:
   // Aggregates (polymorphic) InteractionDelegate objects for each

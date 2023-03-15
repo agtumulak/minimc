@@ -19,6 +19,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <variant>
 
 // InteractionDelegate
@@ -31,9 +32,39 @@ InteractionDelegate::~InteractionDelegate() noexcept {}
 
 //// public
 
-Continuous::Continuous(const pugi::xml_node& particle_node)
-    : reactions{CreateReactions(particle_node)}, total{particle_node.child(
-                                                     "total")} {}
+Continuous::Continuous(
+    const pugi::xml_node& particle_node, const Nuclide& target)
+    : // IIFE
+      tnsl{[&particle_node, &target]() -> std::optional<ThermalScattering> {
+        const auto& tnsl_node = particle_node.child("scatter").child("tnsl");
+        if (!tnsl_node) {
+          return std::nullopt;
+        }
+        if (Particle::ToType(particle_node.name()) != Particle::Type::neutron) {
+          throw std::runtime_error(
+              tnsl_node.path() +
+              ": Only neutrons may have a thermal scattering library node");
+        }
+        return ThermalScattering{tnsl_node, target};
+      }()},
+      // IIFE
+      reactions{[this, &particle_node, &target]() {
+        std::vector<std::unique_ptr<const ContinuousReaction>> reactions;
+        for (const auto& reaction_node : particle_node) {
+          const std::string reaction_name = reaction_node.name();
+          if (reaction_name == "total") {
+            continue; // skip total cross section
+          }
+          reactions.emplace_back(
+              ContinuousReaction::Create(reaction_node, target, tnsl));
+        }
+        return reactions;
+      }()},
+      total{particle_node.child("total")} {}
+
+const std::optional<ThermalScattering>& Continuous::GetTNSL() const {
+  return tnsl;
+}
 
 MicroscopicCrossSection
 Continuous::GetMajorant(const Particle& p) const noexcept {
@@ -85,19 +116,6 @@ void Continuous::Interact(
 
 //// private
 
-std::vector<std::unique_ptr<const ContinuousReaction>>
-Continuous::CreateReactions(const pugi::xml_node& particle_node) {
-  std::vector<std::unique_ptr<const ContinuousReaction>> reactions;
-  for (const auto& reaction_node : particle_node) {
-    const std::string reaction_name = reaction_node.name();
-    if (reaction_name == "total") {
-      continue; // skip total cross section
-    }
-    reactions.emplace_back(ContinuousReaction::Create(reaction_node));
-  }
-  return reactions;
-}
-
 bool Continuous::ReactionsModifyTotal(const Particle& p) const noexcept {
   return std::any_of(
       reactions.cbegin(), reactions.cend(),
@@ -124,6 +142,11 @@ Multigroup::Multigroup(const pugi::xml_node& particle_node)
       reactions{CreateReactions(particle_node)},
       total{CreateTotalXS(particle_node, reactions)},
       max_group{GroupStructureSize(particle_node.root())} {}
+
+const std::optional<ThermalScattering>& Multigroup::GetTNSL() const {
+  throw std::runtime_error(
+      "Thermal neutron scattering law does not exist for multigroup data");
+}
 
 MicroscopicCrossSection
 Multigroup::GetMajorant(const Particle& p) const noexcept {
