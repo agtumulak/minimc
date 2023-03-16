@@ -4,6 +4,7 @@
 #include "World.hpp"
 
 #include <cstddef>
+#include <cstdint>
 #include <filesystem>
 #include <memory>
 #include <vector>
@@ -67,7 +68,7 @@ public:
   const std::filesystem::path output_filepath;
   /// @brief Total histories for fixed-source; cycle weight for k-eigenvalue
   ///        (C++ Core Guidelines C.131)
-  const size_t total_weight;
+  const uint_fast64_t total_weight;
   /// @brief Number of threads dedicated to particle transport (C++ Core
   ///        Guidelines C.131)
   const size_t threads;

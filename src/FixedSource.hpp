@@ -5,8 +5,9 @@
 #include "Source.hpp"
 
 #include <atomic>
-#include <cstddef>
+#include <cstdint>
 #include <filesystem>
+#include <memory>
 #include <vector>
 
 namespace pugi {
@@ -28,7 +29,7 @@ public:
 private:
   // function executed by a worker on a single thread
   std::vector<std::unique_ptr<Estimator::Interface>>
-  StartWorker(std::atomic<size_t>& histories_elapsed) const;
+  StartWorker(std::atomic<uint_fast64_t>& histories_elapsed) const;
   // fixed source from which new Particle objects can be sampled from
   const Source source;
 };

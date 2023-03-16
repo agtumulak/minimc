@@ -17,7 +17,10 @@
 
 #include <cassert>
 #include <iosfwd>
+#include <map>
 #include <string>
+#include <type_traits>
+#include <utility>
 
 // Driver
 
@@ -60,8 +63,8 @@ Driver::Driver(
       }()},
       stream_delegate{StreamDelegate::Create(root, world)},
       output_filepath{output_filepath},
-      total_weight(
-          std::stoi(root.child("general").child("histories").child_value())),
+      total_weight{
+          std::stoull(root.child("general").child("histories").child_value())},
       threads{std::stoul(root.child("general").child("threads").child_value())},
       seed(std::stoi(
           root.child("general").child("seed")

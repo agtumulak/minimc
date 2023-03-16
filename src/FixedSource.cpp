@@ -5,8 +5,11 @@
 #include "Particle.hpp"
 #include "pugixml.hpp"
 
-#include <future>
+#include <cstddef>
+#include <cstdint>
 #include <fstream>
+#include <functional>
+#include <future>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -31,7 +34,7 @@ FixedSource::Solve() const {
             << std::to_string(total_weight) << " histories..." << std::endl;
   // Number of histories completed or initiated by all threads. May exceed
   // batchsize since each thread will call it once before ending.
-  std::atomic<size_t> histories_elapsed{0};
+  std::atomic<uint_fast64_t> histories_elapsed{0};
   for (size_t i = 0; i < threads; i++) {
     // https://stackoverflow.com/q/18359864/5101335
     threads_future_estimators.push_back(std::async(
@@ -67,7 +70,7 @@ FixedSource::Solve() const {
 //// private
 
 std::vector<std::unique_ptr<Estimator::Interface>>
-FixedSource::StartWorker(std::atomic<size_t>& histories_elapsed) const {
+FixedSource::StartWorker(std::atomic<uint_fast64_t>& histories_elapsed) const {
   // each thread gets its own copy of Estimator::Interface objects
   std::vector<std::unique_ptr<Estimator::Interface>> worker_estimators;
   for (const auto& estimator : estimators) {
