@@ -197,8 +197,8 @@ The transition probabilities are conventionally decomposed
   &=
   p
     \left(
-      \boldsymbol{x}_{i+1}
-      \hat{\boldsymbol{\Omega}}_{i+1}
+      \boldsymbol{x}_{i+1},
+      \hat{\boldsymbol{\Omega}}_{i+1},
       E_{i+1},
       r_{i+1}
     \middle|
@@ -223,7 +223,7 @@ The transition probabilities are conventionally decomposed
   p \left(
       r_{i+1}
     \middle|
-      \boldsymbol{x}_{i+1}
+      \boldsymbol{x}_{i+1},
       \hat{\boldsymbol{\Omega}}_{i},
       E_{i},
       r_{i}
@@ -233,7 +233,7 @@ The transition probabilities are conventionally decomposed
   p \left(
       E_{i+1}
     \middle|
-      \boldsymbol{x}_{i+1}
+      \boldsymbol{x}_{i+1},
       \hat{\boldsymbol{\Omega}}_{i},
       E_{i},
       r_{i+1}
@@ -243,7 +243,7 @@ The transition probabilities are conventionally decomposed
   p \left(
       \hat{\boldsymbol{\Omega}}_{i+1},
     \middle|
-      \boldsymbol{x}_{i+1}
+      \boldsymbol{x}_{i+1},
       \hat{\boldsymbol{\Omega}}_{i},
       E_{i+1},
       r_{i+1}
@@ -810,7 +810,7 @@ When only perturbations in @f$ u_{mr} @f$, @f$ \sigma_{r} @f$, or @f$ v_{nr}
 @f$ for @f$ \alpha @f$ CDF data are considered, the only nonzero term in @f$
 \eqref{eq:step-i-indirect-effect} @f$ is
 @f[
-  \mathcal{E}_{i}
+  \mathcal{A}_{i}
   =
   p
   \left(
