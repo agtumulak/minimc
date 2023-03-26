@@ -714,7 +714,7 @@ ThermalScattering::Alpha ThermalScattering::SampleAlpha(
           a_F_hi - a_F_lo});
     }
     // linearly interpolate in temperature
-    return a_F_lo + r_F * (a_F_lo - a_F_hi);
+    return a_F_lo + r_F * (a_F_hi - a_F_lo);
   }
   else if (F_hi_exists && F_lo_exists && T_hi_exists && !T_lo_exists){
     // snap to upper temperature (2)
