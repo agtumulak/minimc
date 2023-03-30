@@ -748,9 +748,11 @@ ThermalScattering::Alpha ThermalScattering::SampleAlpha(
     const auto r_T = (T - T_lo) / (T_hi - T_lo);
     // linearly interpolate in temperature
     const auto a_F_hi = a_F_hi_T_lo + r_T * (a_F_hi_T_hi - a_F_hi_T_lo);
-    const Alpha a_F_lo = 0;
-    // linearly interpolate in CDF; note F_lo = 0
-    return a_F_lo + F / a_F_hi * (a_F_hi - a_F_lo);
+    // interpolation fraction
+    const auto F_hi = Fs.at(F_hi_i);
+    const auto r_F = F / F_hi;
+    // linearly interpolate in CDF
+    return r_F * a_F_hi;
   }
   else if (!F_hi_exists && F_lo_exists && T_hi_exists && T_lo_exists){
     // use alpha cutoff at unity CDF (5)
@@ -770,16 +772,20 @@ ThermalScattering::Alpha ThermalScattering::SampleAlpha(
   else if (F_hi_exists && !F_lo_exists && T_hi_exists && !T_lo_exists){
     // snap to upper temperature, use zero alpha at zero CDF (6)
     const auto a_F_hi = P_s.Evaluate(F_hi_i, b_s_i_local, T_hi_i);
-    const Alpha a_F_lo = 0;
-    // linearly interpolate in CDF; note F_lo = 0
-    return a_F_lo + F / a_F_hi * (a_F_hi - a_F_lo);
+    // interpolation fraction
+    const auto F_hi = Fs.at(F_hi_i);
+    const auto r_F = F / F_hi;
+    // linearly interpolate in CDF
+    return r_F * a_F_hi;
   }
   else if (F_hi_exists && !F_lo_exists && !T_hi_exists && T_lo_exists){
     // snap to lower temperature, use zero alpha at zero CDF (7)
     const auto a_F_hi = P_s.Evaluate(F_hi_i, b_s_i_local, T_hi_i - 1);
-    const Alpha a_F_lo = 0;
-    // linearly interpolate in CDF; note F_lo = 0
-    return a_F_lo + F / a_F_hi * (a_F_hi - a_F_lo);
+    // interpolation fraction
+    const auto F_hi = Fs.at(F_hi_i);
+    const auto r_F = F / F_hi;
+    // linearly interpolate in CDF
+    return r_F * a_F_hi;
   }
   else if (!F_hi_exists && F_lo_exists && T_hi_exists && !T_lo_exists){
     // snap to upper temperature, use alpha cutoff at unity CDF (8)
