@@ -109,7 +109,7 @@ public:
         const size_t cdf_index, const size_t local_beta_index,
         const size_t T_index) const;
     // Returns a CDF value that would return the given value of alpha
-    Real FindCDF(
+    CDF FindCDF(
         const Alpha a, const size_t b_s_i_local, const Temperature T,
         const Alpha alpha_cutoff) const noexcept;
     // Contains CDF modes

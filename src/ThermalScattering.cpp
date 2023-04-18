@@ -254,7 +254,7 @@ ThermalScattering::Alpha ThermalScattering::AlphaPartition::Evaluate(
   return alpha;
 }
 
-Real ThermalScattering::AlphaPartition::FindCDF(
+CDF ThermalScattering::AlphaPartition::FindCDF(
     const Alpha a, const size_t b_s_i_local, const Temperature T,
     const Alpha alpha_cutoff) const noexcept {
   // Evaluate nearest temperatures on the sampled beta grid
@@ -275,7 +275,7 @@ Real ThermalScattering::AlphaPartition::FindCDF(
         std::upper_bound(
             Fs.cbegin(), Fs.cend(), a,
             [this, &Fs, &b_s_i_local, &T_hi_i, &Ts,
-             &T](const Alpha& a, const Real& F) {
+             &T](const Alpha& a, const CDF& F) {
               // https://en.cppreference.com/w/cpp/language/operator_arithmetic
               const size_t F_i = &F - &Fs.front();
               const auto a_T_hi = Evaluate(F_i, b_s_i_local, T_hi_i);
@@ -320,7 +320,7 @@ Real ThermalScattering::AlphaPartition::FindCDF(
       // return value of F that would return `a`
       const auto r_a = (a - a_F_lo) / (a_F_hi - a_F_lo);
       const auto F_hi = Fs.at(F_hi_i);
-      const Real F_lo = 0;
+      const CDF F_lo = 0;
       return F_lo + r_a * (F_hi - F_lo);
     }
     else if (!F_hi_exists && F_lo_exists) {
@@ -335,7 +335,7 @@ Real ThermalScattering::AlphaPartition::FindCDF(
       const auto a_F_lo = a_F_lo_T_lo + r_T * (a_F_lo_T_hi - a_F_lo_T_lo);
       // return value of F that would return `a`
       const auto r_a = (a - a_F_lo) / (a_F_hi - a_F_lo);
-      const Real F_hi = 1;
+      const CDF F_hi = 1;
       const auto F_lo = Fs.at(F_hi_i - 1);
       return F_lo + r_a * (F_hi - F_lo);
     }
@@ -349,7 +349,7 @@ Real ThermalScattering::AlphaPartition::FindCDF(
         Fs.cbegin(),
         std::upper_bound(
             Fs.cbegin(), Fs.cend(), a,
-            [this, &Fs, &b_s_i_local, &T_hi_i](const Alpha& a, const Real& F) {
+            [this, &Fs, &b_s_i_local, &T_hi_i](const Alpha& a, const CDF& F) {
               // https://en.cppreference.com/w/cpp/language/operator_arithmetic
               const size_t F_i = &F - &Fs.front();
               const auto a_T_hi = Evaluate(F_i, b_s_i_local, T_hi_i);
@@ -380,7 +380,7 @@ Real ThermalScattering::AlphaPartition::FindCDF(
       // return value of F that would return `a`
       const auto r_a = (a - a_F_lo) / (a_F_hi - a_F_lo);
       const auto F_hi = Fs.at(F_hi_i);
-      const Real F_lo = 0;
+      const CDF F_lo = 0;
       return F_lo + r_a * (F_hi - F_lo);
     }
     else if (!F_hi_exists && F_lo_exists) {
@@ -391,7 +391,7 @@ Real ThermalScattering::AlphaPartition::FindCDF(
       const auto a_F_lo = a_F_lo_T_hi;
       // return value of F that would return `a`
       const auto r_a = (a - a_F_lo) / (a_F_hi - a_F_lo);
-      const Real F_hi = 1;
+      const CDF F_hi = 1;
       const auto F_lo = Fs.at(F_hi_i - 1);
       return F_lo + r_a * (F_hi - F_lo);
     }
@@ -404,7 +404,7 @@ Real ThermalScattering::AlphaPartition::FindCDF(
         Fs.cbegin(),
         std::upper_bound(
             Fs.cbegin(), Fs.cend(), a,
-            [this, &Fs, &b_s_i_local, &T_hi_i](const Alpha& a, const Real& F) {
+            [this, &Fs, &b_s_i_local, &T_hi_i](const Alpha& a, const CDF& F) {
               // https://en.cppreference.com/w/cpp/language/operator_arithmetic
               const size_t F_i = &F - &Fs.front();
               const auto a_T_lo = Evaluate(F_i, b_s_i_local, T_hi_i - 1);
@@ -435,7 +435,7 @@ Real ThermalScattering::AlphaPartition::FindCDF(
       // return value of F that would return `a`
       const auto r_a = (a - a_F_lo) / (a_F_hi - a_F_lo);
       const auto F_hi = Fs.at(F_hi_i);
-      const Real F_lo = 0;
+      const CDF F_lo = 0;
       return F_lo + r_a * (F_hi - F_lo);
     }
     else if (!F_hi_exists && F_lo_exists) {
@@ -446,7 +446,7 @@ Real ThermalScattering::AlphaPartition::FindCDF(
       const auto a_F_lo = a_F_lo_T_lo;
       // return value of F that would return `a`
       const auto r_a = (a - a_F_lo) / (a_F_hi - a_F_lo);
-      const Real F_hi = 1;
+      const CDF F_hi = 1;
       const auto F_lo = Fs.at(F_hi_i - 1);
       return F_lo + r_a * (F_hi - F_lo);
     }
@@ -503,15 +503,15 @@ ThermalScattering::Beta ThermalScattering::SampleBeta(
   const size_t E_s_i_local =
       P_s_i == 0 ? E_s_i : E_s_i - beta_partition_E_ends.at(P_s_i - 1);
   // sample a CDF value
-  const Real F = std::uniform_real_distribution{}(p.rng);
+  const CDF F = std::uniform_real_distribution{}(p.rng);
   // find index of CDF value strictly greater than sampled CDF value
   const auto& Fs = P_s.CDF_modes.GetAxis(0);
   const size_t F_hi_i =
       std::distance(Fs.cbegin(), std::upper_bound(Fs.cbegin(), Fs.cend(), F));
 
   // Evaluate nearest Fs on the sampled E grid.
-  const Real F_lo = F_hi_i != 0 ? Fs.at(F_hi_i - 1) : 0;
-  const Real F_hi = F_hi_i != Fs.size() ? Fs.at(F_hi_i) : 1;
+  const CDF F_lo = F_hi_i != 0 ? Fs.at(F_hi_i - 1) : 0;
+  const CDF F_hi = F_hi_i != Fs.size() ? Fs.at(F_hi_i) : 1;
 
   // Evaluate nearest betas on the sampled E grid.
   const auto b_s_min = -E_s / (constants::boltzmann * T);

@@ -10,6 +10,8 @@
 using BinIndex = size_t;
 /// @brief Real number @f$ \mathbb{R} @f$ (C++ Core Guidelines P.1)
 using Real = double;
+/// @brief Cumulative Distribution Function; must be in @f$ [0, 1) @f$
+using CDF = Real;
 /// @brief See @ref estimators_scoring_functions
 using Score = Real;
 /// @brief Temperature in kelvins
