@@ -16,6 +16,7 @@
 #include <iterator>
 #include <memory>
 #include <random>
+#include <stdexcept>
 #include <type_traits>
 #include <variant>
 
@@ -238,9 +239,29 @@ ThermalScattering::AlphaPartition::AlphaPartition(
     : CDF_modes{partition_node.attribute("CDF").as_string()},
       singular_values{partition_node.attribute("S").as_string()},
       beta_T_modes{partition_node.attribute("beta_T").as_string()} {
-  // The following assumptions about CDF values will be used in sampling
+  // enforce assumptions about CDF values
   const auto& Fs = CDF_modes.GetAxis(0);
-  assert(Fs.size() > 0);
+  if (Fs.front() <= 0){
+    throw std::runtime_error(
+        partition_node.path() + ": First CDF (" + std::to_string(Fs.front()) +
+        ") must be strictly positive");
+  }
+  for (size_t i = 1; i < Fs.size(); i++){
+    const auto F_cur = Fs.at(i);
+    const auto F_prev = Fs.at(i - 1);
+    if (F_prev >= F_cur) {
+      throw std::runtime_error(
+          partition_node.path() + ": CDF at index " + std::to_string(i) + " (" +
+          std::to_string(F_cur) +
+          ") must be strictly greater than CDF at index " +
+          std::to_string(i - 1) + "(" + std::to_string(F_prev) + ")");
+    }
+  }
+  if (Fs.back() <= 1){
+    throw std::runtime_error(
+        partition_node.path() + ": Last CDF (" + std::to_string(Fs.back()) +
+        ") must be strictly less than 1");
+  }
 }
 
 ThermalScattering::Alpha ThermalScattering::AlphaPartition::Evaluate(
