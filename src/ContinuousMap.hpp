@@ -77,20 +77,3 @@ template <> struct NestedContinuousMap<0> {
   /// @brief Type contained by a ContinuousMap when there is no nesting
   using MappedType = Real;
 };
-
-/// @brief Like Map, but stores elements as the CDF of some random variable.
-///        Stores CDF values as keys so that std::map::upper_bound() can be
-///        used.
-/// @tparam T The type of the random variable
-template <typename T> class CDF : public ContinuousMap<Real, T> {
-public:
-  /// @brief Constructs a CDF from a std::map
-  CDF(typename ContinuousMap<Real, T>::elements_type&& other)
-      : ContinuousMap<Real, T>{std::move(other)} {};
-
-  /// @brief Samples a value from the CDF and returns the sampled key
-  const T& Sample(RNG& rng) const noexcept {
-    return this->elements.upper_bound(std::uniform_real_distribution{}(rng))
-        ->second;
-  }
-};
