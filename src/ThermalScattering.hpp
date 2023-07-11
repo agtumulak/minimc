@@ -31,6 +31,8 @@ public:
   /// @brief Constructs thermal scattering data from a `tnsl` node and target
   ///        Nuclide
   ThermalScattering(const pugi::xml_node& tnsl_node, const Nuclide& target);
+  /// @brief Returns the number of perturbable parameters
+  size_t CountPerturbableParameters() const noexcept;
   /// @brief Returns true if Particle is Type::neutron and is strictly below
   ///        the cutoff energy
   bool IsValid(const Particle& p) const noexcept;

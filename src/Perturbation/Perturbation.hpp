@@ -94,8 +94,6 @@ public:
   const Nuclide& nuclide;
   /// @brief TNSL data whose parameters are being perturbed
   const ThermalScattering& tnsl;
-  /// @brief Flattened offsets of each alpha partition
-  const std::vector<size_t> partition_offsets;
 };
 
 }; // namespace Perturbation

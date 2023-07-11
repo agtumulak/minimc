@@ -103,6 +103,16 @@ ThermalScattering::ThermalScattering(
       alpha_cutoff{tnsl_node.attribute("alpha_cutoff").as_double()},
       target{target} {}
 
+size_t ThermalScattering::CountPerturbableParameters() const noexcept {
+  return std::accumulate(
+      alpha_partitions.cbegin(), alpha_partitions.cend(), size_t{0},
+      [](const auto& accumulated, const auto& alpha_partition) {
+        return accumulated + alpha_partition.CDF_modes.size() +
+               alpha_partition.singular_values.size() +
+               alpha_partition.beta_T_modes.size();
+      });
+}
+
 bool ThermalScattering::IsValid(const Particle& p) const noexcept {
   const auto E = std::get<ContinuousEnergy>(p.GetEnergy());
   return p.GetType() == Particle::Type::neutron && E < cutoff_energy;

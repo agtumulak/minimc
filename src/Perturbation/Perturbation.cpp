@@ -77,30 +77,12 @@ TNSL::TNSL(const pugi::xml_node& tnsl_node, const World& world)
               tnsl_node.path() + ": \"" + nuclide_name +
               "\" has no thermal neutron scattering law data");
         }
-        return std::accumulate(
-            tnsl->alpha_partitions.cbegin(), tnsl->alpha_partitions.cend(),
-            size_t{0},
-            [](const auto& accumulated, const auto& alpha_partition) {
-              return accumulated + alpha_partition.CDF_modes.size() +
-                     alpha_partition.singular_values.size() +
-                     alpha_partition.beta_T_modes.size();
-            });
+        return tnsl->CountPerturbableParameters();
       }()
     },
     nuclide{*world.FindNuclideByName(tnsl_node.attribute("nuclide").as_string())},
     // construction of Interface has already checked that TNSL data exists
-    tnsl{nuclide.GetTNSL().value()},
-    // IIFE
-    partition_offsets{[this]() noexcept {
-      std::vector<size_t> result {0};
-      for (const auto& alpha_partition: tnsl.alpha_partitions){
-        result.push_back(
-            result.back() + alpha_partition.CDF_modes.size() +
-            alpha_partition.singular_values.size() +
-            alpha_partition.beta_T_modes.size());
-      }
-      return result;
-    }()} {}
+    tnsl{nuclide.GetTNSL().value()} {}
 
 std::unique_ptr<Sensitivity::Interface>
 TNSL::CreateSensitivity(const Estimator::Interface& estimator) const noexcept {
