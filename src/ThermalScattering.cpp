@@ -400,11 +400,14 @@ std::vector<Real> ThermalScattering::GetDerivatives(
         delta_xs_pow4.cbegin(), result.begin(), std::multiplies<Real>());
     return result;
   }();
-  // assign optimal derivative of first value
+  // assign optimal derivative of first value; contribution from the first
+  // segment is ignored since the smallest possible value that can be sampled
+  // can be greater than the first datapoint; this means the optimal derivative
+  // of first value may be negative
   signed_cs[0] =
       -0.5 *
-      std::accumulate(numerator_terms.cbegin(), numerator_terms.cend(), 0.) /
-      std::accumulate(delta_xs_pow4.cbegin(), delta_xs_pow4.cend(), 0.);
+      std::accumulate(std::next(numerator_terms.cbegin()), numerator_terms.cend(), 0.) /
+      std::accumulate(std::next(delta_xs_pow4.cbegin()), delta_xs_pow4.cend(), 0.);
   // expression for derivatives is similar to `cumsum_signed_cs`
   std::vector<Real> result(cumsum_signed_cs.size(), signed_cs[0]);
   for (size_t i = 1; i < cumsum_signed_cs.size(); i++) {
