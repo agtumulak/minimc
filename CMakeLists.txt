@@ -110,6 +110,33 @@ set_target_properties(pugixml PROPERTIES
   IMPORTED_LOCATION ${PUGI_LIB}
   INTERFACE_INCLUDE_DIRECTORIES ${PUGI_INCLUDE_DIR})
 
+# add eigen as an external project and create a static library
+set(EIGEN_PREFIX ${CMAKE_BINARY_DIR}/eigen)
+set(EIGEN_BINARY_DIR ${EIGEN_PREFIX}/build)
+set(EIGEN_INSTALL_DIR ${EIGEN_PREFIX}/install)
+ExternalProject_Add(
+  eigen_download
+  PREFIX ${EIGEN_PREFIX}
+  SOURCE_DIR ${EIGEN_PREFIX}/src
+  TMP_DIR ${EIGEN_BINARY_DIR}
+  STAMP_DIR ${EIGEN_BINARY_DIR}
+  DOWNLOAD_DIR ${EIGEN_BINARY_DIR}
+  BINARY_DIR ${EIGEN_BINARY_DIR}
+  INSTALL_DIR ${EIGEN_INSTALL_DIR}
+  GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+  GIT_TAG 3.4.0
+  UPDATE_COMMAND ""
+  CMAKE_ARGS
+    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    -DCMAKE_INSTALL_PREFIX=${EIGEN_INSTALL_DIR}
+  )
+add_library(eigen INTERFACE IMPORTED)
+add_dependencies(eigen eigen_download)
+set(EIGEN_INCLUDE_DIR ${EIGEN_INSTALL_DIR}/include/eigen3)
+file(MAKE_DIRECTORY ${EIGEN_INCLUDE_DIR})
+set_target_properties(eigen PROPERTIES
+  INTERFACE_INCLUDE_DIRECTORIES ${EIGEN_INCLUDE_DIR})
+
 # add hdf5 as an external project and create a static library
 set(HDF5_PREFIX ${CMAKE_BINARY_DIR}/hdf5)
 set(HDF5_BINARY_DIR ${HDF5_PREFIX}/build)
