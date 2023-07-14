@@ -13,3 +13,6 @@
 [submodule "third-party/eigen"]
 	path = third-party/eigen
 	url = https://gitlab.com/libeigen/eigen.git
+[submodule "third-party/autodiff"]
+	path = third-party/autodiff
+	url = git@github.com:autodiff/autodiff.git

@@ -28,6 +28,10 @@ add_subdirectory(third-party/Catch2)
 add_subdirectory(third-party/eigen)
 add_subdirectory(third-party/pugixml)
 
+# add autodiff as header only library
+add_library(autodiff INTERFACE)
+target_include_directories(autodiff INTERFACE third-party/autodiff)
+
 include(ExternalProject)
 
 # add xerces as an external project and create a static library

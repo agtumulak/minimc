@@ -74,7 +74,7 @@ target_compile_options(minimc PUBLIC
   $<$<AND:$<CONFIG:Release>,$<CXX_COMPILER_ID:Clang,GNU>>:-O3>)
 target_link_options(minimc PUBLIC
   $<$<AND:$<CONFIG:Debug>,$<BOOL:${APPLE}>>:-fprofile-instr-generate>)
-target_link_libraries(minimc PUBLIC xerces pugixml Eigen3::Eigen hdf5_cpp Threads::Threads)
+target_link_libraries(minimc PUBLIC xerces pugixml Eigen3::Eigen autodiff hdf5_cpp Threads::Threads)
 set_target_properties(minimc PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
   )
