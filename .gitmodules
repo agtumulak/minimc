@@ -4,3 +4,12 @@
 [submodule "pyminimc"]
 	path = pyminimc
 	url = git@github.com:agtumulak/pyminimc.git
+[submodule "third-party/Catch2"]
+	path = third-party/Catch2
+	url = git@github.com:catchorg/Catch2.git
+[submodule "third-party/pugixml"]
+	path = third-party/pugixml
+	url = git@github.com:zeux/pugixml.git
+[submodule "third-party/eigen"]
+	path = third-party/eigen
+	url = https://gitlab.com/libeigen/eigen.git

@@ -25,5 +25,5 @@ if(Doxygen_FOUND)
     ${CMAKE_CURRENT_SOURCE_DIR}/doxygen-awesome-css/doxygen-awesome-sidebar-only.css
     ${CMAKE_CURRENT_SOURCE_DIR}/doxygen-awesome-css/doxygen-awesome-sidebar-only-darkmode-toggle.css)
   set(DOXYGEN_IMAGE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/resources)
-  doxygen_add_docs(doc ${DOXYGEN_SOURCES} ${CMAKE_SOURCE_DIR}/src)
+  doxygen_add_docs(minimcdoc ${DOXYGEN_SOURCES} ${CMAKE_SOURCE_DIR}/src)
 endif()

@@ -22,6 +22,12 @@ if (MSVC)
   add_compile_definitions(_USE_MATH_DEFINES) # https://stackoverflow.com/a/63810121/5101335
 endif()
 
+# add third party libraries
+# https://github.com/catchorg/Catch2/blob/devel/docs/cmake-integration.md#cmake-targets
+add_subdirectory(third-party/Catch2)
+add_subdirectory(third-party/eigen)
+add_subdirectory(third-party/pugixml)
+
 include(ExternalProject)
 
 # add xerces as an external project and create a static library
@@ -72,70 +78,6 @@ set_target_properties(xerces PROPERTIES
 if (APPLE)
   target_link_options(xerces INTERFACE -framework CoreServices -lcurl)
 endif()
-
-# add pugixml as an external project and create a static library
-set(PUGI_PREFIX ${CMAKE_BINARY_DIR}/pugixml)
-set(PUGI_BINARY_DIR ${PUGI_PREFIX}/build)
-set(PUGI_INSTALL_DIR ${PUGI_PREFIX}/install)
-# logic to determine where static library will be found
-set(PUGI_LIB ${PUGI_INSTALL_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}pugixml${CMAKE_STATIC_LIBRARY_SUFFIX})
-if (UNIX)
-  # since pugixml is an external library, we do not care about compiler warnings
-  set(UNIX_PUGI_CMAKE_ARGS -DCMAKE_CXX_FLAGS="-w")
-endif()
-ExternalProject_Add(
-  pugixml_download
-  PREFIX ${PUGI_PREFIX}
-  SOURCE_DIR ${PUGI_PREFIX}/src
-  TMP_DIR ${PUGI_BINARY_DIR}
-  STAMP_DIR ${PUGI_BINARY_DIR}
-  DOWNLOAD_DIR ${PUGI_BINARY_DIR}
-  BINARY_DIR ${PUGI_BINARY_DIR}
-  INSTALL_DIR ${PUGI_INSTALL_DIR}
-  GIT_REPOSITORY https://github.com/zeux/pugixml.git
-  GIT_TAG v1.12.1
-  UPDATE_COMMAND ""
-  CMAKE_ARGS
-    -DBUILD_SHARED_LIBS:BOOL=OFF
-    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-    -DCMAKE_INSTALL_PREFIX=${PUGI_INSTALL_DIR}
-    ${UNIX_PUGI_CMAKE_ARGS}
-  BUILD_BYPRODUCTS ${PUGI_LIB}
-  )
-add_library(pugixml STATIC IMPORTED)
-add_dependencies(pugixml pugixml_download)
-set(PUGI_INCLUDE_DIR ${PUGI_INSTALL_DIR}/include)
-file(MAKE_DIRECTORY ${PUGI_INCLUDE_DIR})
-set_target_properties(pugixml PROPERTIES
-  IMPORTED_LOCATION ${PUGI_LIB}
-  INTERFACE_INCLUDE_DIRECTORIES ${PUGI_INCLUDE_DIR})
-
-# add eigen as an external project and create a static library
-set(EIGEN_PREFIX ${CMAKE_BINARY_DIR}/eigen)
-set(EIGEN_BINARY_DIR ${EIGEN_PREFIX}/build)
-set(EIGEN_INSTALL_DIR ${EIGEN_PREFIX}/install)
-ExternalProject_Add(
-  eigen_download
-  PREFIX ${EIGEN_PREFIX}
-  SOURCE_DIR ${EIGEN_PREFIX}/src
-  TMP_DIR ${EIGEN_BINARY_DIR}
-  STAMP_DIR ${EIGEN_BINARY_DIR}
-  DOWNLOAD_DIR ${EIGEN_BINARY_DIR}
-  BINARY_DIR ${EIGEN_BINARY_DIR}
-  INSTALL_DIR ${EIGEN_INSTALL_DIR}
-  GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
-  GIT_TAG 3.4.0
-  UPDATE_COMMAND ""
-  CMAKE_ARGS
-    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-    -DCMAKE_INSTALL_PREFIX=${EIGEN_INSTALL_DIR}
-  )
-add_library(eigen INTERFACE IMPORTED)
-add_dependencies(eigen eigen_download)
-set(EIGEN_INCLUDE_DIR ${EIGEN_INSTALL_DIR}/include/eigen3)
-file(MAKE_DIRECTORY ${EIGEN_INCLUDE_DIR})
-set_target_properties(eigen PROPERTIES
-  INTERFACE_INCLUDE_DIRECTORIES ${EIGEN_INCLUDE_DIR})
 
 # add hdf5 as an external project and create a static library
 set(HDF5_PREFIX ${CMAKE_BINARY_DIR}/hdf5)

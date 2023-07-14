@@ -1,12 +1,3 @@
-# https://github.com/catchorg/Catch2/blob/devel/docs/cmake-integration.md#cmake-targets
-Include(FetchContent)
-FetchContent_Declare(
-  catch_download
-  GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-  GIT_TAG v3.0.1
-  )
-FetchContent_MakeAvailable(catch_download)
-
 # add new unit test source files here
 set(UNIT_TEST_SOURCES
   test_CSGSurface.cpp
