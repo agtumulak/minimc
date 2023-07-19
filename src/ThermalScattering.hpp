@@ -3,6 +3,7 @@
 #include "BasicTypes.hpp"
 #include "ContinuousMap.hpp"
 #include "HDF5DataSet.hpp"
+#include "autodiff/reverse/var/var.hpp"
 
 #include <cstddef>
 #include <vector>
@@ -27,7 +28,7 @@ public:
   /// @brief Dimensionless energy transfer
   using Beta = Real;
   /// @brief Dimensionless momentum transfer
-  using Alpha = Real;
+  using Alpha = autodiff::var;
   /// @brief Constructs thermal scattering data from a `tnsl` node and target
   ///        Nuclide
   ThermalScattering(const pugi::xml_node& tnsl_node, const Nuclide& target);
@@ -50,7 +51,6 @@ public:
   MicroscopicCrossSection GetTotal(const Particle& p) const noexcept;
   /// @brief The raison d'etre of this class
   void Scatter(Particle& p) const noexcept;
-
 private:
   // encapsulates data required to sample a value of beta using proper
   // orthogonal decomposition; limited to a given incident energy range
@@ -83,24 +83,26 @@ private:
         Particle& p, const size_t b_i, const Beta b, const Temperature T,
         const Alpha a_cutoff, const Real awr) const noexcept;
     // contains CDF modes
-    const HDF5DataSet<2> CDF_modes;
+    const HDF5DataSet<2, true> CDF_modes;
     // contains singular values
-    const HDF5DataSet<1> singular_values;
+    const HDF5DataSet<1, true> singular_values;
     // contains beta and temperature modes
-    const HDF5DataSet<3> beta_T_modes;
+    const HDF5DataSet<3, true> beta_T_modes;
+    // total number of elements in this partition (C++ Core Guidelines C.131)
+    const size_t size;
   };
   // identifies optimal set of PDFs for a piecewise quadratic fit
-  static std::vector<Real> GetDerivatives(
-      const std::vector<Real>& xs, const std::vector<Real>& ys) noexcept;
+  static std::vector<autodiff::var> GetDerivatives(
+      const std::vector<autodiff::var>& xs, const std::vector<Real>& ys) noexcept;
   // evaluates a piecewise quadratic function at a point
-  static Real EvaluateQuadratic(
-      const std::vector<Real>& xs, const std::vector<Real>& ys,
-      const std::vector<Real>& fs, Real x) noexcept;
+  static autodiff::var EvaluateQuadratic(
+      const std::vector<autodiff::var>& xs, const std::vector<Real>& ys,
+      const std::vector<autodiff::var>& fs, Real x) noexcept;
   // performs the inverse of EvaluateQuadratic. Assumes that data is strictly
   // increasing.
-  static Real SolveQuadratic(
-      const std::vector<Real>& xs, const std::vector<Real>& ys,
-      const std::vector<Real>& fs, Real y) noexcept;
+  static autodiff::var SolveQuadratic(
+      const std::vector<autodiff::var>& xs, const std::vector<Real>& ys,
+      const std::vector<autodiff::var>& fs, autodiff::var y) noexcept;
   // evaluates the inelastic scattering cross section.
   MacroscopicCrossSection
   EvaluateInelastic(const size_t E_index, const size_t T_index) const noexcept;
@@ -108,7 +110,7 @@ private:
   // ThermalScattering::cutoff_energy. Uses histogram interpolation in PDF.
   Beta SampleBeta(Particle& p, ContinuousEnergy E, Temperature T) const;
   // samples an outgoing cosine given an outgoing energy
-  Alpha SampleAlpha(
+  Real SampleAlpha(
       Particle& p, const Beta& b, ContinuousEnergy E, Temperature T) const;
   // majorant cross section
   const ContinuousMap<ContinuousEnergy, MicroscopicCrossSection> majorant;
@@ -128,6 +130,8 @@ private:
   const std::vector<Beta> betas;
   // identifies the global beta index where each partition begins
   const std::vector<size_t> alpha_partition_beta_begins;
+  // start index of each alpha partition for sensitivity analysis
+  const std::vector<size_t> alpha_partition_offsets;
   // maximum value of beta which can be sampled
   const Beta beta_cutoff;
   // maximum value of alpha which can be sampled
@@ -135,5 +139,5 @@ private:
   // the target Nuclide
   const Nuclide& target;
   // neutrons above the cutoff energy do not get thermal scattering treatment
-  const ContinuousEnergy cutoff_energy = scatter_xs_E.GetAxis(0).back();
+  const ContinuousEnergy cutoff_energy = scatter_xs_E.axes.at(0).back();
 };

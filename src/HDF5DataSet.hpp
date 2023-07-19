@@ -60,7 +60,7 @@ public:
       result = at(outer_indices...);
     }
     else {
-      const auto& keys = GetAxis(sizeof...(outer_indices));
+      const auto& keys = axes.at(sizeof...(outer_indices));
       for (size_t index = 0; index < keys.size(); index++) {
         result[keys[index]] = ToContinuousMap(outer_indices..., index);
       }
@@ -81,12 +81,14 @@ public:
     static_assert(1 + sizeof...(inner_indices) == D);
     return at_from_base(0, 0, index, inner_indices...);
   }
-  /// @brief Get values of a given axis
-  const std::vector<double>& GetAxis(size_t level) const noexcept {
-    return axes.at(level);
-  }
   /// @brief Returns total number of elements in dataset
   size_t size() const noexcept { return values.size(); }
+  /// @brief Outer vector contains each axis. Inner vector contains values of
+  ///        an axis (C++ Core Guidelines C.131)
+  const std::array<std::vector<double>, D> axes;
+  /// @brief The values of the rectangular grid are stored in a flattened array.
+  ///        (C++ Core Guidelines C.131)
+  const std::vector<T> values;
 
 private:
   // Helper function to read HDF5 file from pandas and return flattened array.
@@ -178,10 +180,6 @@ private:
           base + index * strides.at(level), level + 1, inner_indices...);
     }
   }
-  // Outer vector contains each axis. Inner vector contains values of an axis.
-  const std::array<std::vector<double>, D> axes;
-  // The values of the rectangular grid are stored in a flattened array.
-  const std::vector<T> values;
   // Distance of a single step in each level
   const std::array<size_t, D> strides;
 };
