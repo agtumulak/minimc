@@ -3,9 +3,11 @@
 #include "BasicTypes.hpp"
 #include "ContinuousMap.hpp"
 #include "HDF5DataSet.hpp"
+#include "autodiff/reverse/var/eigen.hpp"
 #include "autodiff/reverse/var/var.hpp"
 
 #include <cstddef>
+#include <tuple>
 #include <vector>
 
 namespace pugi {
@@ -51,6 +53,7 @@ public:
   MicroscopicCrossSection GetTotal(const Particle& p) const noexcept;
   /// @brief The raison d'etre of this class
   void Scatter(Particle& p) const noexcept;
+
 private:
   // encapsulates data required to sample a value of beta using proper
   // orthogonal decomposition; limited to a given incident energy range
@@ -75,32 +78,34 @@ private:
     AlphaPartition(const pugi::xml_node& partition_node);
     // evaluates alpha using proper orthogonal decomposition
     Alpha Evaluate(
-        const size_t cdf_index, const size_t local_beta_index,
-        const size_t T_index) const;
+        const autodiff::VectorXvar& alpha_coeffs, const size_t cdf_index,
+        const size_t local_beta_index, const size_t T_index) const;
     // samples a value of alpha using quadratic interpolation in CDF then
     // linear interpolation in T
     Alpha Sample(
-        Particle& p, const size_t b_i, const Beta b, const Temperature T,
-        const Alpha a_cutoff, const Real awr) const noexcept;
+        Particle& p, const Nuclide& target, const size_t partition_offset,
+        const size_t b_i, const Beta b, const Temperature T,
+        const Real a_cutoff) const noexcept;
     // contains CDF modes
-    const HDF5DataSet<2, true> CDF_modes;
+    const HDF5DataSet<2> CDF_modes;
     // contains singular values
-    const HDF5DataSet<1, true> singular_values;
+    const HDF5DataSet<1> singular_values;
     // contains beta and temperature modes
-    const HDF5DataSet<3, true> beta_T_modes;
+    const HDF5DataSet<3> beta_T_modes;
     // total number of elements in this partition (C++ Core Guidelines C.131)
     const size_t size;
   };
   // identifies optimal set of PDFs for a piecewise quadratic fit
   static std::vector<autodiff::var> GetDerivatives(
-      const std::vector<autodiff::var>& xs, const std::vector<Real>& ys) noexcept;
+      const std::vector<autodiff::var>& xs,
+      const std::vector<Real>& ys) noexcept;
   // evaluates a piecewise quadratic function at a point
   static autodiff::var EvaluateQuadratic(
       const std::vector<autodiff::var>& xs, const std::vector<Real>& ys,
       const std::vector<autodiff::var>& fs, Real x) noexcept;
-  // performs the inverse of EvaluateQuadratic. Assumes that data is strictly
-  // increasing.
-  static autodiff::var SolveQuadratic(
+  // Performs the inverse of EvaluateQuadratic. Assumes that data is strictly
+  // increasing. Returns the solution and the derivative at the solution.
+  static std::tuple<Real, autodiff::var> SolveQuadratic(
       const std::vector<autodiff::var>& xs, const std::vector<Real>& ys,
       const std::vector<autodiff::var>& fs, autodiff::var y) noexcept;
   // evaluates the inelastic scattering cross section.
@@ -135,7 +140,7 @@ private:
   // maximum value of beta which can be sampled
   const Beta beta_cutoff;
   // maximum value of alpha which can be sampled
-  const Alpha alpha_cutoff;
+  const Real alpha_cutoff;
   // the target Nuclide
   const Nuclide& target;
   // neutrons above the cutoff energy do not get thermal scattering treatment

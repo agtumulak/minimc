@@ -146,6 +146,7 @@ public:
     return GetOffsetFromBase(0, 0, index, inner_indices...);
   }
   /// @brief Get values of a given axis
+  /// @todo Deprecate in favor of acessing member directly
   const std::vector<double>& GetAxis(size_t level) const noexcept {
     return axes.at(level);
   }

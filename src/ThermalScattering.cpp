@@ -181,7 +181,6 @@ void ThermalScattering::Scatter(Particle& p) const noexcept {
   // sample beta then alpha
   const auto beta = SampleBeta(p, E, T);
   const auto alpha = SampleAlpha(p, beta, E, T);
-  // alpha is some crazing fucking expression tree
   // convert to outgoing energy and cosine
   const auto E_p = E + beta * constants::boltzmann * T;
   const auto mu =
@@ -277,19 +276,38 @@ ThermalScattering::AlphaPartition::AlphaPartition(
 }
 
 ThermalScattering::Alpha ThermalScattering::AlphaPartition::Evaluate(
-    const size_t cdf_index, const size_t local_beta_index,
-    const size_t T_index) const {
+    const autodiff::VectorXvar& alpha_coeffs, size_t cdf_index,
+    const size_t local_beta_index, const size_t T_index) const {
+  const size_t CDF_modes_offset =
+      singular_values.size() + CDF_modes.GetOffset(cdf_index);
+  const size_t beta_T_modes_offset =
+      singular_values.size() + CDF_modes.size() +
+      beta_T_modes.GetOffset(local_beta_index, T_index);
   Alpha alpha = 0;
   for (size_t order = 0; order < singular_values.axes.at(0).size(); order++) {
-    alpha += singular_values.at(order) * CDF_modes.at(cdf_index, order) *
-             beta_T_modes.at(local_beta_index, T_index, order);
+    alpha += alpha_coeffs[order] * alpha_coeffs[CDF_modes_offset + order] *
+             alpha_coeffs[beta_T_modes_offset + order];
   }
   return alpha;
 }
 
-ThermalScattering::Alpha ThermalScattering::AlphaPartition::Sample( Particle&
-    p, const size_t b_i, const Beta b, const Temperature T, const Alpha
-    a_cutoff, const Real awr) const noexcept {
+ThermalScattering::Alpha ThermalScattering::AlphaPartition::Sample(
+    Particle& p, const Nuclide& target, const size_t partition_offset,
+    const size_t b_i, const Beta b, const Temperature T,
+    const Real a_cutoff) const noexcept {
+  // copy elements into Eigen array of autodiff::var
+  // TODO: Make const once autodiff::gradient accepts const Eigen::DenseBase
+  autodiff::VectorXvar alpha_coeffs(size);
+  size_t i = 0;
+  for (size_t j = 0; j < singular_values.size(); j++) {
+    alpha_coeffs[i++] = singular_values.values.at(j);
+  }
+  for (size_t j = 0; j < CDF_modes.size(); j++) {
+    alpha_coeffs[i++] = CDF_modes.values.at(j);
+  }
+  for (size_t j = 0; j < beta_T_modes.size(); j++) {
+    alpha_coeffs[i++] = beta_T_modes.values.at(j);
+  }
   // identify two possible edge cases for temperature
   const auto& Ts = beta_T_modes.axes.at(1);
   const size_t T_upper_i =
@@ -311,13 +329,13 @@ ThermalScattering::Alpha ThermalScattering::AlphaPartition::Sample( Particle&
   // evaluate alpha at T_hi and T_lo
   const auto E = std::get<ContinuousEnergy>(p.GetEnergy());
   const auto H = p.Sample();
-  const auto EvaluateAlpha = [this, &Fs, &H, &E, &b_i, &b, &a_cutoff, &awr,
-                              &Ts](const auto& T_i) {
+  const auto EvaluateAlpha = [this, &target, &alpha_coeffs, &Fs, &H, &E, &b_i,
+                              &b, &a_cutoff, &Ts](const auto& T_i) {
     // compute alpha at each CDF point
     std::vector<Alpha> alphas(Fs.size());
     alphas.front() = 0;
     for (size_t F_i = 1; F_i < Fs.size() - 1; F_i++) {
-      alphas[F_i] = Evaluate(F_i - 1, b_i, T_i);
+      alphas[F_i] = Evaluate(alpha_coeffs, F_i - 1, b_i, T_i);
     }
     alphas.back() = a_cutoff;
     // compute PDFs at each cdf point
@@ -327,33 +345,71 @@ ThermalScattering::Alpha ThermalScattering::AlphaPartition::Sample( Particle&
     const auto a_min =
         std::pow(
             std::sqrt(E) - std::sqrt(E + b * constants::boltzmann * T), 2) /
-        (awr * constants::boltzmann * T);
+        (target.awr * constants::boltzmann * T);
     const auto a_max =
         std::pow(
             std::sqrt(E) + std::sqrt(E + b * constants::boltzmann * T), 2) /
-        (awr * constants::boltzmann * T);
+        (target.awr * constants::boltzmann * T);
     // compute corresponding CDF values; when optimal derivative of first value
     // is negative, F_min may be negative
     const auto F_min =
-        autodiff::detail::max(0, EvaluateQuadratic(alphas, Fs, fs, a_min));
+        autodiff::detail::max(0., EvaluateQuadratic(alphas, Fs, fs, a_min));
     const auto F_max = EvaluateQuadratic(alphas, Fs, fs, a_max);
     // compute scaled CDF value and return quadratically interpolated alpha
     const auto H_hat = F_min + H * (F_max - F_min);
-    return SolveQuadratic(alphas, Fs, fs, H_hat);
+    const auto [alpha, unscaled_f] = SolveQuadratic(alphas, Fs, fs, H_hat);
+    const auto f = unscaled_f / (F_max - F_min);
+    return std::make_tuple(alpha, f);
   };
-  if (T_hi_i == T_lo_i){
-    return EvaluateAlpha(T_hi_i);
+  const auto [alpha, f] =
+      T_hi_i == T_lo_i
+          ? EvaluateAlpha(T_hi_i)
+          : [&EvaluateAlpha, &Ts, T_hi_i, T_lo_i, T]() {
+              // linearly interpolate in temperature
+              const auto [a_T_hi, f_T_hi] = EvaluateAlpha(T_hi_i);
+              const auto [a_T_lo, f_T_lo] = EvaluateAlpha(T_lo_i);
+              // scale PDFs
+              const auto T_hi = Ts.at(T_hi_i);
+              const auto T_lo = Ts.at(T_lo_i);
+              const auto r_T = T_hi != T_lo ? (T - T_lo) / (T_hi - T_lo) : 0;
+              return std::make_tuple(
+                  a_T_lo + r_T * (a_T_hi - a_T_lo),
+                  1 / ((1 - r_T) / f_T_lo + r_T / f_T_hi));
+            }();
+  // compute sensitivities
+  for (auto& indirect_effect : p.indirect_effects) {
+    class Visitor : public Perturbation::IndirectEffect::Visitor {
+    public:
+      Visitor(
+          const Nuclide& target, const autodiff::var& f,
+          autodiff::VectorXvar& alpha_coeffs, const size_t partition_offset)
+          : target{target}, f{f}, alpha_coeffs{alpha_coeffs},
+            partition_offset{partition_offset} {}
+      void Visit(Perturbation::IndirectEffect::TNSL& indirect_effect)
+          const noexcept final {
+        // if current TNSL indirect effect is for a Nuclide that does not
+        // match the enclosing scope's target Nuclide, skip
+        if (&indirect_effect.perturbation.nuclide != &target) {
+          return;
+        }
+        // compute all derivatives in a single reverse pass
+        const auto grad = autodiff::gradient(f, alpha_coeffs);
+        for (auto i = 0; i < grad.size(); i++) {
+          indirect_effect.indirect_effects.at(partition_offset + i) +=
+              grad[i] / f.expr->val;
+        }
+      }
+
+    private:
+      const Nuclide& target;
+      const Alpha& f;
+      autodiff::VectorXvar& alpha_coeffs;
+      const size_t partition_offset;
+    };
+
+    indirect_effect->Visit(Visitor{target, f, alpha_coeffs, partition_offset});
   }
-  else{
-    // linearly interpolate in temperature
-    const auto a_T_hi = EvaluateAlpha(T_hi_i);
-    const auto a_T_lo = EvaluateAlpha(T_lo_i);
-    const auto T_hi = Ts.at(T_hi_i);
-    const auto T_lo = Ts.at(T_lo_i);
-    const auto r_T = T_hi != T_lo ? (T - T_lo) / (T_hi - T_lo) : 0;
-    const auto interpolated_alpha = a_T_lo + r_T * (a_T_hi - a_T_lo);
-    return interpolated_alpha;
-  }
+  return alpha;
 }
 
 // ThermalScattering
@@ -439,8 +495,6 @@ autodiff::var ThermalScattering::EvaluateQuadratic(
   const size_t hi_i =
       std::distance(xs.cbegin(), std::upper_bound(xs.cbegin(), xs.cend(), x));
   // identify quadratic coefficients
-  const auto xs_hi = xs[hi_i];
-  const auto xs_lo = xs[hi_i - 1];
   const auto r = (x - xs[hi_i - 1]) / (xs[hi_i] - xs[hi_i - 1]);
   const auto a = 0.5 * (fs[hi_i] - fs[hi_i - 1]) * (xs[hi_i] - xs[hi_i - 1]);
   const auto b = fs[hi_i - 1] * (xs[hi_i] - xs[hi_i - 1]);
@@ -448,27 +502,32 @@ autodiff::var ThermalScattering::EvaluateQuadratic(
   return a * r * r + b * r + c;
 }
 
-autodiff::var ThermalScattering::SolveQuadratic(
+std::tuple<Real, autodiff::var> ThermalScattering::SolveQuadratic(
     const std::vector<autodiff::var>& xs, const std::vector<Real>& ys,
     const std::vector<autodiff::var>& fs, autodiff::var y) noexcept {
   // identify first value on y grid which is strictly greater than y
   const size_t hi_i =
       std::distance(ys.cbegin(), std::upper_bound(ys.cbegin(), ys.cend(), y));
   // identify quadratic coefficients
-  const auto a = 0.5 * (fs[hi_i] - fs[hi_i - 1]) / (xs[hi_i] - xs[hi_i - 1]);
-  const auto b = fs[hi_i - 1];
-  const auto c = - (y - ys[hi_i - 1]);
+  const auto delta_x = (xs[hi_i] - xs[hi_i - 1]);
+  const auto delta_f = (fs[hi_i] - fs[hi_i - 1]);
+  const auto a = 0.5 * delta_f * delta_x;
+  const auto b = fs[hi_i - 1] * delta_x;
+  const auto c = -(y - ys[hi_i - 1]);
   // solve quadratic equation
-  if (b >= 0) {
-    return xs[hi_i - 1] +
-           (2 * c) / (-b - autodiff::detail::sqrt(b * b - 4 * a * c));
-  }
-  else {
-    // handle special case where optimal derivative of first value may be
-    // negative
-    return xs[hi_i - 1] +
-           (-b + autodiff::detail::sqrt(b * b - 4 * a * c)) / (2 * a);
-  }
+  const auto x =
+      b >= 0
+          ? xs[hi_i - 1] + delta_x * (2 * c) /
+                               (-b - autodiff::detail::sqrt(b * b - 4 * a * c))
+          :
+          // handle special case where optimal derivative of first value may be
+          // negative
+          xs[hi_i - 1] + delta_x *
+                             (-b + autodiff::detail::sqrt(b * b - 4 * a * c)) /
+                             (2 * a);
+  // calculate corresponding derivative (may or may not be the PDF just yet)
+  const auto f = fs[hi_i - 1] + (x - xs[hi_i - 1]) / delta_x * delta_f;
+  return {x->val, f};
 }
 
 MacroscopicCrossSection ThermalScattering::EvaluateInelastic(
@@ -554,22 +613,22 @@ Real ThermalScattering::SampleAlpha(
     const size_t b_upper_i = std::distance(
         betas.cbegin(), std::upper_bound(betas.cbegin(), betas.cend(), abs_b));
     // if only one datapoint, we are forced to use it for both cases
-    if (betas.size() == 1){
+    if (betas.size() == 1) {
       return std::make_tuple(size_t{0}, size_t{0});
     }
     // requested beta is greater than any available beta; snap to last beta
-    if (b_upper_i == betas.size()){
+    if (b_upper_i == betas.size()) {
       return std::make_tuple(b_upper_i - 1, b_upper_i - 1);
     }
     // requested beta is less than any available beta; snap to first value
-    if (b_upper_i == 0){
+    if (b_upper_i == 0) {
       return std::make_tuple(size_t{0}, size_t{0});
     }
     // upper beta exists, but it corresponds to physically impossible value
     // so snap to lower value
     const auto physical_upper =
         sgn_b == 1 ? beta_cutoff : E / (constants::boltzmann * T);
-    if (physical_upper < betas.at(b_upper_i)){
+    if (physical_upper < betas.at(b_upper_i)) {
       return std::make_tuple(b_upper_i - 1, b_upper_i - 1);
     }
     return std::make_tuple(b_upper_i, b_upper_i - 1);
@@ -590,63 +649,8 @@ Real ThermalScattering::SampleAlpha(
                        1;
   const auto& P_s = alpha_partitions.at(P_s_i);
   const size_t b_s_i_local = b_s_i - alpha_partition_beta_begins.at(P_s_i);
-  const auto alpha = P_s.Sample(p, b_s_i_local, b, T, alpha_cutoff, target.awr);
-  // compute sensitivities
-  for (auto& indirect_effect : p.indirect_effects) {
-    class Visitor : public Perturbation::IndirectEffect::Visitor {
-    public:
-      Visitor(
-          const Nuclide& target, const Alpha& alpha,
-          const AlphaPartition& partition, const size_t partition_offset)
-          : target{target}, alpha{alpha}, partition{partition},
-            partition_offset{partition_offset} {}
-      void Visit(Perturbation::IndirectEffect::TNSL& indirect_effect)
-          const noexcept final {
-        // if current TNSL indirect effect is for a Nuclide that does not
-        // match the enclosing scope's target Nuclide, skip
-        if (&indirect_effect.perturbation.nuclide != &target) {
-          return;
-        }
-        // TODO: Optimize by removing updates to coefficients which we know
-        //       are zero
-        // TODO: Change at() to operator[]
-        // sensitivities to singular values
-        size_t i = partition_offset;
-        for (size_t j = 0; j < partition.singular_values.size(); j++) {
-          indirect_effect.indirect_effects.at(i++) +=
-              autodiff::derivatives(
-                  alpha, wrt(partition.singular_values.values.at(j)))
-                  .front() / alpha.expr->val;
-        }
-        // sensitivities to CDF modes
-        for (size_t j = 0; j < partition.CDF_modes.size(); j++){
-          indirect_effect.indirect_effects.at(i++) +=
-              autodiff::derivatives(
-                  alpha, wrt(partition.CDF_modes.values.at(j)))
-                  .front() / alpha.expr->val;
-        }
-        // sensitivities to beta and temperature modes
-        for (size_t j = 0; j < partition.beta_T_modes.size(); j++) {
-          indirect_effect.indirect_effects.at(i++) +=
-              autodiff::derivatives(
-                  alpha, wrt(partition.beta_T_modes.values.at(j)))
-                  .front() / alpha.expr->val;
-        }
-      }
-
-    private:
-      const Nuclide& target;
-      const Alpha& alpha;
-      const AlphaPartition& partition;
-      const size_t partition_offset;
-    };
-
-    indirect_effect->Visit(
-        Visitor{target, alpha, P_s, alpha_partition_offsets.at(P_s_i)});
-  }
+  const auto alpha = P_s.Sample(
+      p, target, alpha_partition_offsets.at(P_s_i), b_s_i_local, b, T,
+      alpha_cutoff);
   return alpha.expr->val;
 }
-
-//// public
-
-// BetaPartition
