@@ -107,7 +107,7 @@ private:
   // increasing. Returns the solution and the derivative at the solution.
   static std::tuple<Real, autodiff::var> SolveQuadratic(
       const std::vector<autodiff::var>& xs, const std::vector<Real>& ys,
-      const std::vector<autodiff::var>& fs, autodiff::var y) noexcept;
+      const std::vector<autodiff::var>& fs, Real y) noexcept;
   // evaluates the inelastic scattering cross section.
   MacroscopicCrossSection
   EvaluateInelastic(const size_t E_index, const size_t T_index) const noexcept;

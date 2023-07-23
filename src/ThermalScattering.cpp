@@ -356,7 +356,7 @@ ThermalScattering::Alpha ThermalScattering::AlphaPartition::Sample(
         autodiff::detail::max(0., EvaluateQuadratic(alphas, Fs, fs, a_min));
     const auto F_max = EvaluateQuadratic(alphas, Fs, fs, a_max);
     // compute scaled CDF value and return quadratically interpolated alpha
-    const auto H_hat = F_min + H * (F_max - F_min);
+    const auto H_hat = F_min->val + H * (F_max - F_min)->val;
     const auto [alpha, unscaled_f] = SolveQuadratic(alphas, Fs, fs, H_hat);
     const auto f = unscaled_f / (F_max - F_min);
     return std::make_tuple(alpha, f);
@@ -402,7 +402,7 @@ ThermalScattering::Alpha ThermalScattering::AlphaPartition::Sample(
 
     private:
       const Nuclide& target;
-      const Alpha& f;
+      const autodiff::var& f;
       autodiff::VectorXvar& alpha_coeffs;
       const size_t partition_offset;
     };
@@ -504,30 +504,32 @@ autodiff::var ThermalScattering::EvaluateQuadratic(
 
 std::tuple<Real, autodiff::var> ThermalScattering::SolveQuadratic(
     const std::vector<autodiff::var>& xs, const std::vector<Real>& ys,
-    const std::vector<autodiff::var>& fs, autodiff::var y) noexcept {
+    const std::vector<autodiff::var>& fs, Real y) noexcept {
   // identify first value on y grid which is strictly greater than y
   const size_t hi_i =
       std::distance(ys.cbegin(), std::upper_bound(ys.cbegin(), ys.cend(), y));
   // identify quadratic coefficients
   const auto delta_x = (xs[hi_i] - xs[hi_i - 1]);
   const auto delta_f = (fs[hi_i] - fs[hi_i - 1]);
-  const auto a = 0.5 * delta_f * delta_x;
-  const auto b = fs[hi_i - 1] * delta_x;
+  // quadratic coefficients; no need to use autodiff
+  const auto a = 0.5 * delta_f->val * delta_x->val;
+  const auto b = fs[hi_i - 1].expr->val * delta_x->val;
   const auto c = -(y - ys[hi_i - 1]);
   // solve quadratic equation
   const auto x =
       b >= 0
-          ? xs[hi_i - 1] + delta_x * (2 * c) /
-                               (-b - autodiff::detail::sqrt(b * b - 4 * a * c))
+          ? xs[hi_i - 1].expr->val +
+                delta_x->val * (2 * c) / (-b - std::sqrt(b * b - 4 * a * c))
           :
           // handle special case where optimal derivative of first value may be
           // negative
-          xs[hi_i - 1] + delta_x *
-                             (-b + autodiff::detail::sqrt(b * b - 4 * a * c)) /
-                             (2 * a);
+          xs[hi_i - 1].expr->val +
+              delta_x->val * (-b + std::sqrt(b * b - 4 * a * c)) / (2 * a);
   // calculate corresponding derivative (may or may not be the PDF just yet)
+  // we use non-autodiff value of x since DOS computes the derivative of the
+  // probability of sampling the unperturbed value
   const auto f = fs[hi_i - 1] + (x - xs[hi_i - 1]) / delta_x * delta_f;
-  return {x->val, f};
+  return {x, f};
 }
 
 MacroscopicCrossSection ThermalScattering::EvaluateInelastic(
