@@ -106,6 +106,7 @@ ThermalScattering::ThermalScattering(
               partition.CDF_modes.size() + partition.singular_values.size() +
               partition.beta_T_modes.size());
         }
+        std::partial_sum(result.cbegin(), result.cend(), result.begin());
         return result;
       }()},
       beta_cutoff{tnsl_node.attribute("beta_cutoff").as_double()},
