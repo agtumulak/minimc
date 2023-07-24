@@ -342,7 +342,11 @@ ThermalScattering::Alpha ThermalScattering::AlphaPartition::Sample(
     // compute PDFs at each cdf point
     const auto fs = GetDerivatives(alphas, Fs);
     // compute minimum and maximum allowed values of alpha
-    const auto T = Ts.at(T_i);
+    const auto candidate_T = Ts.at(T_i);
+    // the sampled beta may be unfeasible for current temperature gridpoint,
+    // resort to temperature at lower gridpoint
+    const auto discriminant = E + b * constants:: boltzmann * candidate_T;
+    const auto T = discriminant >= 0 ? candidate_T : Ts.at(T_i - 1);
     const auto a_min =
         std::pow(
             std::sqrt(E) - std::sqrt(E + b * constants::boltzmann * T), 2) /
