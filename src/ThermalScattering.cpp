@@ -331,7 +331,14 @@ ThermalScattering::Alpha ThermalScattering::AlphaPartition::Sample(
   const auto E = std::get<ContinuousEnergy>(p.GetEnergy());
   const auto H = p.Sample();
   const auto EvaluateAlpha = [this, &target, &alpha_coeffs, &Fs, &H, &E, &b_i,
-                              &b, &a_cutoff, &Ts](const auto& T_i) {
+                              &b, &a_cutoff, &Ts](const auto& candidate_T_i) {
+    // the temperature gridpoint may correspond to a temperature that is
+    // unfeasible for the sampled value of beta, resort to temperature at
+    // lower gridpoint
+    const auto candidate_T = Ts.at(candidate_T_i);
+    const auto discriminant = E + b * constants:: boltzmann * candidate_T;
+    const auto T_i = discriminant >= 0 ? candidate_T_i : candidate_T_i - 1;
+    const auto T = Ts.at(T_i);
     // compute alpha at each CDF point
     std::vector<Alpha> alphas(Fs.size());
     alphas.front() = 0; // this will be set to an optimal value later
@@ -343,11 +350,6 @@ ThermalScattering::Alpha ThermalScattering::AlphaPartition::Sample(
     const auto [optimal_a0, fs] = GetOptimalInitial(alphas, Fs);
     alphas.front() = optimal_a0;
     // compute minimum and maximum allowed values of alpha
-    const auto candidate_T = Ts.at(T_i);
-    // the sampled beta may be unfeasible for current temperature gridpoint,
-    // resort to temperature at lower gridpoint
-    const auto discriminant = E + b * constants:: boltzmann * candidate_T;
-    const auto T = discriminant >= 0 ? candidate_T : Ts.at(T_i - 1);
     const auto a_min =
         std::pow(
             std::sqrt(E) - std::sqrt(E + b * constants::boltzmann * T), 2) /
