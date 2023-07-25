@@ -334,13 +334,14 @@ ThermalScattering::Alpha ThermalScattering::AlphaPartition::Sample(
                               &b, &a_cutoff, &Ts](const auto& T_i) {
     // compute alpha at each CDF point
     std::vector<Alpha> alphas(Fs.size());
-    alphas.front() = 0;
+    alphas.front() = 0; // this will be set to an optimal value later
     for (size_t F_i = 1; F_i < Fs.size() - 1; F_i++) {
       alphas[F_i] = Evaluate(alpha_coeffs, F_i - 1, b_i, T_i);
     }
     alphas.back() = a_cutoff;
-    // compute PDFs at each cdf point
-    const auto fs = GetDerivatives(alphas, Fs);
+    // compute optimal first value of alpha and corresponding PDFs
+    const auto [optimal_a0, fs] = GetOptimalInitial(alphas, Fs);
+    alphas.front() = optimal_a0;
     // compute minimum and maximum allowed values of alpha
     const auto candidate_T = Ts.at(T_i);
     // the sampled beta may be unfeasible for current temperature gridpoint,
@@ -355,13 +356,11 @@ ThermalScattering::Alpha ThermalScattering::AlphaPartition::Sample(
         std::pow(
             std::sqrt(E) + std::sqrt(E + b * constants::boltzmann * T), 2) /
         (target.awr * constants::boltzmann * T);
-    // compute corresponding CDF values; when optimal derivative of first value
-    // is negative, F_min may be negative
-    const auto F_min =
-        autodiff::detail::max(0., EvaluateQuadratic(alphas, Fs, fs, a_min));
+    // compute corresponding CDF values
+    const auto F_min = EvaluateQuadratic(alphas, Fs, fs, a_min);
     const auto F_max = EvaluateQuadratic(alphas, Fs, fs, a_max);
     // compute scaled CDF value and return quadratically interpolated alpha
-    const auto H_hat = F_min->val + H * (F_max - F_min)->val;
+    const auto H_hat = F_min.expr->val + H * (F_max - F_min)->val;
     const auto [alpha, unscaled_f] = SolveQuadratic(alphas, Fs, fs, H_hat);
     const auto f = unscaled_f / (F_max - F_min);
     return std::make_tuple(alpha, f);
@@ -420,8 +419,8 @@ ThermalScattering::Alpha ThermalScattering::AlphaPartition::Sample(
 // ThermalScattering
 
 //// private
-
-std::vector<autodiff::var> ThermalScattering::GetDerivatives(
+std::tuple<autodiff::var, std::vector<autodiff::var>>
+ThermalScattering::GetOptimalInitial(
     const std::vector<autodiff::var>& xs,
     const std::vector<Real>& ys) noexcept {
   // difference between subsequent values, the first entry is zero
@@ -432,14 +431,16 @@ std::vector<autodiff::var> ThermalScattering::GetDerivatives(
     return result;
   }();
   // Terms used in the recursion relation used to compute subsequent PDF
-  // values. The first value, c0, is, by convention, the first PDF value
-  // which is to be determined.
+  // values. The first value, c0, is set to zero. The second value, c1, is to
+  // be determined.
   std::vector<autodiff::var> signed_cs(ys.size());
-  for (size_t i = 1; i < signed_cs.size(); i++) {
+  signed_cs[0] = 0.; // by definition
+  signed_cs[1] = 0.; // to be determined
+  for (size_t i = 2; i < signed_cs.size(); i++) {
     signed_cs[i] = std::pow(-1, i) * 2 * (ys[i] - ys[i - 1]) / delta_xs[i];
   }
-  // evaluate cummulative sum of `signed_cs`; recall that the first element
-  // of `signed_cs` is still zero
+  // evaluate cummulative sum of `signed_cs`; recall that the first two
+  // elements are zero
   const auto cumsum_signed_cs = [&signed_cs]() {
     std::vector<autodiff::var> result(signed_cs.size());
     std::partial_sum(signed_cs.cbegin(), signed_cs.cend(), result.begin());
@@ -473,11 +474,8 @@ std::vector<autodiff::var> ThermalScattering::GetDerivatives(
         std::multiplies<autodiff::var>());
     return result;
   }();
-  // assign optimal derivative of first value; contribution from the first
-  // segment is ignored since the smallest possible value that can be sample
-  // can be greater than the first datapoint; this means the optimal derivative
-  // of first value may be negative
-  signed_cs[0] = -0.5 *
+  // assign optimal value of c1
+  signed_cs[1] = -0.5 *
                  std::accumulate(
                      std::next(numerator_terms.cbegin(), 2),
                      numerator_terms.cend(), autodiff::var{0.}) /
@@ -485,13 +483,15 @@ std::vector<autodiff::var> ThermalScattering::GetDerivatives(
                      std::next(delta_xs_pow4.cbegin(), 2), delta_xs_pow4.cend(),
                      autodiff::var{0.});
   // expression for derivatives is similar to `cumsum_signed_cs`
-  std::vector<autodiff::var> result(cumsum_signed_cs.size(), signed_cs[0]);
+  std::vector<autodiff::var> optimal_derivatives(cumsum_signed_cs);
   for (size_t i = 1; i < cumsum_signed_cs.size(); i++) {
-    result[i] += cumsum_signed_cs[i];
-    result[i] *= std::pow(-1, i);
+    optimal_derivatives[i] += signed_cs[1];
+    optimal_derivatives[i] *= std::pow(-1, i);
   };
-  return result;
-};
+  // get optimal value of x0
+  const auto optimal_x = xs[1] + 2 * (ys[1] - ys[0]) / signed_cs[1];
+  return {optimal_x, optimal_derivatives};
+}
 
 autodiff::var ThermalScattering::EvaluateQuadratic(
     const std::vector<autodiff::var>& xs, const std::vector<Real>& ys,
@@ -499,6 +499,10 @@ autodiff::var ThermalScattering::EvaluateQuadratic(
   // identify first value on x grid which is strictly greater than x
   const size_t hi_i =
       std::distance(xs.cbegin(), std::upper_bound(xs.cbegin(), xs.cend(), x));
+  // if x is strictly less than least value in xs, we say it is zero
+  if (hi_i == 0){
+    return 0.;
+  }
   // identify quadratic coefficients
   const auto r = (x - xs[hi_i - 1]) / (xs[hi_i] - xs[hi_i - 1]);
   const auto a = 0.5 * (fs[hi_i] - fs[hi_i - 1]) * (xs[hi_i] - xs[hi_i - 1]);

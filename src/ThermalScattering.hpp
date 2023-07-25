@@ -95,8 +95,9 @@ private:
     // total number of elements in this partition (C++ Core Guidelines C.131)
     const size_t size;
   };
-  // identifies optimal set of PDFs for a piecewise quadratic fit
-  static std::vector<autodiff::var> GetDerivatives(
+  // returns the optimal value for the first value and corresponding optimal
+  // set of derivatives for a piecewise quadratic fit
+  static std::tuple<autodiff::var, std::vector<autodiff::var>> GetOptimalInitial(
       const std::vector<autodiff::var>& xs,
       const std::vector<Real>& ys) noexcept;
   // evaluates a piecewise quadratic function at a point
