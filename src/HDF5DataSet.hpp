@@ -172,7 +172,7 @@ private:
           std::to_string(index) + ")");
     }
     if constexpr (sizeof...(inner_indices) == 0) {
-      return base + index;
+      return base + index * strides.at(level);
     }
     else {
       return GetOffsetFromBase(
