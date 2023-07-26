@@ -315,6 +315,9 @@ ThermalScattering::Alpha ThermalScattering::AlphaPartition::Sample(
       std::distance(Ts.cbegin(), std::upper_bound(Ts.cbegin(), Ts.cend(), T));
   const auto T_hi_i = T_upper_i < Ts.size() ? T_upper_i : T_upper_i - 1;
   const auto T_lo_i = T_upper_i != 0 ? T_upper_i - 1 : T_upper_i;
+  const auto T_hi = Ts.at(T_hi_i);
+  const auto T_lo = Ts.at(T_lo_i);
+  const auto r_T = T_hi_i != T_lo_i ? (T - T_lo) / (T_hi - T_lo) : 0.;
   // create CDF values, appending two endpoints
   const auto Fs = [this]() {
     const auto& original_Fs = CDF_modes.axes.at(0);
@@ -327,74 +330,39 @@ ThermalScattering::Alpha ThermalScattering::AlphaPartition::Sample(
     result.back() = 1;
     return result;
   }();
-  // evaluate alpha at T_hi and T_lo
-  const auto E = std::get<ContinuousEnergy>(p.GetEnergy());
-  const auto H = p.Sample();
-  const auto EvaluateAlpha = [this, &target, &alpha_coeffs, &Fs, &H, &E, &b_i,
-                              &b, &a_cutoff, &Ts](const auto& candidate_T_i) {
-    // the temperature gridpoint may correspond to a temperature that is
-    // unfeasible for the sampled value of beta, resort to temperature at
-    // lower gridpoint
-    const auto candidate_T = Ts.at(candidate_T_i);
-    const auto discriminant = E + b * constants:: boltzmann * candidate_T;
-    const auto T_i = discriminant >= 0 ? candidate_T_i : candidate_T_i - 1;
-    const auto T = Ts.at(T_i);
-    // compute alpha at each CDF point
+  // linearly interpolate alphas in temperature
+  const auto [alphas, fs] = [this, &alpha_coeffs, &Fs, &b_i, &T_hi_i, &T_lo_i,
+                             &r_T, &a_cutoff]() {
     std::vector<Alpha> alphas(Fs.size());
-    alphas.front() = 0; // this will be set to an optimal value later
+    alphas.front() = 0; // will be set to optimal value later in this function
     for (size_t F_i = 1; F_i < Fs.size() - 1; F_i++) {
-      alphas[F_i] = Evaluate(alpha_coeffs, F_i - 1, b_i, T_i);
+      const auto a_T_hi = Evaluate(alpha_coeffs, F_i - 1, b_i, T_hi_i);
+      const auto a_T_lo = Evaluate(alpha_coeffs, F_i - 1, b_i, T_lo_i);
+      alphas[F_i] = (1 - r_T) * a_T_lo + r_T * a_T_hi;
     }
     alphas.back() = a_cutoff;
     // compute optimal first value of alpha and corresponding PDFs
     const auto [optimal_a0, fs] = GetOptimalInitial(alphas, Fs);
-    alphas.front() = optimal_a0;
-    // compute minimum and maximum allowed values of alpha
-    const auto a_min =
-        std::pow(
-            std::sqrt(E) - std::sqrt(E + b * constants::boltzmann * T), 2) /
-        (target.awr * constants::boltzmann * T);
-    const auto a_max =
-        std::pow(
-            std::sqrt(E) + std::sqrt(E + b * constants::boltzmann * T), 2) /
-        (target.awr * constants::boltzmann * T);
-    // compute corresponding CDF values
-    const auto F_min = EvaluateQuadratic(alphas, Fs, fs, a_min);
-    const auto F_max = EvaluateQuadratic(alphas, Fs, fs, a_max);
-    // compute scaled CDF value and return quadratically interpolated alpha
-    const auto H_hat = F_min.expr->val + H * (F_max - F_min)->val;
-    const auto [alpha, unscaled_f] = SolveQuadratic(alphas, Fs, fs, H_hat);
-    const auto f = unscaled_f / (F_max - F_min);
-    return std::make_tuple(alpha, f, a_min, a_max);
-  };
-  const auto [alpha_unscaled, f, a_min_unscaled, a_max_unscaled] =
-      T_hi_i == T_lo_i
-          ? EvaluateAlpha(T_hi_i)
-          : [&EvaluateAlpha, &Ts, T_hi_i, T_lo_i, T]() {
-              // linearly interpolate in temperature
-              const auto [a_T_hi, f_T_hi, a_min_T_hi, a_max_T_hi] =
-                  EvaluateAlpha(T_hi_i);
-              const auto [a_T_lo, f_T_lo, a_min_T_lo, a_max_T_lo] =
-                  EvaluateAlpha(T_lo_i);
-              const auto T_hi = Ts.at(T_hi_i);
-              const auto T_lo = Ts.at(T_lo_i);
-              const auto r_T = T_hi != T_lo ? (T - T_lo) / (T_hi - T_lo) : 0;
-              const auto a_T = (1 - r_T) * a_T_lo + r_T * a_T_hi;
-              const auto f_T = 1 / ((1 - r_T) / f_T_lo + r_T / f_T_hi);
-              const auto a_min_T = a_min_T_lo + r_T * (a_min_T_hi - a_min_T_lo);
-              const auto a_max_T = a_max_T_lo + r_T * (a_max_T_hi - a_max_T_lo);
-              return std::make_tuple(a_T, f_T, a_min_T, a_max_T);
-            }();
-  // unit-base trnsform
+    alphas[0] = optimal_a0;
+    return std::make_tuple(alphas, fs);
+  }();
+  // evaluate alpha
+  const auto E = std::get<ContinuousEnergy>(p.GetEnergy());
+  const auto H = p.Sample();
+  // compute minimum and maximum allowed values of alpha
   const auto a_min =
       std::pow(std::sqrt(E) - std::sqrt(E + b * constants::boltzmann * T), 2) /
       (target.awr * constants::boltzmann * T);
   const auto a_max =
       std::pow(std::sqrt(E) + std::sqrt(E + b * constants::boltzmann * T), 2) /
       (target.awr * constants::boltzmann * T);
-  const auto alpha = a_min + (alpha_unscaled - a_min_unscaled) /
-                                 (a_max_unscaled - a_min_unscaled) *
-                                 (a_max - a_min);
+  // compute corresponding CDF values
+  const auto F_min = EvaluateQuadratic(alphas, Fs, fs, a_min);
+  const auto F_max = EvaluateQuadratic(alphas, Fs, fs, a_max);
+  // compute scaled CDF value and return quadratically interpolated alpha
+  const auto H_hat = F_min.expr->val + H * (F_max - F_min)->val;
+  const auto [alpha, unscaled_f] = SolveQuadratic(alphas, Fs, fs, H_hat);
+  const auto f = unscaled_f / (F_max - F_min);
   // compute sensitivities
   for (auto& indirect_effect : p.indirect_effects) {
     class Visitor : public Perturbation::IndirectEffect::Visitor {
@@ -515,7 +483,7 @@ autodiff::var ThermalScattering::EvaluateQuadratic(
   const size_t hi_i =
       std::distance(xs.cbegin(), std::upper_bound(xs.cbegin(), xs.cend(), x));
   // if x is strictly less than least value in xs, we say it is zero
-  if (hi_i == 0){
+  if (hi_i == 0) {
     return 0.;
   }
   // identify quadratic coefficients
