@@ -365,23 +365,36 @@ ThermalScattering::Alpha ThermalScattering::AlphaPartition::Sample(
     const auto H_hat = F_min.expr->val + H * (F_max - F_min)->val;
     const auto [alpha, unscaled_f] = SolveQuadratic(alphas, Fs, fs, H_hat);
     const auto f = unscaled_f / (F_max - F_min);
-    return std::make_tuple(alpha, f);
+    return std::make_tuple(alpha, f, a_min, a_max);
   };
-  const auto [alpha, f] =
+  const auto [alpha_unscaled, f, a_min_unscaled, a_max_unscaled] =
       T_hi_i == T_lo_i
           ? EvaluateAlpha(T_hi_i)
           : [&EvaluateAlpha, &Ts, T_hi_i, T_lo_i, T]() {
               // linearly interpolate in temperature
-              const auto [a_T_hi, f_T_hi] = EvaluateAlpha(T_hi_i);
-              const auto [a_T_lo, f_T_lo] = EvaluateAlpha(T_lo_i);
-              // scale PDFs
+              const auto [a_T_hi, f_T_hi, a_min_T_hi, a_max_T_hi] =
+                  EvaluateAlpha(T_hi_i);
+              const auto [a_T_lo, f_T_lo, a_min_T_lo, a_max_T_lo] =
+                  EvaluateAlpha(T_lo_i);
               const auto T_hi = Ts.at(T_hi_i);
               const auto T_lo = Ts.at(T_lo_i);
               const auto r_T = T_hi != T_lo ? (T - T_lo) / (T_hi - T_lo) : 0;
-              return std::make_tuple(
-                  a_T_lo + r_T * (a_T_hi - a_T_lo),
-                  1 / ((1 - r_T) / f_T_lo + r_T / f_T_hi));
+              const auto a_T = (1 - r_T) * a_T_lo + r_T * a_T_hi;
+              const auto f_T = 1 / ((1 - r_T) / f_T_lo + r_T / f_T_hi);
+              const auto a_min_T = a_min_T_lo + r_T * (a_min_T_hi - a_min_T_lo);
+              const auto a_max_T = a_max_T_lo + r_T * (a_max_T_hi - a_max_T_lo);
+              return std::make_tuple(a_T, f_T, a_min_T, a_max_T);
             }();
+  // unit-base trnsform
+  const auto a_min =
+      std::pow(std::sqrt(E) - std::sqrt(E + b * constants::boltzmann * T), 2) /
+      (target.awr * constants::boltzmann * T);
+  const auto a_max =
+      std::pow(std::sqrt(E) + std::sqrt(E + b * constants::boltzmann * T), 2) /
+      (target.awr * constants::boltzmann * T);
+  const auto alpha = a_min + (alpha_unscaled - a_min_unscaled) /
+                                 (a_max_unscaled - a_min_unscaled) *
+                                 (a_max - a_min);
   // compute sensitivities
   for (auto& indirect_effect : p.indirect_effects) {
     class Visitor : public Perturbation::IndirectEffect::Visitor {
