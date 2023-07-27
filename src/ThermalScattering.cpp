@@ -480,8 +480,14 @@ autodiff::var ThermalScattering::EvaluateQuadratic(
     const std::vector<autodiff::var>& xs, const std::vector<Real>& ys,
     const std::vector<autodiff::var>& fs, Real x) noexcept {
   // identify first value on x grid which is strictly greater than x
-  const size_t hi_i =
-      std::distance(xs.cbegin(), std::upper_bound(xs.cbegin(), xs.cend(), x));
+  const size_t hi_i = std::distance(
+      xs.cbegin(),
+      std::upper_bound(
+          xs.cbegin(), xs.cend(), x,
+          // this speeds up calculation when autodiff doesn't have to be used
+          [](const auto& x, const auto& xs_element) {
+            return x < xs_element.expr->val;
+          }));
   // if x is strictly less than least value in xs, we say it is zero
   if (hi_i == 0) {
     return 0.;
