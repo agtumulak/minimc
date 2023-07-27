@@ -578,8 +578,17 @@ ThermalScattering::Beta ThermalScattering::SampleBeta(
 
   // Evaluate nearest betas on the sampled E grid.
   const auto b_s_min = -E_s / (constants::boltzmann * T);
-  const ContinuousEnergy E_s_b_lo =
-      F_hi_i != 0 ? P_s.Evaluate(F_hi_i - 1, E_s_i_local, T) : b_s_min;
+  const ContinuousEnergy E_s_b_lo = [&F_hi_i, &P_s, &b_s_min, &E_s_i_local,
+                                     &T]() {
+    if (F_hi_i == 0) {
+      return b_s_min;
+    }
+    auto candidate = P_s.Evaluate(F_hi_i - 1, E_s_i_local, T);
+    if (candidate < b_s_min) {
+      return b_s_min;
+    }
+    return candidate;
+  }();
   const ContinuousEnergy E_s_b_hi =
       F_hi_i != Fs.size() ? P_s.Evaluate(F_hi_i, E_s_i_local, T) : beta_cutoff;
 
