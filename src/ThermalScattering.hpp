@@ -7,6 +7,7 @@
 #include "autodiff/reverse/var/var.hpp"
 
 #include <cstddef>
+#include <map>
 #include <tuple>
 #include <vector>
 
@@ -74,12 +75,15 @@ private:
   // encapsulates data required to sample a value of alpha using proper
   // orthogonal decomposition; limited to a given beta range
   struct AlphaPartition {
+    // each thread needs its own leaf nodes in expression trees
+    thread_local static std::map<const AlphaPartition*, autodiff::VectorXvar>
+        alpha_coeffs;
     // constructs an AlphaPartition from a `partition` node
     AlphaPartition(const pugi::xml_node& partition_node);
     // evaluates alpha using proper orthogonal decomposition
     Alpha Evaluate(
-        const autodiff::VectorXvar& alpha_coeffs, const size_t cdf_index,
-        const size_t local_beta_index, const size_t T_index) const;
+        const size_t cdf_index, const size_t local_beta_index,
+        const size_t T_index) const;
     // samples a value of alpha using quadratic interpolation in CDF then
     // linear interpolation in T
     Alpha Sample(

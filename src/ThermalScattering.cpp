@@ -245,6 +245,10 @@ ThermalScattering::Beta ThermalScattering::BetaPartition::Evaluate(
 
 // AlphaPartition
 
+thread_local std::map<
+    const ThermalScattering::AlphaPartition*, autodiff::VectorXvar>
+    ThermalScattering::AlphaPartition::alpha_coeffs = {};
+
 ThermalScattering::AlphaPartition::AlphaPartition(
     const pugi::xml_node& partition_node)
     : CDF_modes{partition_node.attribute("CDF").as_string()},
@@ -277,8 +281,8 @@ ThermalScattering::AlphaPartition::AlphaPartition(
 }
 
 ThermalScattering::Alpha ThermalScattering::AlphaPartition::Evaluate(
-    const autodiff::VectorXvar& alpha_coeffs, size_t cdf_index,
-    const size_t local_beta_index, const size_t T_index) const {
+    size_t cdf_index, const size_t local_beta_index,
+    const size_t T_index) const {
   const size_t CDF_modes_offset =
       singular_values.size() + CDF_modes.GetOffset(cdf_index);
   const size_t beta_T_modes_offset =
@@ -286,8 +290,9 @@ ThermalScattering::Alpha ThermalScattering::AlphaPartition::Evaluate(
       beta_T_modes.GetOffset(local_beta_index, T_index);
   Alpha alpha = 0;
   for (size_t order = 0; order < singular_values.axes.at(0).size(); order++) {
-    alpha += alpha_coeffs[order] * alpha_coeffs[CDF_modes_offset + order] *
-             alpha_coeffs[beta_T_modes_offset + order];
+    alpha += alpha_coeffs[this][order] *
+             alpha_coeffs[this][CDF_modes_offset + order] *
+             alpha_coeffs[this][beta_T_modes_offset + order];
   }
   return alpha;
 }
@@ -296,18 +301,19 @@ ThermalScattering::Alpha ThermalScattering::AlphaPartition::Sample(
     Particle& p, const Nuclide& target, const size_t partition_offset,
     const size_t b_i, const Beta b, const Temperature T,
     const Real a_cutoff) const noexcept {
-  // copy elements into Eigen array of autodiff::var
-  // TODO: Make const once autodiff::gradient accepts const Eigen::DenseBase
-  autodiff::VectorXvar alpha_coeffs(size);
-  size_t i = 0;
-  for (size_t j = 0; j < singular_values.size(); j++) {
-    alpha_coeffs[i++] = singular_values.values.at(j);
-  }
-  for (size_t j = 0; j < CDF_modes.size(); j++) {
-    alpha_coeffs[i++] = CDF_modes.values.at(j);
-  }
-  for (size_t j = 0; j < beta_T_modes.size(); j++) {
-    alpha_coeffs[i++] = beta_T_modes.values.at(j);
+  // construct thread local members if necessary
+  if (alpha_coeffs.find(this) == alpha_coeffs.cend()) {
+    alpha_coeffs[this] = autodiff::VectorXvar(size);
+    size_t i = 0;
+    for (const auto x : singular_values.values) {
+      alpha_coeffs[this][i++] = x;
+    }
+    for (const auto x : CDF_modes.values) {
+      alpha_coeffs[this][i++] = x;
+    }
+    for (const auto x : beta_T_modes.values) {
+      alpha_coeffs[this][i++] = x;
+    }
   }
   // identify two possible edge cases for temperature
   const auto& Ts = beta_T_modes.axes.at(1);
@@ -331,13 +337,13 @@ ThermalScattering::Alpha ThermalScattering::AlphaPartition::Sample(
     return result;
   }();
   // linearly interpolate alphas in temperature
-  const auto [alphas, fs] = [this, &alpha_coeffs, &Fs, &b_i, &T_hi_i, &T_lo_i,
-                             &r_T, &a_cutoff]() {
+  const auto [alphas, fs] = [this, &Fs, &b_i, &T_hi_i, &T_lo_i, &r_T,
+                             &a_cutoff]() {
     std::vector<Alpha> alphas(Fs.size());
     alphas.front() = 0; // will be set to optimal value later in this function
     for (size_t F_i = 1; F_i < Fs.size() - 1; F_i++) {
-      const auto a_T_hi = Evaluate(alpha_coeffs, F_i - 1, b_i, T_hi_i);
-      const auto a_T_lo = Evaluate(alpha_coeffs, F_i - 1, b_i, T_lo_i);
+      const auto a_T_hi = Evaluate(F_i - 1, b_i, T_hi_i);
+      const auto a_T_lo = Evaluate(F_i - 1, b_i, T_lo_i);
       alphas[F_i] = (1 - r_T) * a_T_lo + r_T * a_T_hi;
     }
     alphas.back() = a_cutoff;
@@ -394,7 +400,8 @@ ThermalScattering::Alpha ThermalScattering::AlphaPartition::Sample(
       const size_t partition_offset;
     };
 
-    indirect_effect->Visit(Visitor{target, f, alpha_coeffs, partition_offset});
+    indirect_effect->Visit(
+        Visitor{target, f, alpha_coeffs[this], partition_offset});
   }
   return alpha;
 }
