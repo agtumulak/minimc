@@ -342,8 +342,8 @@ ThermalScattering::Alpha ThermalScattering::AlphaPartition::Sample(
     std::vector<Alpha> alphas(Fs.size());
     alphas.front() = 0; // will be set to optimal value later in this function
     for (size_t F_i = 1; F_i < Fs.size() - 1; F_i++) {
-      const auto a_T_hi = Evaluate(F_i - 1, b_i, T_hi_i);
-      const auto a_T_lo = Evaluate(F_i - 1, b_i, T_lo_i);
+      const auto a_T_hi = autodiff::detail::exp(Evaluate(F_i - 1, b_i, T_hi_i));
+      const auto a_T_lo = autodiff::detail::exp(Evaluate(F_i - 1, b_i, T_lo_i));
       alphas[F_i] = (1 - r_T) * a_T_lo + r_T * a_T_hi;
     }
     alphas.back() = a_cutoff;
