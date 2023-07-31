@@ -29,7 +29,7 @@ class Particle;
 class ThermalScattering {
 public:
   /// @brief Dimensionless energy transfer
-  using Beta = Real;
+  using Beta = autodiff::var;
   /// @brief Dimensionless momentum transfer
   using Alpha = autodiff::var;
   /// @brief Constructs thermal scattering data from a `tnsl` node and target
@@ -56,22 +56,9 @@ public:
   void Scatter(Particle& p) const noexcept;
 
 private:
-  // encapsulates data required to sample a value of beta using proper
-  // orthogonal decomposition; limited to a given incident energy range
-  struct BetaPartition {
-    // constructs a BetaPartition from a `partition` node
-    BetaPartition(const pugi::xml_node& partition_node);
-    // evaluates beta using proper orthogonal decomposition and linear
-    // interpolation in T
-    Beta Evaluate(const size_t cdf_index, const size_t E_index, Temperature T)
-        const noexcept;
-    // contains CDF modes
-    const HDF5DataSet<2> CDF_modes;
-    // contains singular values
-    const HDF5DataSet<1> singular_values;
-    // contains energy and temperature modes
-    const HDF5DataSet<3> E_T_modes;
-  };
+  // each thread needs its own leaf nodes in expression trees
+  thread_local static std::map<const ThermalScattering*, autodiff::VectorXvar>
+      beta_coeffs;
   // encapsulates data required to sample a value of alpha using proper
   // orthogonal decomposition; limited to a given beta range
   struct AlphaPartition {
@@ -88,7 +75,7 @@ private:
     // linear interpolation in T
     Alpha Sample(
         Particle& p, const Nuclide& target, const size_t partition_offset,
-        const size_t b_i, const Beta b, const Temperature T,
+        const size_t b_i, const Real b, const Temperature T,
         const Real a_cutoff) const noexcept;
     // contains CDF modes
     const HDF5DataSet<2> CDF_modes;
@@ -99,9 +86,14 @@ private:
     // total number of elements in this partition (C++ Core Guidelines C.131)
     const size_t size;
   };
+  // sample cubic Hermite spline using J. Butland's method
+  static std::tuple<Real, autodiff::var> SolveCubic(
+      const std::array<autodiff::var, 4>& xs, const std::array<CDF, 4>& ys,
+      const Real y);
   // returns the optimal value for the first value and corresponding optimal
   // set of derivatives for a piecewise quadratic fit
-  static std::tuple<autodiff::var, std::vector<autodiff::var>> GetOptimalInitial(
+  static std::tuple<autodiff::var, std::vector<autodiff::var>>
+  GetOptimalInitial(
       const std::vector<autodiff::var>& xs,
       const std::vector<Real>& ys) noexcept;
   // evaluates a piecewise quadratic function at a point
@@ -116,34 +108,36 @@ private:
   // evaluates the inelastic scattering cross section.
   MacroscopicCrossSection
   EvaluateInelastic(const size_t E_index, const size_t T_index) const noexcept;
+  // evaluates beta using proper orthogonal decomposition
+  Beta EvaluateBeta(
+      const size_t cdf_index, const size_t E_index,
+      const size_t T_index) const noexcept;
   // Samples an outgoing energy. Requires Particle energy is strictly below
-  // ThermalScattering::cutoff_energy. Uses histogram interpolation in PDF.
-  Beta SampleBeta(Particle& p, ContinuousEnergy E, Temperature T) const;
+  // ThermalScattering::cutoff_energy.
+  Real SampleBeta(Particle& p, ContinuousEnergy E, Temperature T) const;
   // samples an outgoing cosine given an outgoing energy
   Real SampleAlpha(
-      Particle& p, const Beta& b, ContinuousEnergy E, Temperature T) const;
+      Particle& p, const Real& b, ContinuousEnergy E, Temperature T) const;
   // majorant cross section
   const ContinuousMap<ContinuousEnergy, MicroscopicCrossSection> majorant;
   // total scattering cross section POD coefficients
   const HDF5DataSet<2> scatter_xs_T;
   const HDF5DataSet<1> scatter_xs_S;
   const HDF5DataSet<2> scatter_xs_E;
-  // beta proper orthogonal decomposition coefficients
-  const std::vector<BetaPartition> beta_partitions;
-  // concatenated vector of all incident energies found in each partition
-  const std::vector<ContinuousEnergy> Es;
-  // A vector of one-past-the-last energy index for each partition
-  const std::vector<size_t> beta_partition_E_ends;
+  // log of offset beta CDF POD coefficients
+  const HDF5DataSet<2> beta_CDF_modes;
+  const HDF5DataSet<1> beta_singular_values;
+  const HDF5DataSet<3> beta_E_T_modes;
   // alpha proper orthogonal decomposition coefficients
   const std::vector<AlphaPartition> alpha_partitions;
   // concatenated vector of all betas found in each partition_ends
-  const std::vector<Beta> betas;
+  const std::vector<Real> betas;
   // identifies the global beta index where each partition begins
   const std::vector<size_t> alpha_partition_beta_begins;
   // start index of each alpha partition for sensitivity analysis
   const std::vector<size_t> alpha_partition_offsets;
   // maximum value of beta which can be sampled
-  const Beta beta_cutoff;
+  const Real beta_cutoff;
   // maximum value of alpha which can be sampled
   const Real alpha_cutoff;
   // the target Nuclide
