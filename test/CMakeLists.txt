@@ -9,7 +9,6 @@ set(UNIT_TEST_SOURCES
   test_Particle.cpp
   test_Perturbation.cpp
   test_Point.cpp
-  test_ThermalScattering.cpp
   test_XMLDocument.cpp
   test_World.cpp
   )
@@ -36,34 +35,6 @@ set(UNIT_TEST_INPUTS
   data/endfb8/n-U235_0-elastic.hdf5
   data/endfb8/n-U235_0-fission.hdf5
   data/endfb8/n-U235_0-nubar.hdf5
-  data/tnsl/endfb8/majorant_endfb8_safety_factor_1.05.hdf5
-  data/tnsl/endfb8/scatter_xs_endfb8_T_coeffs.hdf5
-  data/tnsl/endfb8/scatter_xs_endfb8_S_coeffs.hdf5
-  data/tnsl/endfb8/scatter_xs_endfb8_E_coeffs.hdf5
-  data/tnsl/endfb8/beta_endfb8_0_CDF_coeffs.hdf5
-  data/tnsl/endfb8/beta_endfb8_1_CDF_coeffs.hdf5
-  data/tnsl/endfb8/beta_endfb8_2_CDF_coeffs.hdf5
-  data/tnsl/endfb8/beta_endfb8_3_CDF_coeffs.hdf5
-  data/tnsl/endfb8/beta_endfb8_0_S_coeffs.hdf5
-  data/tnsl/endfb8/beta_endfb8_1_S_coeffs.hdf5
-  data/tnsl/endfb8/beta_endfb8_2_S_coeffs.hdf5
-  data/tnsl/endfb8/beta_endfb8_3_S_coeffs.hdf5
-  data/tnsl/endfb8/beta_endfb8_0_E_T_coeffs.hdf5
-  data/tnsl/endfb8/beta_endfb8_1_E_T_coeffs.hdf5
-  data/tnsl/endfb8/beta_endfb8_2_E_T_coeffs.hdf5
-  data/tnsl/endfb8/beta_endfb8_3_E_T_coeffs.hdf5
-  data/tnsl/endfb8/alpha_endfb8_0_CDF_coeffs.hdf5
-  data/tnsl/endfb8/alpha_endfb8_1_CDF_coeffs.hdf5
-  data/tnsl/endfb8/alpha_endfb8_2_CDF_coeffs.hdf5
-  data/tnsl/endfb8/alpha_endfb8_3_CDF_coeffs.hdf5
-  data/tnsl/endfb8/alpha_endfb8_0_S_coeffs.hdf5
-  data/tnsl/endfb8/alpha_endfb8_1_S_coeffs.hdf5
-  data/tnsl/endfb8/alpha_endfb8_2_S_coeffs.hdf5
-  data/tnsl/endfb8/alpha_endfb8_3_S_coeffs.hdf5
-  data/tnsl/endfb8/alpha_endfb8_0_beta_T_coeffs.hdf5
-  data/tnsl/endfb8/alpha_endfb8_1_beta_T_coeffs.hdf5
-  data/tnsl/endfb8/alpha_endfb8_2_beta_T_coeffs.hdf5
-  data/tnsl/endfb8/alpha_endfb8_3_beta_T_coeffs.hdf5
   test/absorbing_sphere_leakage_totalxs_sensitivity.xml
   test/continuous.xml
   test/continuous_invalid_nuclide_data_path.xml
@@ -80,7 +51,6 @@ set(UNIT_TEST_INPUTS
   test/point_source_leakage.xml
   test/test_HDF5_valid.hdf5
   test/test_HDF5_invalid.hdf5
-  test/test_ThermalScattering.xml
   test/test_XMLDocument.xsd
   test/test_XMLDocument_valid.xml
   test/test_XMLDocument_invalid.xml

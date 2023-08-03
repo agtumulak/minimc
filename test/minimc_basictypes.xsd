@@ -95,40 +95,18 @@
           <xs:element name="xs" type="ContinuousEvaluation"/>
           <xs:element name="tnsl" minOccurs="0">
             <xs:complexType>
-              <xs:all>
-                <xs:element name="beta_partitions" minOccurs="1">
-                  <xs:complexType>
-                    <xs:choice minOccurs="1" maxOccurs="unbounded">
-                      <xs:element name="partition" minOccurs="1" maxOccurs="unbounded">
-                        <xs:complexType>
-                          <xs:attribute name="CDF" type="xs:anyURI" use="required"/>
-                          <xs:attribute name="S" type="xs:anyURI" use="required"/>
-                          <xs:attribute name="E_T" type="xs:anyURI" use="required"/>
-                        </xs:complexType>
-                      </xs:element>
-                    </xs:choice>
-                  </xs:complexType>
-                </xs:element>
-                <xs:element name="alpha_partitions" minOccurs="1">
-                  <xs:complexType>
-                    <xs:choice minOccurs="1" maxOccurs="unbounded">
-                      <xs:element name="partition" minOccurs="1" maxOccurs="unbounded">
-                        <xs:complexType>
-                          <xs:attribute name="CDF" type="xs:anyURI" use="required"/>
-                          <xs:attribute name="S" type="xs:anyURI" use="required"/>
-                          <xs:attribute name="beta_T" type="xs:anyURI" use="required"/>
-                        </xs:complexType>
-                      </xs:element>
-                    </xs:choice>
-                  </xs:complexType>
-                </xs:element>
-              </xs:all>
               <xs:attribute name="majorant" type="xs:anyURI" use="required"/>
               <xs:attribute name="total_E" type="xs:anyURI" use="required"/>
               <xs:attribute name="total_T" type="xs:anyURI" use="required"/>
               <xs:attribute name="total_S" type="xs:anyURI" use="required"/>
               <xs:attribute name="beta_cutoff" type="StrictlyPositiveDouble" use="required"/>
+              <xs:attribute name="beta_CDF" type="xs:anyURI" use="required"/>
+              <xs:attribute name="beta_S" type="xs:anyURI" use="required"/>
+              <xs:attribute name="beta_E_T" type="xs:anyURI" use="required"/>
               <xs:attribute name="alpha_cutoff" type="StrictlyPositiveDouble" use="required"/>
+              <xs:attribute name="alpha_CDF" type="xs:anyURI" use="required"/>
+              <xs:attribute name="alpha_S" type="xs:anyURI" use="required"/>
+              <xs:attribute name="alpha_beta_T" type="xs:anyURI" use="required"/>
             </xs:complexType>
           </xs:element>
         </xs:all>
