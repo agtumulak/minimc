@@ -131,7 +131,7 @@ ThermalScattering::EvaluateG(const autodiff::var& s, const autodiff::var& t) {
   // adapted from "An Improved Monotone Piecewise Cubic Interpolation
   // Algorithm" by F. N. Fritsch and J. Butland (UCRL 85104)
   constexpr Real m = 3.; // 1 <= m <= 3; 2 is Butland; 3 is recommended
-  if (sv * tv > 0){
+  if (sv * tv > 0) {
     const auto u = std::abs(sv) < std::abs(tv) ? s : t;
     const auto v = std::abs(sv) > std::abs(tv) ? s : t;
     const auto r = u / v;
@@ -168,7 +168,7 @@ autodiff::var ThermalScattering::EvaluateCubic(
 
 std::tuple<Real, autodiff::var> ThermalScattering::SolveCubic(
     const std::array<autodiff::var, 4>& xs, const std::array<CDF, 4>& ys,
-    const Real y) {
+    const Real y) noexcept {
   // 4 neighboring points define 3 intervals. Identify 3 secant lines.
   const auto s01 = (ys[1] - ys[0]) / (xs[1] - xs[0]);
   const auto s12 = (ys[2] - ys[1]) / (xs[2] - xs[1]);
@@ -197,26 +197,22 @@ std::tuple<Real, autodiff::var> ThermalScattering::SolveCubic(
   const auto qbv = 2 * cbv;
   const auto qcv = ccv;
   // newton raphson method
-  constexpr size_t max_iterations = 20;
-  constexpr Real yprevp_eps = 1e-4;
-  constexpr Real t_tol = 1e-8;
+  // no need to count iterations or check for near-zero derivative because
+  // of monotonic interval and bounding of iterations
+  constexpr Real nr_epsilon = 1e-12;
   Real tprev = 0.5;
   Real tcur;
-  for (size_t i = 0; i < max_iterations; i++) {
+  while (true) {
     const Real yprev = cav * tprev * tprev * tprev + cbv * tprev * tprev +
                        ccv * tprev + (cdv - y);
     const Real yprevp = qav * tprev * tprev + qbv * tprev + qcv;
-    if (std::abs(yprevp) < yprevp_eps) {
-      throw std::runtime_error("derivative too small");
-    }
     tcur = tprev - yprev / yprevp;
-    if (std::abs(tcur - tprev) < t_tol) {
+    // bound next guess to resolve convergence problems for cubics
+    tcur = std::max(0., std::min(1., tcur));
+    if (std::abs(tcur - tprev) < nr_epsilon) {
       break;
     }
     tprev = tcur;
-    if (i == max_iterations - 1) {
-      throw std::runtime_error("max iterations exceeded");
-    }
   }
   Real sampled = tcur * (delta_x->val) + xs[1].expr->val;
   // evaluate derivative of y with respect to x; recall dy(x)/dx = dy(t)/dt
@@ -434,7 +430,7 @@ T ThermalScattering::EvaluateAlpha(
     }
     return autodiff::detail::exp(alpha);
   }
-  else if constexpr (std::is_same_v<T, Real>){
+  else if constexpr (std::is_same_v<T, Real>) {
     Alpha alpha = 0.;
     const size_t CDF_modes_offset = alpha_CDF_modes.GetOffset(cdf_index);
     const size_t beta_T_modes_offset =

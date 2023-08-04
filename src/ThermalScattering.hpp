@@ -68,7 +68,7 @@ private:
   // sample cubic Hermite spline using J. Butland's method
   static std::tuple<Real, autodiff::var> SolveCubic(
       const std::array<autodiff::var, 4>& xs, const std::array<CDF, 4>& ys,
-      const Real y);
+      const Real y) noexcept;
   // evaluates the inelastic scattering cross section.
   MacroscopicCrossSection
   EvaluateInelastic(const size_t E_index, const size_t T_index) const noexcept;
