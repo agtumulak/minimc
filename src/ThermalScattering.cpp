@@ -162,7 +162,7 @@ autodiff::var ThermalScattering::EvaluateCubic(
   const auto cc = delta_x * m1;
   const auto cd = ys[1];
   // evaluate cubic polynomial
-  const auto t = (x - xs[1].expr->val) / delta_x->val;
+  const auto t = (x - xs[1]) / delta_x;
   return ca * t * t * t + cb * t * t + cc * t + cd;
 }
 
@@ -215,8 +215,9 @@ std::tuple<Real, autodiff::var> ThermalScattering::SolveCubic(
     tprev = tcur;
   }
   Real sampled = tcur * (delta_x->val) + xs[1].expr->val;
-  // evaluate derivative of y with respect to x; recall dy(x)/dx = dy(t)/dt
-  const auto p_sampled = (qa * tcur * tcur + qb * tcur + qc);
+  // evaluate derivative of y with respect to x
+  const auto t = (sampled - xs[1]) / delta_x;
+  const auto p_sampled = (qa * t * t + qb * t + qc) / delta_x;
   return {sampled, p_sampled};
 }
 
