@@ -4,7 +4,6 @@
 #include <iosfwd>
 #include <memory>
 #include <string>
-#include <vector>
 
 namespace Estimator {
 class Interface;
@@ -56,25 +55,6 @@ protected:
   Interface(
       const pugi::xml_node& perturbation_node,
       const size_t n_perturbations) noexcept;
-};
-
-/// @brief Models a perturbation in a Nuclide microscopic total cross section
-///        @f$ \sigma_{\text{perturbed}}(E) = \sigma_{\text{unperturbed}}(E) +
-///        \delta \sigma @f$
-class TotalCrossSection : public Interface {
-public:
-  /// @brief Constructs a TotalCrossSection from a `perturbations/totalxs` node
-  ///        of an XML document
-  /// @exception std::runtime_error Perturbed Nuclide name not found in World
-  TotalCrossSection(const pugi::xml_node& totalxs_node, const World& world);
-  /// @brief Returns a Sensitiviity::TotalCrossSection
-  std::unique_ptr<Sensitivity::Interface>
-  CreateSensitivity(const Estimator::Interface& estimator) const noexcept final;
-  /// @brief Returns a IndirectEffect::TotalCrossSection
-  std::unique_ptr<IndirectEffect::Interface>
-  CreateIndirectEffect() const noexcept final;
-  /// @brief Nuclide whose microscopic total cross section is being perturbed
-  const std::shared_ptr<const Nuclide> nuclide;
 };
 
 /// @brief Models a perturbation in all parameters of a thermal neutron

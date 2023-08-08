@@ -40,8 +40,6 @@ ConstantField::ConstantField(const pugi::xml_node& scalar_field_node) noexcept
 
 ConstantField::ConstantField(const Real c) noexcept : ScalarField{c, c}, c{c} {}
 
-bool ConstantField::IsConstant() const noexcept { return true; }
-
 Real ConstantField::at(const Point&) const noexcept { return c; }
 
 // LinearField
@@ -52,7 +50,5 @@ LinearField::LinearField(const pugi::xml_node& scalar_field_node) noexcept
       scalar_field_node.child("bounds").attribute("lower").as_double()},
       g{scalar_field_node.child("gradient")},
       b{scalar_field_node.child("intercept").attribute("b").as_double()} {}
-
-bool LinearField::IsConstant() const noexcept { return g == Point{0, 0, 0}; }
 
 Real LinearField::at(const Point& p) const noexcept { return g.Dot(p) + b; }

@@ -6,8 +6,6 @@
 #include <memory>
 #include <vector>
 
-class Nuclide;
-
 namespace Perturbation {
 namespace IndirectEffect {
 
@@ -30,23 +28,6 @@ public:
   /// @brief Each element corresponds to a single parameter being perturbed
   std::vector<Real> indirect_effects =
       std::vector<Score>(perturbation.n_perturbations, 0.);
-};
-
-/// @brief Indirect effect for Perturbation::TotalCrossSection
-class TotalCrossSection : public Interface {
-public:
-  /// @brief Constructs indirect effect for a total cross section perturbation
-  ///        of a nuclide
-  TotalCrossSection(
-      const Perturbation::TotalCrossSection& perturbation) noexcept;
-  /// @brief Implements interface
-  void Visit(const Visitor& visitor) noexcept final;
-  /// @brief Returns a new total cross section perturbation instance
-  std::unique_ptr<Interface> Clone() const noexcept final;
-  /// @brief The nuclide whose total cross section is being perturbed
-  /// @details std::shared_ptr is used so std::map::find can be used on
-  ///          Material::afracs
-  const std::shared_ptr<const Nuclide> nuclide;
 };
 
 /// @brief Indirect effect for Perturbation::TNSL

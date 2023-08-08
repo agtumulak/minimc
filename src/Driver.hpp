@@ -14,16 +14,12 @@ class Interface;
 class Proxy;
 } // namespace Estimator
 namespace Perturbation {
-namespace IndirectEffect {
-class Visitor;
-}
 class Interface;
 } // namespace Perturbation
 namespace pugi {
 class xml_node;
 }
 class Particle;
-class StreamDelegate;
 
 /// @brief A Driver owns all the data needed to perform radiation transport
 class Driver {
@@ -60,8 +56,6 @@ protected:
   /// @brief Used to initialize each thread's own estimator as well as
   ///        accumulate results from each thread
   const std::vector<std::unique_ptr<Estimator::Interface>> estimators;
-  /// @brief Composition over inheritance delegate for sampling next position
-  const std::unique_ptr<const StreamDelegate> stream_delegate;
 
 public:
   /// @brief Path to save results (C++ Core Guidelines C.131)
@@ -77,8 +71,7 @@ public:
   const RNG::result_type seed;
 
 private:
-  // Interface for updating each indirect effect after colliding at the current
-  // position.
-  std::unique_ptr<const Perturbation::IndirectEffect::Visitor>
-  GetCollideWithinCellIndirectEffectVisitor(const Particle& p) const noexcept;
+  // stream until a collision event
+  void Stream(Particle& p, std::vector<Estimator::Proxy>& estimator_proxies)
+      const noexcept;
 };

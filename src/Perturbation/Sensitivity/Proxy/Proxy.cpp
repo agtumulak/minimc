@@ -8,7 +8,6 @@
 
 #include <algorithm>
 #include <cassert>
-#include <type_traits>
 
 using namespace Perturbation::Sensitivity::Proxy;
 
@@ -35,24 +34,6 @@ void Interface::SetIndirectEffects(const Particle& p) noexcept {
 
 const std::vector<Real>& Interface::GetIndirectEffects() const noexcept {
   return indirect_effect->indirect_effects;
-}
-
-// TotalCrossSection
-
-//// public
-
-TotalCrossSection::TotalCrossSection(
-    Sensitivity::Interface& sensitivity) noexcept
-    : Interface{sensitivity} {}
-
-void TotalCrossSection::Visit(const Visitor& visitor) noexcept {
-  visitor.Visit(*this);
-}
-
-void TotalCrossSection::CommitHistory() const noexcept {
-  for (const auto& [index, score] : pending_scores) {
-    sensitivity.AddScore(index, score);
-  }
 }
 
 // TNSL

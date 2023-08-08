@@ -7,7 +7,6 @@ set(UNIT_TEST_SOURCES
   test_Material.cpp
   test_Nuclide.cpp
   test_Particle.cpp
-  test_Perturbation.cpp
   test_Point.cpp
   test_XMLDocument.cpp
   test_World.cpp
@@ -18,12 +17,6 @@ target_link_libraries(all_tests PRIVATE Catch2::Catch2WithMain minimc)
 # Add unit test input files here
 # Prefixes are stripped so duplicate filenames must not appear
 set(UNIT_TEST_INPUTS
-  data/debug/uniform-0.975b.hdf5
-  data/debug/uniform-1.000b.hdf5
-  data/debug/uniform-1.025b.hdf5
-  data/debug/uniform-1.950b.hdf5
-  data/debug/uniform-2.000b.hdf5
-  data/debug/uniform-2.050b.hdf5
   data/endfb8/n-H1_0-total.hdf5
   data/endfb8/n-H1_0-gamma.hdf5
   data/endfb8/n-H1_0-elastic.hdf5
@@ -35,7 +28,6 @@ set(UNIT_TEST_INPUTS
   data/endfb8/n-U235_0-elastic.hdf5
   data/endfb8/n-U235_0-fission.hdf5
   data/endfb8/n-U235_0-nubar.hdf5
-  test/absorbing_sphere_leakage_totalxs_sensitivity.xml
   test/continuous.xml
   test/continuous_invalid_nuclide_data_path.xml
   test/minimc.xsd
@@ -45,9 +37,6 @@ set(UNIT_TEST_INPUTS
   test/multigroup_malformed_scatter.xml
   test/multigroup_missing_particle_data.xml
   test/multigroup_nonexistent_nuclide.xml
-  test/nonmultiplying_sphere_leakage_totalxs_perturb_hi.xml
-  test/nonmultiplying_sphere_leakage_totalxs_perturb_lo.xml
-  test/nonmultiplying_sphere_leakage_totalxs_sensitivity.xml
   test/point_source_leakage.xml
   test/test_HDF5_valid.hdf5
   test/test_HDF5_invalid.hdf5

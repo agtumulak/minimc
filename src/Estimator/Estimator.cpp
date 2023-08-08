@@ -158,12 +158,6 @@ Current::GetSensitivityProxyVisitor(
   public:
     Visitor(const Particle& p, const BinIndex i, const Score s) noexcept
         : Perturbation::Sensitivity::Proxy::Visitor{p, i, s} {};
-    void Visit(Perturbation::Sensitivity::Proxy::TotalCrossSection& proxy)
-        const noexcept final {
-      // perturbing the total cross section only has an indirect effect
-      const auto& indirect_effect = proxy.GetIndirectEffects().front();
-      proxy.pending_scores[index] += indirect_effect * score;
-    }
     void
     Visit(Perturbation::Sensitivity::Proxy::TNSL& proxy) const noexcept final {
       // perturbing TNSL only has an indirect effect

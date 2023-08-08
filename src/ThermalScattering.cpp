@@ -53,7 +53,7 @@ bool ThermalScattering::IsValid(const Particle& p) const noexcept {
 }
 
 MicroscopicCrossSection
-ThermalScattering::GetMajorant(const Particle& p) const noexcept {
+ThermalScattering::GetCellMajorant(const Particle& p) const noexcept {
   return majorant.at(std::get<ContinuousEnergy>(p.GetEnergy()));
 }
 

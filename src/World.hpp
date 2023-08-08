@@ -32,10 +32,6 @@ public:
   /// @todo More than one Cell may contain a Particle. This should be checked
   ///       during input parsing if possible.
   const Cell& FindCellContaining(const Point& p) const;
-  /// @brief Returns true if global temperature has no spatial
-  ///        dependence
-  /// @todo Check each Cell if it has constant temperature dependence
-  bool HasConstantTemperature() const noexcept;
   /// @brief Returns the CSGSurface with the given name
   /// @exception std::runtime_error CSGSurface with given name not found
   /// @todo Template this and FindNuclideByName

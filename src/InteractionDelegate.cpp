@@ -67,7 +67,7 @@ const std::optional<ThermalScattering>& Continuous::GetTNSL() const {
 }
 
 MicroscopicCrossSection
-Continuous::GetMajorant(const Particle& p) const noexcept {
+Continuous::GetCellMajorant(const Particle& p) const noexcept {
   // majorant cross section is assumed to occur at maximum temperature in Cell
   const auto majorant_temperature = p.GetCell().temperature->upper_bound;
   if (!ReactionsModifyTotal(p) && total.IsValid(majorant_temperature)) {
@@ -77,7 +77,7 @@ Continuous::GetMajorant(const Particle& p) const noexcept {
     return std::accumulate(
         reactions.cbegin(), reactions.cend(), MicroscopicCrossSection{0},
         [&p](const auto& accumulated, const auto& reaction) {
-          return accumulated + reaction->GetMajorant(p);
+          return accumulated + reaction->GetCellMajorant(p);
         });
   }
 }
@@ -149,7 +149,7 @@ const std::optional<ThermalScattering>& Multigroup::GetTNSL() const {
 }
 
 MicroscopicCrossSection
-Multigroup::GetMajorant(const Particle& p) const noexcept {
+Multigroup::GetCellMajorant(const Particle& p) const noexcept {
   return GetTotal(p);
 }
 

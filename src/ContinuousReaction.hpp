@@ -44,7 +44,8 @@ public:
   /// @brief Returns the largest cross section that may be found within the
   ///        current Cell
   /// @details Currently wraps GetCrossSection
-  virtual MicroscopicCrossSection GetMajorant(const Particle& p) const noexcept;
+  virtual MicroscopicCrossSection
+  GetCellMajorant(const Particle& p) const noexcept;
   /// @brief Returns temperature-adjusted cross section for the reaction
   /// @details Currently returns the cross section without considering
   ///          temperature
@@ -94,7 +95,7 @@ public:
   ///          Performs temperature adjustments from free gas or thermal
   ///          scattering, if applicable.
   MicroscopicCrossSection
-  GetMajorant(const Particle& p) const noexcept override;
+  GetCellMajorant(const Particle& p) const noexcept override;
   /// @brief Returns appropriately-adjusted scattering cross section
   /// @details Thermal neutron scattering is assumed to encompass both elastic
   ///          and inelastic scattering. Performs temperature adjustments from

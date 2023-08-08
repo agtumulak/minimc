@@ -50,21 +50,6 @@ protected:
   Sensitivity::Interface& sensitivity;
 };
 
-/// @brief Buffers sensitivities for the original TotalCrossSection sensitivity
-///        before comitting the history
-class TotalCrossSection : public Interface {
-public:
-  /// @brief Constructs a sensitivity proxy for a total cross section sensitivty
-  TotalCrossSection(Sensitivity::Interface& sensitivity) noexcept;
-  /// @brief Implements Interface method
-  void Visit(const Visitor& visitor) noexcept final;
-  /// @brief Implements Interface method
-  void CommitHistory() const noexcept final;
-  /// @brief TotalCrossSection only perturbs one parameter so indices correspond
-  ///        to bin index
-  std::map<BinIndex, Score> pending_scores;
-};
-
 /// @brief Buffers sensitivities for the original TNSL sensitivity before
 ///        comitting the history
 class TNSL : public Interface {

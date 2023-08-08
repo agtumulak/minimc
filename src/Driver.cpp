@@ -1,26 +1,26 @@
 #include "Driver.hpp"
 
 #include "Cell.hpp"
+#include "Constants.hpp"
 #include "Estimator/Estimator.hpp"
 #include "Estimator/Proxy.hpp"
+#include "Estimator/Visitor.hpp"
 #include "FixedSource.hpp"
 #include "Material.hpp"
 #include "Nuclide.hpp"
 #include "Particle.hpp"
-#include "Perturbation/IndirectEffect/IndirectEffect.hpp"
-#include "Perturbation/IndirectEffect/Visitor.hpp"
 #include "Perturbation/Perturbation.hpp"
+#include "Point.hpp"
 #include "Reaction.hpp"
-#include "StreamDelegate.hpp"
 #include "XMLDocument.hpp"
 #include "pugixml.hpp"
 
 #include <cassert>
-#include <iosfwd>
 #include <map>
+#include <random>
 #include <string>
-#include <type_traits>
-#include <utility>
+
+class CSGSurface;
 
 // Driver
 
@@ -61,7 +61,6 @@ Driver::Driver(
         }
         return result;
       }()},
-      stream_delegate{StreamDelegate::Create(root, world)},
       output_filepath{output_filepath},
       total_weight{
           std::stoull(root.child("general").child("histories").child_value())},
@@ -84,14 +83,10 @@ void Driver::Transport(
   // Perturbation::Sensitivity::Proxy::Interface at the beginning of Transport
   // rather than search it each time an Estimator is scored
   while (p.IsAlive()) {
-    // sample the next position
-    stream_delegate->Stream(p, estimator_proxies, world);
+    // sample the next collision point
+    Stream(p, estimator_proxies);
     if (p.reaction == Reaction::leak) {
       break;
-    }
-    // update indirect effects after colliding at the current position
-    for (auto& indirect_effect : p.indirect_effects) {
-      indirect_effect->Visit(*GetCollideWithinCellIndirectEffectVisitor(p));
     }
     // sample the next Nuclide, currently no need to delegate this
     const auto& sampled_nuclide = [&p]() {
@@ -115,25 +110,51 @@ void Driver::Transport(
 
 //// private
 
-std::unique_ptr<const Perturbation::IndirectEffect::Visitor>
-Driver::GetCollideWithinCellIndirectEffectVisitor(
-    const Particle& p) const noexcept {
-  class Visitor : public Perturbation::IndirectEffect::Visitor {
-  public:
-    Visitor(const Particle& p) : p{p} {};
-    void Visit(Perturbation::IndirectEffect::TotalCrossSection& indirect_effect)
-        const noexcept final {
-      const auto& material = *p.GetCell().material;
-      if (const auto& afrac_it = material.afracs.find(indirect_effect.nuclide);
-          afrac_it != material.afracs.cend()) {
-        indirect_effect.indirect_effects.front() +=
-            material.number_density * afrac_it->second /
-            material.GetMicroscopicTotal(p);
+void Driver::Stream(
+    Particle& p,
+    std::vector<Estimator::Proxy>& estimator_proxies) const noexcept {
+  while (true) {
+    const auto distance_to_collision = std::exponential_distribution{
+        p.GetCell().material->number_density *
+        p.GetCell().material->GetMicroscopicCellMajorant(p)}(p.rng);
+    const auto [nearest_surface, distance_to_surface_crossing] =
+        p.GetCell().NearestSurface(p.GetPosition(), p.GetDirection());
+    // check if collision within Cell has occured
+    if (distance_to_collision < distance_to_surface_crossing) {
+      // move the Particle to new position
+      p.SetPosition(p.GetPosition() + p.GetDirection() * distance_to_collision);
+      // this is where I would score track length estimators...if I had one
+      // caller handles collision
+      return;
+    }
+    else {
+      // collision did not occur so Particle has streamed to adjacent Cell
+      p.SetPosition(
+          p.GetPosition() +
+          p.GetDirection() * (distance_to_collision + constants::nudge));
+      const auto& new_cell = world.FindCellContaining(p.GetPosition());
+      p.SetCell(new_cell);
+      // update Estimator objects
+      for (auto& estimator_proxy : estimator_proxies) {
+        class Visitor : public Estimator::Visitor {
+        public:
+          Visitor(const Particle& p, const CSGSurface& s)
+              : Estimator::Visitor{p}, s{s} {}
+          Score Visit(const Estimator::Current& current_estimator)
+              const noexcept final {
+            return current_estimator.surface.get() == &s ? 1 : 0;
+          }
+
+        private:
+          const CSGSurface& s;
+        };
+        estimator_proxy.Visit(Visitor(p, *nearest_surface));
+      }
+      // if Particle leaked, update Reaction
+      if (new_cell.IsVoid()) {
+        p.reaction = Reaction::leak;
+        break;
       }
     }
-
-  private:
-    const Particle& p;
-  };
-  return std::make_unique<const Visitor>(p);
+  }
 }

@@ -29,7 +29,7 @@ public:
   ///       line count too much.
   Nuclide(const pugi::xml_node& nuclide_node);
   /// @brief Returns the majorant cross section for a given Particle
-  MicroscopicCrossSection GetMajorant(const Particle& p) const noexcept;
+  MicroscopicCrossSection GetCellMajorant(const Particle& p) const noexcept;
   /// @brief Returns the total cross section for a given Particle
   MicroscopicCrossSection GetTotal(const Particle& p) const noexcept;
   /// @brief Interact with a Particle, updating its state

@@ -32,7 +32,7 @@ public:
   virtual const std::optional<ThermalScattering>& GetTNSL() const = 0;
   /// @brief Returns the majorant cross section for a given Particle
   virtual MicroscopicCrossSection
-  GetMajorant(const Particle& p) const noexcept = 0;
+  GetCellMajorant(const Particle& p) const noexcept = 0;
   /// @brief Returns the total cross section for a given Particle
   virtual MicroscopicCrossSection
   GetTotal(const Particle& p) const noexcept = 0;
@@ -55,7 +55,7 @@ public:
   /// @details Currently this is the cross section at the majorant temperature
   ///          in the Cell
   MicroscopicCrossSection
-  GetMajorant(const Particle& p) const noexcept override;
+  GetCellMajorant(const Particle& p) const noexcept override;
   /// @brief Returns the total cross section for a given Particle
   /// @details This is not guaranteed to be consistent with the sum of all
   ///          mutually exclusive reactions. The total cross section is meant
@@ -98,7 +98,7 @@ public:
   /// @brief Returns the total cross section for a given Particle, currently
   ///        the same as GetTotal().
   MicroscopicCrossSection
-  GetMajorant(const Particle& p) const noexcept override;
+  GetCellMajorant(const Particle& p) const noexcept override;
   /// @brief Returns the total cross section for a given Particle
   MicroscopicCrossSection GetTotal(const Particle& p) const noexcept override;
   /// @brief Interact with a Particle, updating its state

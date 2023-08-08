@@ -19,9 +19,6 @@ public:
   ScalarField(Real upper_bound, Real lower_bound) noexcept;
   /// @brief Virtual destructor (C++ Core Guidelines C.127)
   virtual ~ScalarField() noexcept;
-  /// @brief Returns true if the field is constant
-  /// @details Used during input parsing to check if a StreamDelegate is valid
-  virtual bool IsConstant() const noexcept = 0;
   /// @brief Returns the value at a given Point
   virtual Real at(const Point& p) const noexcept = 0;
   /// @brief Upper bound on values that will be encountered (C++ Core
@@ -39,8 +36,6 @@ public:
   ConstantField(const pugi::xml_node& scalar_field_node) noexcept;
   /// @brief Constructs a constant field from a given constant
   ConstantField(const Real c) noexcept;
-  /// @brief Returns true because a ConstantField is constant
-  bool IsConstant() const noexcept override;
   /// @brief Returns the constant value (C++ Core Guidelines F.9)
   Real at(const Point&) const noexcept override;
 
@@ -58,8 +53,6 @@ class LinearField : public ScalarField {
 public:
   /// @brief Constructs a linear field from a `linear` scalar field node
   LinearField(const pugi::xml_node& scalar_field_node) noexcept;
-  /// @brief Returns true iff the gradient of the linear field is zero
-  bool IsConstant() const noexcept override;
   /// @brief Returns the linearly dependent value
   Real at(const Point& p) const noexcept override;
 private:

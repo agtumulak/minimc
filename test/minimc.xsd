@@ -14,7 +14,6 @@
             <xs:element name="threads" type="xs:positiveInteger"/>
             <xs:element name="chunksize" type="xs:positiveInteger"/>
             <xs:element name="seed" type="xs:positiveInteger" minOccurs="0"/>
-            <xs:element name="tracking" type="TrackingType" minOccurs="0"/>
           </xs:all>
         </xs:complexType>
       </xs:element>
@@ -158,15 +157,6 @@
       <xs:element name="perturbations" minOccurs="0">
         <xs:complexType>
           <xs:choice minOccurs="1" maxOccurs="unbounded">
-            <xs:element name="totalxs">
-              <xs:complexType>
-                <xs:complexContent>
-                  <xs:extension base="PerturbationBase">
-                    <xs:attribute name="nuclide" type="xs:normalizedString" use="required"/>
-                  </xs:extension>
-                </xs:complexContent>
-              </xs:complexType>
-            </xs:element>
             <xs:element name="tnsl">
               <xs:complexType>
                 <xs:complexContent>

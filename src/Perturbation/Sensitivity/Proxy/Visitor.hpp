@@ -18,8 +18,6 @@ public:
   Visitor(const Particle& p, const BinIndex i, const Score s) noexcept;
   /// @brief Virtual destructor (C++ Core Guidelines C.127)
   virtual ~Visitor() noexcept;
-  /// @brief Interface for interacting with TotalCrossSection sensitivity proxy
-  virtual void Visit(TotalCrossSection& proxy) const noexcept = 0;
   /// @brief Interface for interacting with TNSL sensitivity proxy
   virtual void Visit(TNSL& proxy) const noexcept = 0;
   /// @brief Particle which is scoring

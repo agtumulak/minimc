@@ -52,7 +52,7 @@ bool ContinuousReaction::ModifiesTotal(const Particle&) const noexcept {
 }
 
 MicroscopicCrossSection
-ContinuousReaction::GetMajorant(const Particle& p) const noexcept {
+ContinuousReaction::GetCellMajorant(const Particle& p) const noexcept {
   return GetCrossSection(p);
 }
 
@@ -86,9 +86,9 @@ bool ContinuousScatter::ModifiesTotal(const Particle& p) const noexcept {
 }
 
 MicroscopicCrossSection
-ContinuousScatter::GetMajorant(const Particle& p) const noexcept {
+ContinuousScatter::GetCellMajorant(const Particle& p) const noexcept {
   if (tnsl.has_value() && tnsl->IsValid(p)) {
-    return tnsl->GetMajorant(p);
+    return tnsl->GetCellMajorant(p);
   }
   else if (const auto T_max = p.GetCell().temperature->upper_bound;
            evaluation.IsValid(T_max)) {

@@ -71,24 +71,6 @@ protected:
       std::vector<Score>(bins.size() * perturbation.n_perturbations, 0.);
 };
 
-/// @brief Estimates the sensitivity with respect to a total cross section
-///        perturbation
-class TotalCrossSection : public Interface {
-public:
-  /// @brief Constructs a total cross section perturbation sensitivity from an
-  ///        estimator and perturbation
-  TotalCrossSection(
-      const Estimator::Interface& estimator,
-      const Perturbation::Interface& perturbation) noexcept;
-  /// @brief Virtual copy constructor
-  std::unique_ptr<Interface> Clone() const noexcept final;
-  /// @brief Create a proxy for this sensitivity
-  std::unique_ptr<Proxy::Interface> CreateProxy() noexcept final;
-  /// @brief Returns a string of total cross section perturbation sensitivities
-  ///        suitable for printing
-  std::string to_string(const Real total_weight) const noexcept final;
-};
-
 /// @brief Estimates the sensitivity with respect to all parameters of a
 ///        thermal neutron scattering law dataset
 class TNSL : public Interface {

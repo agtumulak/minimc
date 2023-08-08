@@ -11,7 +11,6 @@
 #include <numeric>
 #include <stdexcept>
 #include <string>
-#include <type_traits>
 
 // World
 
@@ -34,10 +33,6 @@ const Cell& World::FindCellContaining(const Point& p) const {
   throw std::runtime_error(
       "Point does not belong to any Cell. Please check"
       "that all space is either assigned a material or void.");
-}
-
-bool World::HasConstantTemperature() const noexcept {
-  return temperature->IsConstant();
 }
 
 std::shared_ptr<const CSGSurface>

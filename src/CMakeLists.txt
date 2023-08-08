@@ -57,8 +57,6 @@ set(MINIMC_SOURCES
   ScalarField.hpp
   Source.cpp
   Source.hpp
-  StreamDelegate.cpp
-  StreamDelegate.hpp
   ThermalScattering.cpp
   ThermalScattering.hpp
   World.cpp

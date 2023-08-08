@@ -49,8 +49,9 @@ Nuclide::Nuclide(const pugi::xml_node& nuclide_node)
         return xs;
       }()} {}
 
-MicroscopicCrossSection Nuclide::GetMajorant(const Particle& p) const noexcept {
-  return xs.at(p.type)->GetMajorant(p);
+MicroscopicCrossSection
+Nuclide::GetCellMajorant(const Particle& p) const noexcept {
+  return xs.at(p.type)->GetCellMajorant(p);
 }
 
 MicroscopicCrossSection Nuclide::GetTotal(const Particle& p) const noexcept {

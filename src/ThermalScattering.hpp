@@ -46,8 +46,8 @@ public:
   ///          \Sigma_{\text{elastic}}(E) + \Sigma_{\text{inelastic}}(E) @f$
   ///          because @f$ \beta = 0 @f$ corresponds to elastic scattering.
   /// @todo Throw exception when temperature is out of range
-  MicroscopicCrossSection GetMajorant(const Particle& p) const noexcept;
-  /// @brief Returns the total cross section
+  MicroscopicCrossSection GetCellMajorant(const Particle& p) const noexcept;
+  /// @brief Returns the majorant cross section
   /// @details Currently implemented using bilinear interpolation in
   ///          energy and temperature.
   /// @todo Avoid calling HDF5DataSet::at for each order since order
