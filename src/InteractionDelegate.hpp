@@ -33,9 +33,6 @@ public:
   /// @brief Returns the majorant cross section for a given Particle
   virtual MicroscopicCrossSection
   GetCellMajorant(const Particle& p) const noexcept = 0;
-  /// @brief Returns the total cross section for a given Particle
-  virtual MicroscopicCrossSection
-  GetTotal(const Particle& p) const noexcept = 0;
   /// @brief Interact with a Particle, updating its state
   virtual void Interact(
       Particle& p,
@@ -56,26 +53,16 @@ public:
   ///          in the Cell
   MicroscopicCrossSection
   GetCellMajorant(const Particle& p) const noexcept override;
-  /// @brief Returns the total cross section for a given Particle
-  /// @details This is not guaranteed to be consistent with the sum of all
-  ///          mutually exclusive reactions. The total cross section is meant
-  ///          to be a user-provided quantity to speed up calculations.
-  MicroscopicCrossSection GetTotal(const Particle& p) const noexcept override;
   /// @brief Interact with a Particle, updating its state
   void Interact(Particle& p, std::vector<Estimator::Proxy>& estimator_proxies)
       const noexcept override;
 
 private:
-  // Returns true if any reaction modifies the total cross section even if the
-  // total cross section was evaluated at the target temperature
-  bool ReactionsModifyTotal(const Particle& p) const noexcept;
   // Thermal neutron scattering law S(a,b,T). Must be initialized before
   // `reactions` since ContinuousScatter uses a reference to `tnsl`
   const std::optional<ThermalScattering> tnsl;
   // Cross section data for mutually exclusive reactions
   const std::vector<std::unique_ptr<const ContinuousReaction>> reactions;
-  // Total cross section provided in nuclear data files
-  const ContinuousEvaluation total;
 };
 
 /// @brief Contains cross sections which are indexed by discrete energy groups
@@ -95,12 +82,10 @@ public:
   Multigroup(const pugi::xml_node& particle_node);
   /// @brief Throws an exception for multigroup physics
   const std::optional<ThermalScattering>& GetTNSL() const final;
-  /// @brief Returns the total cross section for a given Particle, currently
-  ///        the same as GetTotal().
+  /// @brief Returns the majorant cross section for a given Particle, currently
+  ///        just returns the total cross section
   MicroscopicCrossSection
   GetCellMajorant(const Particle& p) const noexcept override;
-  /// @brief Returns the total cross section for a given Particle
-  MicroscopicCrossSection GetTotal(const Particle& p) const noexcept override;
   /// @brief Interact with a Particle, updating its state
   void Interact(Particle& p, std::vector<Estimator::Proxy>& estimator_proxies)
       const noexcept override;

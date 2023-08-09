@@ -35,10 +35,7 @@ public:
   /// @brief Return the majorant <em>microscopic</em> cross section
   /// @details This is not to be confused with the <em>global</em> majorant
   ///          across all Materials in the problem
-  MicroscopicCrossSection
-  GetMicroscopicCellMajorant(const Particle& p) const noexcept;
-  /// @brief Return the total <em>microscopic</em> cross section
-  MicroscopicCrossSection GetMicroscopicTotal(const Particle& p) const noexcept;
+  MicroscopicCrossSection GetCellMajorant(const Particle& p) const noexcept;
   /// @brief Unique, user-defined identifier (C++ Core Guidelines C.131)
   const std::string name;
   /// @brief All Nuclide objects which make up this Material and their

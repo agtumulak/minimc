@@ -6,13 +6,11 @@
   <histories>100000000</histories>
   <threads>8</threads>
   <chunksize>100000</chunksize>
-  <tracking>surface</tracking>
 </general>
 <nuclides>
   <continuous>
     <nuclide name="hydrogen in water" awr="0.99916733">
       <neutron>
-        <total file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-total.hdf5" temperature="293.6"/>
         <capture file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-gamma.hdf5" temperature="293.6"/>
         <scatter>
           <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-elastic.hdf5" temperature="293.6"/>

@@ -11,7 +11,6 @@
   <continuous>
     <nuclide name="badpath" awr="1.0">
       <neutron>
-        <total file="/not/real" temperature="293.6"/>
         <capture file="/not/real" temperature="293.6"/>
         <scatter>
           <xs file="/not/real" temperature="293.6"/>

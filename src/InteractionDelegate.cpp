@@ -1,12 +1,9 @@
 #include "InteractionDelegate.hpp"
 
-#include "Cell.hpp"
-#include "ContinuousMap.hpp"
 #include "ContinuousReaction.hpp"
 #include "Particle.hpp"
 #include "Point.hpp"
 #include "Reaction.hpp"
-#include "ScalarField.hpp"
 #include "pugixml.hpp"
 
 #include <algorithm>
@@ -19,7 +16,6 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <type_traits>
 #include <variant>
 
 // InteractionDelegate
@@ -52,15 +48,11 @@ Continuous::Continuous(
         std::vector<std::unique_ptr<const ContinuousReaction>> reactions;
         for (const auto& reaction_node : particle_node) {
           const std::string reaction_name = reaction_node.name();
-          if (reaction_name == "total") {
-            continue; // skip total cross section
-          }
           reactions.emplace_back(
               ContinuousReaction::Create(reaction_node, target, tnsl));
         }
         return reactions;
-      }()},
-      total{particle_node.child("total")} {}
+      }()} {}
 
 const std::optional<ThermalScattering>& Continuous::GetTNSL() const {
   return tnsl;
@@ -68,43 +60,21 @@ const std::optional<ThermalScattering>& Continuous::GetTNSL() const {
 
 MicroscopicCrossSection
 Continuous::GetCellMajorant(const Particle& p) const noexcept {
-  // majorant cross section is assumed to occur at maximum temperature in Cell
-  const auto majorant_temperature = p.GetCell().temperature->upper_bound;
-  if (!ReactionsModifyTotal(p) && total.IsValid(majorant_temperature)) {
-    return total.xs.at(std::get<ContinuousEnergy>(p.GetEnergy()));
-  }
-  else {
-    return std::accumulate(
-        reactions.cbegin(), reactions.cend(), MicroscopicCrossSection{0},
-        [&p](const auto& accumulated, const auto& reaction) {
-          return accumulated + reaction->GetCellMajorant(p);
-        });
-  }
-}
-
-MicroscopicCrossSection Continuous::GetTotal(const Particle& p) const noexcept {
-  const auto requested_temperature =
-      p.GetCell().temperature->at(p.GetPosition());
-  if (!ReactionsModifyTotal(p) && total.IsValid(requested_temperature)) {
-    return total.xs.at(std::get<ContinuousEnergy>(p.GetEnergy()));
-  }
-  else {
-    return std::accumulate(
-        reactions.cbegin(), reactions.cend(), MicroscopicCrossSection{0},
-        [&p](const auto& accumulated, const auto& reaction) {
-          return accumulated + reaction->GetCrossSection(p);
-        });
-  }
+  return std::accumulate(
+      reactions.cbegin(), reactions.cend(), MicroscopicCrossSection{0},
+      [&p](const auto& accumulated, const auto& reaction) {
+        return accumulated + reaction->GetCellMajorant(p);
+      });
 }
 
 void Continuous::Interact(
     Particle& p,
     std::vector<Estimator::Proxy>& estimator_proxies) const noexcept {
   const MicroscopicCrossSection threshold =
-      std::uniform_real_distribution{}(p.rng) * GetTotal(p);
+      std::uniform_real_distribution{}(p.rng) * GetCellMajorant(p);
   MicroscopicCrossSection accumulated{0};
   for (const auto& candidate : reactions) {
-    accumulated += candidate->GetCrossSection(p);
+    accumulated += candidate->GetCellMajorant(p);
     if (accumulated > threshold) {
       candidate->Interact(p, estimator_proxies);
       return;
@@ -112,14 +82,6 @@ void Continuous::Interact(
   }
   // If no reaction found, resample tail-recursively
   return Interact(p, estimator_proxies);
-}
-
-//// private
-
-bool Continuous::ReactionsModifyTotal(const Particle& p) const noexcept {
-  return std::any_of(
-      reactions.cbegin(), reactions.cend(),
-      [&p](const auto& reaction) { return reaction->ModifiesTotal(p); });
 }
 
 // Multigroup
@@ -150,10 +112,6 @@ const std::optional<ThermalScattering>& Multigroup::GetTNSL() const {
 
 MicroscopicCrossSection
 Multigroup::GetCellMajorant(const Particle& p) const noexcept {
-  return GetTotal(p);
-}
-
-MicroscopicCrossSection Multigroup::GetTotal(const Particle& p) const noexcept {
   return total.at(std::get<Group>(p.GetEnergy()));
 }
 
@@ -161,7 +119,7 @@ void Multigroup::Interact(
     Particle& p,
     std::vector<Estimator::Proxy>& estimator_proxies) const noexcept {
   const MicroscopicCrossSection threshold{
-      std::uniform_real_distribution{}(p.rng) * GetTotal(p)};
+      std::uniform_real_distribution{}(p.rng) * GetCellMajorant(p)};
   MicroscopicCrossSection accumulated{0};
   for (const auto& [reaction, xs] : reactions) {
     accumulated += xs.at(std::get<Group>(p.GetEnergy()));

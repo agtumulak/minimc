@@ -11,7 +11,6 @@
   <continuous>
     <nuclide name="hydrogen" awr="0.999167339">
       <neutron>
-        <total file="n-H1_0-total.hdf5" temperature="293.6"/>
         <capture file="n-H1_0-gamma.hdf5" temperature="293.6"/>
         <scatter>
           <xs file="n-H1_0-elastic.hdf5" temperature="293.6"/>
@@ -20,7 +19,6 @@
     </nuclide>
     <nuclide name="oxygen" awr="15.8575107">
       <neutron>
-        <total file="n-O16_0-total.hdf5" temperature="293.6"/>
         <capture file="n-O16_0-gamma.hdf5" temperature="293.6"/>
         <scatter>
           <xs file="n-O16_0-elastic.hdf5" temperature="293.6"/>
@@ -29,7 +27,6 @@
     </nuclide>
     <nuclide name="uranium235" awr="233.024791">
       <neutron>
-        <total file="n-U235_0-total.hdf5" temperature="293.6"/>
         <capture file="n-U235_0-gamma.hdf5" temperature="293.6"/>
         <scatter>
           <xs file="n-U235_0-elastic.hdf5" temperature="293.6"/>

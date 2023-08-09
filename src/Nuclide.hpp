@@ -30,8 +30,6 @@ public:
   Nuclide(const pugi::xml_node& nuclide_node);
   /// @brief Returns the majorant cross section for a given Particle
   MicroscopicCrossSection GetCellMajorant(const Particle& p) const noexcept;
-  /// @brief Returns the total cross section for a given Particle
-  MicroscopicCrossSection GetTotal(const Particle& p) const noexcept;
   /// @brief Interact with a Particle, updating its state
   void Interact(Particle& p, std::vector<Estimator::Proxy>& estimator_proxies)
       const noexcept;

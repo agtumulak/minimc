@@ -33,26 +33,14 @@ public:
       const pugi::xml_node& reaction_node, const Nuclide& target);
   /// @brief Virtual destructor (C++ Core Guidelines C.127)
   virtual ~ContinuousReaction() noexcept;
-  /// @brief Returns true if the reaction's cross section will change the
-  ///        total cross section
-  /// @details Used when evaluation of the correct total cross section needs
-  ///          more information about the reaction. Currently used by
-  ///          ContinuousScatter to signal if thermal scattering exists,
-  ///          requiring an adjustment of the total cross section, even if the
-  ///          total cross section was processed at the correct temperature.
-  virtual bool ModifiesTotal(const Particle&) const noexcept;
-  /// @brief Returns the largest cross section that may be found within the
-  ///        current Cell
-  /// @details Currently wraps GetCrossSection
-  virtual MicroscopicCrossSection
-  GetCellMajorant(const Particle& p) const noexcept;
-  /// @brief Returns temperature-adjusted cross section for the reaction
-  /// @details Currently returns the cross section without considering
-  ///          temperature
+  /// @brief Returns a cross section that is at least greater than any cross
+  ///        section that will be encountered in the current Cell
+  /// @details Cross sections are currently given at a single, user-specified
+  ///          temperature.
   /// @todo Add warning the first time the requested temperature does not match
   ///       evaluated temperature
   virtual MicroscopicCrossSection
-  GetCrossSection(const Particle& p) const noexcept;
+  GetCellMajorant(const Particle& p) const noexcept;
   /// @brief Interact with a Particle, updating its state
   virtual void Interact(
       Particle& p,
@@ -87,34 +75,22 @@ public:
   ContinuousScatter(
       const pugi::xml_node& scatter_node, const Nuclide& target,
       const std::optional<ThermalScattering>& tnsl);
-  /// @brief Returns true if thermal scattering is present
-  bool ModifiesTotal(const Particle& p) const noexcept override;
-  /// @brief Returns largest scattering cross section that may be found within
-  ///        the current Cell.
-  /// @details Used when there is a continuous dependence on temperature.
-  ///          Performs temperature adjustments from free gas or thermal
+  /// @brief Returns a cross section that is at least greater than any cross
+  ///        section that will be encountered in the current Cell
+  /// @details Performs temperature adjustments from free gas or thermal
   ///          scattering, if applicable.
   MicroscopicCrossSection
   GetCellMajorant(const Particle& p) const noexcept override;
-  /// @brief Returns appropriately-adjusted scattering cross section
-  /// @details Thermal neutron scattering is assumed to encompass both elastic
-  ///          and inelastic scattering. Performs temperature adjustments from
-  ///          free gas or thermal scattering, if applicable.
-  MicroscopicCrossSection
-  GetCrossSection(const Particle& p) const noexcept override;
   /// @brief Scatter the Particle
   void Interact(Particle& p, std::vector<Estimator::Proxy>& estimator_proxies)
       const noexcept override;
 
 private:
-  // Returns true if free gas scattering adjustments are applicable. Because
-  // downscattering is always possible if the target is hydrogen-1, free gas
-  // adjustments are always made if the atomic weight ratio is less than one.
-  bool IsFreeGasScatteringValid(
-      const Particle& p, const Temperature& T) const noexcept;
   // Returns adjusted free gas scattering cross section for given temperature
   MicroscopicCrossSection
   GetFreeGasScatterAdjustment(const Particle& p, Temperature T) const noexcept;
+  // perform free gas scattering
+  void ScatterFreeGas(Particle& p) const noexcept;
   // Thermal neutron scattering law S(a,b,T) of InteractionDelegate of Nuclide
   const std::optional<ThermalScattering>& tnsl;
 };

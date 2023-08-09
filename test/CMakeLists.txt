@@ -17,13 +17,10 @@ target_link_libraries(all_tests PRIVATE Catch2::Catch2WithMain minimc)
 # Add unit test input files here
 # Prefixes are stripped so duplicate filenames must not appear
 set(UNIT_TEST_INPUTS
-  data/endfb8/n-H1_0-total.hdf5
   data/endfb8/n-H1_0-gamma.hdf5
   data/endfb8/n-H1_0-elastic.hdf5
-  data/endfb8/n-O16_0-total.hdf5
   data/endfb8/n-O16_0-gamma.hdf5
   data/endfb8/n-O16_0-elastic.hdf5
-  data/endfb8/n-U235_0-total.hdf5
   data/endfb8/n-U235_0-gamma.hdf5
   data/endfb8/n-U235_0-elastic.hdf5
   data/endfb8/n-U235_0-fission.hdf5

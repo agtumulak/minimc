@@ -54,10 +54,6 @@ Nuclide::GetCellMajorant(const Particle& p) const noexcept {
   return xs.at(p.type)->GetCellMajorant(p);
 }
 
-MicroscopicCrossSection Nuclide::GetTotal(const Particle& p) const noexcept {
-  return xs.at(p.type)->GetTotal(p);
-}
-
 void Nuclide::Interact(
     Particle& p,
     std::vector<Estimator::Proxy>& estimator_proxies) const noexcept {

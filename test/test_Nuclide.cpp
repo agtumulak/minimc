@@ -67,12 +67,12 @@ TEST_CASE("Nuclide member methods work properly") {
                 "/minimc/nuclides/multigroup/nuclide[@name='uranium235']")
             .node()};
 
-    REQUIRE(hydrogen.GetTotal(neutron_group1) == 1);
-    REQUIRE(hydrogen.GetTotal(neutron_group2) == 1);
-    REQUIRE(oxygen.GetTotal(neutron_group1) == 1.5);
-    REQUIRE(oxygen.GetTotal(neutron_group2) == 1);
-    REQUIRE(uranium235.GetTotal(neutron_group1) == 1.33);
-    REQUIRE(uranium235.GetTotal(neutron_group2) == 2.67);
+    REQUIRE(hydrogen.GetCellMajorant(neutron_group1) == 1);
+    REQUIRE(hydrogen.GetCellMajorant(neutron_group2) == 1);
+    REQUIRE(oxygen.GetCellMajorant(neutron_group1) == 1.5);
+    REQUIRE(oxygen.GetCellMajorant(neutron_group2) == 1);
+    REQUIRE(uranium235.GetCellMajorant(neutron_group1) == 1.33);
+    REQUIRE(uranium235.GetCellMajorant(neutron_group2) == 2.67);
   }
   SECTION("Continuous methods") {
     XMLDocument doc{"continuous.xml"};
@@ -106,10 +106,13 @@ TEST_CASE("Nuclide member methods work properly") {
         Catch::Matchers::Message("File not found: /not/real"));
 
     REQUIRE_THAT(
-        hydrogen.GetTotal(neutron), Catch::Matchers::WithinRel(20.74794504));
+        hydrogen.GetCellMajorant(neutron),
+        Catch::Matchers::WithinRel(20.74794400216));
     REQUIRE_THAT(
-        oxygen.GetTotal(neutron), Catch::Matchers::WithinRel(3.796959472));
+        oxygen.GetCellMajorant(neutron),
+        Catch::Matchers::WithinRel(3.7969596274296));
     REQUIRE_THAT(
-        uranium235.GetTotal(neutron), Catch::Matchers::WithinRel(92.35753856));
+        uranium235.GetCellMajorant(neutron),
+        Catch::Matchers::WithinRel(92.3574585600001));
   }
 }

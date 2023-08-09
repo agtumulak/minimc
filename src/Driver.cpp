@@ -88,13 +88,13 @@ void Driver::Transport(
     if (p.reaction == Reaction::leak) {
       break;
     }
-    // sample the next Nuclide, currently no need to delegate this
+    // sample the next Nuclide
     const auto& sampled_nuclide = [&p]() {
       const MicroscopicCrossSection threshold =
-          p.cell->material->GetMicroscopicTotal(p) * p.Sample();
+          p.cell->material->GetCellMajorant(p) * p.Sample();
       MicroscopicCrossSection accumulated = 0;
       for (const auto& [nuclide_ptr, afrac] : p.cell->material->afracs) {
-        accumulated += afrac * nuclide_ptr->GetTotal(p);
+        accumulated += afrac * nuclide_ptr->GetCellMajorant(p);
         if (accumulated > threshold) {
           return nuclide_ptr;
         }
@@ -116,7 +116,7 @@ void Driver::Stream(
   while (true) {
     const auto distance_to_collision = std::exponential_distribution{
         p.GetCell().material->number_density *
-        p.GetCell().material->GetMicroscopicCellMajorant(p)}(p.rng);
+        p.GetCell().material->GetCellMajorant(p)}(p.rng);
     const auto [nearest_surface, distance_to_surface_crossing] =
         p.GetCell().NearestSurface(p.GetPosition(), p.GetDirection());
     // check if collision within Cell has occured
