@@ -17,9 +17,9 @@
           <xs file="/Users/atumulak/Developer/minimc/data/endfb8/n-H1_0-elastic.hdf5" temperature="623.6"/>
           <tnsl
             majorant="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/majorant_endfb8_safety_factor_1.05.hdf5"
-            total_T="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/scatter_xs_endfb8_T_coeffs.hdf5"
-            total_S="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/scatter_xs_endfb8_S_coeffs.hdf5"
-            total_E="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/scatter_xs_endfb8_E_coeffs.hdf5"
+            total_T="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/scatter_T_coarse.hdf5"
+            total_S="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/scatter_S_coarse.hdf5"
+            total_E="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/scatter_E_coarse.hdf5"
             beta_cutoff="20.0"
             beta_CDF="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/log_offset_beta_CDF_coarse.hdf5"
             beta_S="/Users/atumulak/Developer/minimc/data/tnsl/endfb8/log_offset_beta_S_coarse.hdf5"

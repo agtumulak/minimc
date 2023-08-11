@@ -28,9 +28,10 @@ ThermalScattering::ThermalScattering(
     const pugi::xml_node& tnsl_node, const Nuclide& target)
     : majorant{HDF5DataSet<1>{tnsl_node.attribute("majorant").as_string()}
                    .ToContinuousMap()},
-      scatter_xs_T{tnsl_node.attribute("total_T").as_string()},
-      scatter_xs_S{tnsl_node.attribute("total_S").as_string()},
-      scatter_xs_E{tnsl_node.attribute("total_E").as_string()},
+      scatter_xs_T_modes{tnsl_node.attribute("scatter_xs_T").as_string()},
+      scatter_xs_singular_values{
+          tnsl_node.attribute("scatter_xs_S").as_string()},
+      scatter_xs_E_modes{tnsl_node.attribute("scatter_xs_E").as_string()},
       beta_CDF_modes{tnsl_node.attribute("beta_CDF").as_string()},
       beta_singular_values{tnsl_node.attribute("beta_S").as_string()},
       beta_E_T_modes{tnsl_node.attribute("beta_E_T").as_string()},
@@ -42,9 +43,7 @@ ThermalScattering::ThermalScattering(
       target{target} {}
 
 size_t ThermalScattering::CountPerturbableParameters() const noexcept {
-  return beta_singular_values.size() + beta_CDF_modes.size() +
-         beta_E_T_modes.size() + alpha_singular_values.size() +
-         alpha_CDF_modes.size() + alpha_beta_T_modes.size();
+  return scatter_xs_size + beta_size + alpha_size;
 }
 
 bool ThermalScattering::IsValid(const Particle& p) const noexcept {
@@ -57,51 +56,49 @@ ThermalScattering::GetCellMajorant(const Particle& p) const noexcept {
   return majorant.at(std::get<ContinuousEnergy>(p.GetEnergy()));
 }
 
-MicroscopicCrossSection
-ThermalScattering::GetTotal(const Particle& p) const noexcept {
-
-  // Find index of Energy above and below Particle Energy
-  const auto E = std::get<ContinuousEnergy>(p.GetEnergy());
-  const auto& Es = scatter_xs_E.axes.at(0);
-  const size_t E_hi_i =
+autodiff::var
+ThermalScattering::GetTotal(ContinuousEnergy E, Temperature T) const {
+  // construct thread local members if necessary
+  if (scatter_xs_coeffs.find(this) == scatter_xs_coeffs.cend()) {
+    scatter_xs_coeffs[this] = autodiff::VectorXvar(scatter_xs_size);
+    size_t i = 0;
+    for (const auto x : scatter_xs_singular_values.values) {
+      scatter_xs_coeffs[this][i++] = x;
+    }
+    for (const auto x : scatter_xs_E_modes.values) {
+      scatter_xs_coeffs[this][i++] = x;
+    }
+    for (const auto x : scatter_xs_T_modes.values) {
+      scatter_xs_coeffs[this][i++] = x;
+    }
+  }
+  // identify two possible edge cases for energy
+  const auto& Es = scatter_xs_E_modes.axes.at(0);
+  const size_t E_upper_i =
       std::distance(Es.cbegin(), std::upper_bound(Es.cbegin(), Es.cend(), E));
-  // We require that E is strictly less than cutoff energy
-  assert(E_hi_i != Es.size());
-  // If E < E_min, we use the same index for the lower value of E
-  const auto below_E_min = E_hi_i == 0;
-  const size_t E_lo_i = below_E_min ? E_hi_i : E_hi_i - 1;
-
-  // Find index of Temperature above and below target Temperature
-  const Temperature T = p.GetCell().temperature->at(p.GetPosition());
-  const auto& Ts = scatter_xs_T.axes.at(0);
-  const size_t candidate_T_hi_i =
-      std::distance(Ts.cbegin(), std::upper_bound(Ts.cbegin(), Ts.cend(), T));
-  // If T >= T_max, we use T_max for the upper value
-  const auto above_T_max = candidate_T_hi_i == Ts.size();
-  const size_t T_hi_i = above_T_max ? candidate_T_hi_i - 1 : candidate_T_hi_i;
-  // If T < T_min, we use T_min as the lower value
-  const auto below_T_min = T_hi_i == 0;
-  const size_t T_lo_i = below_T_min ? T_hi_i : T_hi_i - 1;
-
-  // Evaluate neighboring points
-  const auto xs_E_lo_T_lo = EvaluateInelastic(E_lo_i, T_lo_i);
-  const auto xs_E_lo_T_hi = EvaluateInelastic(E_lo_i, T_hi_i);
-  const auto xs_E_hi_T_lo = EvaluateInelastic(E_hi_i, T_lo_i);
-  const auto xs_E_hi_T_hi = EvaluateInelastic(E_hi_i, T_hi_i);
-
-  // Linear interpolation in energy
-  const auto E_lo = Es.at(E_lo_i);
+  const auto E_hi_i = E_upper_i < Es.size() ? E_upper_i : E_upper_i - 1;
+  const auto E_lo_i = E_upper_i != 0 ? E_upper_i - 1 : E_upper_i;
   const auto E_hi = Es.at(E_hi_i);
-  const auto r_E = below_E_min ? 1 : (E - E_lo) / (E_hi - E_lo);
+  const auto E_lo = Es.at(E_lo_i);
+  const auto r_E = E_hi_i != E_lo_i ? (E - E_lo) / (E_hi - E_lo) : 0.;
+  // identify two possible edge cases for temperature
+  const auto& Ts = scatter_xs_T_modes.axes.at(0);
+  const size_t T_upper_i =
+      std::distance(Ts.cbegin(), std::upper_bound(Ts.cbegin(), Ts.cend(), T));
+  const auto T_hi_i = T_upper_i < Ts.size() ? T_upper_i : T_upper_i - 1;
+  const auto T_lo_i = T_upper_i != 0 ? T_upper_i - 1 : T_upper_i;
+  const auto T_hi = Ts.at(T_hi_i);
+  const auto T_lo = Ts.at(T_lo_i);
+  const auto r_T = T_hi_i != T_lo_i ? (T - T_lo) / (T_hi - T_lo) : 0.;
+  // Evaluate neighboring points
+  const auto xs_E_lo_T_lo = EvaluateCrossSection(E_lo_i, T_lo_i);
+  const auto xs_E_lo_T_hi = EvaluateCrossSection(E_lo_i, T_hi_i);
+  const auto xs_E_hi_T_lo = EvaluateCrossSection(E_hi_i, T_lo_i);
+  const auto xs_E_hi_T_hi = EvaluateCrossSection(E_hi_i, T_hi_i);
+  // Linear interpolation in energy
   const auto xs_T_lo = xs_E_lo_T_lo + r_E * (xs_E_hi_T_lo - xs_E_lo_T_lo);
   const auto xs_T_hi = xs_E_lo_T_hi + r_E * (xs_E_hi_T_hi - xs_E_lo_T_hi);
-
   // Linear interpolation in temperature
-  const auto T_lo = Ts.at(T_lo_i);
-  const auto T_hi = Ts.at(T_hi_i);
-  const auto r_T = below_T_min   ? 1
-                   : above_T_max ? 0
-                                 : (T - T_lo) / (T_hi - T_lo);
   return xs_T_lo + r_T * (xs_T_hi - xs_T_lo);
 }
 
@@ -109,17 +106,59 @@ void ThermalScattering::Scatter(Particle& p) const noexcept {
   // get incident energy and target temperature
   const auto E = std::get<ContinuousEnergy>(p.GetEnergy());
   const Temperature T = p.GetCell().temperature->at(p.GetPosition());
-  // sample beta then alpha
-  const auto beta = SampleBeta(p, E, T);
-  const auto alpha = SampleAlpha(p, beta, E, T);
-  // convert to outgoing energy and cosine
-  const auto E_p = E + beta * constants::boltzmann * T;
-  const auto mu =
-      (E + E_p - double{alpha} * target.awr * constants::boltzmann * T) /
-      (2 * std::sqrt(E * E_p));
-  p.Scatter(mu, E_p);
-}
+  // compute probability of a true (non-virtual) collision
+  const auto p_true = GetTotal(E, T) / GetCellMajorant(p);
+  autodiff::var p_reaction;
+  if (std::bernoulli_distribution{p_true->val}(p.rng)) {
+    // sample beta then alpha
+    const auto beta = SampleBeta(p, E, T);
+    const auto alpha = SampleAlpha(p, beta, E, T);
+    // convert to outgoing energy and cosine
+    const auto E_p = E + beta * constants::boltzmann * T;
+    const auto mu =
+        (E + E_p - double{alpha} * target.awr * constants::boltzmann * T) /
+        (2 * std::sqrt(E * E_p));
+    p.Scatter(mu, E_p);
+    p_reaction = p_true;
+  }
+  else {
+    // virtual collision; nothing happens
+    p_reaction = 1 - p_true;
+  }
+  // compute sensitivities
+  for (auto& indirect_effect : p.indirect_effects) {
+    class Visitor : public Perturbation::IndirectEffect::Visitor {
+    public:
+      Visitor(
+          const Nuclide& target, const autodiff::var& p_reaction,
+          autodiff::VectorXvar& scatter_xs_coeffs)
+          : target{target}, p_reaction{p_reaction},
+            scatter_xs_coeffs{scatter_xs_coeffs} {}
+      void Visit(Perturbation::IndirectEffect::TNSL& indirect_effect)
+          const noexcept final {
+        // if current TNSL indirect effect is for a Nuclide that does not
+        // match the enclosing scope's target Nuclide, skip
+        if (&indirect_effect.perturbation.nuclide != &target) {
+          return;
+        }
+        // compute all derivatives in a single reverse pass
+        const auto grad = autodiff::gradient(p_reaction, scatter_xs_coeffs);
+        for (auto i = 0; i < grad.size(); i++) {
+          indirect_effect.indirect_effects.at(i) +=
+              grad[i] / p_reaction.expr->val;
+        }
+      }
 
+    private:
+      const Nuclide& target;
+      const autodiff::var& p_reaction;
+      autodiff::VectorXvar& scatter_xs_coeffs;
+    };
+
+    indirect_effect->Visit(
+        Visitor{target, p_reaction, scatter_xs_coeffs[this]});
+  }
+}
 //// private
 
 autodiff::var
@@ -221,15 +260,21 @@ std::tuple<Real, autodiff::var> ThermalScattering::SolveCubic(
   return {sampled, p_sampled};
 }
 
-MacroscopicCrossSection ThermalScattering::EvaluateInelastic(
+autodiff::var ThermalScattering::EvaluateCrossSection(
     const size_t E_index, const size_t T_index) const noexcept {
-  const size_t max_order = scatter_xs_S.axes.at(0).size();
-  MicroscopicCrossSection result = 0;
-  for (size_t order = 0; order < max_order; order++) {
-    result += scatter_xs_S.at(order) * scatter_xs_E.at(E_index, order) *
-              scatter_xs_T.at(T_index, order);
+  const size_t E_modes_offset =
+      scatter_xs_singular_values.size() + scatter_xs_E_modes.GetOffset(E_index);
+  const size_t T_modes_offset = scatter_xs_singular_values.size() +
+                                scatter_xs_E_modes.size() +
+                                scatter_xs_T_modes.GetOffset(T_index);
+  autodiff::var scatter_xs = 0.;
+  for (size_t order = 0; order < scatter_xs_singular_values.axes[0].size();
+       order++) {
+    scatter_xs += scatter_xs_coeffs[this][order] *
+                  scatter_xs_coeffs[this][E_modes_offset + order] *
+                  scatter_xs_coeffs[this][T_modes_offset + order];
   }
-  return result;
+  return scatter_xs;
 }
 
 autodiff::var ThermalScattering::EvaluateBeta(
@@ -253,9 +298,7 @@ Real ThermalScattering::SampleBeta(
     Particle& p, const ContinuousEnergy E, const Temperature T) const {
   // construct thread local members if necessary
   if (beta_coeffs.find(this) == beta_coeffs.cend()) {
-    beta_coeffs[this] = autodiff::VectorXvar(
-        beta_singular_values.size() + beta_CDF_modes.size() +
-        beta_E_T_modes.size());
+    beta_coeffs[this] = autodiff::VectorXvar(beta_size);
     size_t i = 0;
     for (const auto x : beta_singular_values.values) {
       beta_coeffs[this][i++] = x;
@@ -271,14 +314,14 @@ Real ThermalScattering::SampleBeta(
   const auto& Es = beta_E_T_modes.axes[0];
   const size_t E_hi_i =
       std::distance(Es.cbegin(), std::upper_bound(Es.cbegin(), Es.cend(), E));
-  // We require that E is strictly less than cutoff energy
+  // we require that E is strictly less than cutoff energy
   if (E_hi_i == Es.size()) {
     throw std::runtime_error(
         std::string{"Requested energy ("} + std::to_string(E) +
         ") must be strictly less than cutoff energy (" +
         std::to_string(cutoff_energy) + ")");
   }
-  // Determine interpolation factor. If E < E_min, we force the use of the grid
+  // determine interpolation factor. If E < E_min, we force the use of the grid
   // at E_min by setting r = 1. This way, index of the sampled energy E_s_i is
   // always valid.
   const Real r = E_hi_i != 0 ? (E - Es.at(E_hi_i - 1)) /
@@ -382,8 +425,9 @@ Real ThermalScattering::SampleBeta(
     public:
       Visitor(
           const Nuclide& target, const autodiff::var& p_beta,
-          autodiff::VectorXvar& beta_coeffs)
-          : target{target}, p_beta{p_beta}, beta_coeffs{beta_coeffs} {}
+          autodiff::VectorXvar& beta_coeffs, const size_t offset)
+          : target{target}, p_beta{p_beta}, beta_coeffs{beta_coeffs},
+            offset{offset} {}
       void Visit(Perturbation::IndirectEffect::TNSL& indirect_effect)
           const noexcept final {
         // if current TNSL indirect effect is for a Nuclide that does not
@@ -394,7 +438,8 @@ Real ThermalScattering::SampleBeta(
         // compute all derivatives in a single reverse pass
         const auto grad = autodiff::gradient(p_beta, beta_coeffs);
         for (auto i = 0; i < grad.size(); i++) {
-          indirect_effect.indirect_effects.at(i) += grad[i] / p_beta.expr->val;
+          indirect_effect.indirect_effects.at(offset + i) +=
+              grad[i] / p_beta.expr->val;
         }
       }
 
@@ -402,9 +447,11 @@ Real ThermalScattering::SampleBeta(
       const Nuclide& target;
       const autodiff::var& p_beta;
       autodiff::VectorXvar& beta_coeffs;
+      const size_t offset;
     };
 
-    indirect_effect->Visit(Visitor{target, p_beta, beta_coeffs[this]});
+    indirect_effect->Visit(
+        Visitor{target, p_beta, beta_coeffs[this], scatter_xs_size});
   }
   return beta_shifted;
 }
@@ -549,9 +596,7 @@ Real ThermalScattering::SampleAlpha(
     Particle& p, const Real& b, ContinuousEnergy E, Temperature T) const {
   // construct thread local members if necessary
   if (alpha_coeffs.find(this) == alpha_coeffs.cend()) {
-    alpha_coeffs[this] = autodiff::VectorXvar(
-        alpha_singular_values.size() + alpha_CDF_modes.size() +
-        alpha_beta_T_modes.size());
+    alpha_coeffs[this] = autodiff::VectorXvar(alpha_size);
     size_t i = 0;
     for (const auto x : alpha_singular_values.values) {
       alpha_coeffs[this][i++] = x;
@@ -662,9 +707,7 @@ Real ThermalScattering::SampleAlpha(
     };
 
     indirect_effect->Visit(Visitor{
-        target, p_alpha, alpha_coeffs[this],
-        beta_singular_values.size() + beta_CDF_modes.size() +
-            beta_E_T_modes.size()});
+        target, p_alpha, alpha_coeffs[this], scatter_xs_size + beta_size});
   }
   return alpha;
 }
@@ -676,3 +719,6 @@ thread_local std::map<const ThermalScattering*, autodiff::VectorXvar>
 
 thread_local std::map<const ThermalScattering*, autodiff::VectorXvar>
     ThermalScattering::alpha_coeffs = {};
+
+thread_local std::map<const ThermalScattering*, autodiff::VectorXvar>
+    ThermalScattering::scatter_xs_coeffs = {};

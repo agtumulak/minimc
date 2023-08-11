@@ -88,9 +88,9 @@
           <xs:element name="tnsl" minOccurs="0">
             <xs:complexType>
               <xs:attribute name="majorant" type="xs:anyURI" use="required"/>
-              <xs:attribute name="total_E" type="xs:anyURI" use="required"/>
-              <xs:attribute name="total_T" type="xs:anyURI" use="required"/>
-              <xs:attribute name="total_S" type="xs:anyURI" use="required"/>
+              <xs:attribute name="scatter_xs_E" type="xs:anyURI" use="required"/>
+              <xs:attribute name="scatter_xs_T" type="xs:anyURI" use="required"/>
+              <xs:attribute name="scatter_xs_S" type="xs:anyURI" use="required"/>
               <xs:attribute name="beta_cutoff" type="StrictlyPositiveDouble" use="required"/>
               <xs:attribute name="beta_CDF" type="xs:anyURI" use="required"/>
               <xs:attribute name="beta_S" type="xs:anyURI" use="required"/>

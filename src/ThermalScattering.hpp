@@ -42,17 +42,12 @@ public:
   ///        the cutoff energy
   bool IsValid(const Particle& p) const noexcept;
   /// @brief Returns the majorant cross section
-  /// @details For thermal inelastic scattering, this is larger than @f$
-  ///          \Sigma_{\text{elastic}}(E) + \Sigma_{\text{inelastic}}(E) @f$
-  ///          because @f$ \beta = 0 @f$ corresponds to elastic scattering.
+  /// @details Assumed to be constant under perturbations
   /// @todo Throw exception when temperature is out of range
   MicroscopicCrossSection GetCellMajorant(const Particle& p) const noexcept;
-  /// @brief Returns the majorant cross section
-  /// @details Currently implemented using bilinear interpolation in
-  ///          energy and temperature.
-  /// @todo Avoid calling HDF5DataSet::at for each order since order
-  ///       coefficients are adjacent in memory
-  MicroscopicCrossSection GetTotal(const Particle& p) const noexcept;
+  /// @brief Returns the total cross section
+  /// @details Performs bilinear interpolation in energy and temperature
+  autodiff::var GetTotal(ContinuousEnergy E, Temperature T) const;
   /// @brief The raison d'etre of this class
   void Scatter(Particle& p) const noexcept;
 
@@ -69,9 +64,9 @@ private:
   static std::tuple<Real, autodiff::var> SolveCubic(
       const std::array<autodiff::var, 4>& xs, const std::array<CDF, 4>& ys,
       const Real y) noexcept;
-  // evaluates the inelastic scattering cross section.
-  MacroscopicCrossSection
-  EvaluateInelastic(const size_t E_index, const size_t T_index) const noexcept;
+  // evaluates the inelastic scattering cross section
+  autodiff::var EvaluateCrossSection(
+      const size_t E_index, const size_t T_index) const noexcept;
   // evaluates beta using proper orthogonal decomposition
   autodiff::var EvaluateBeta(
       const size_t cdf_index, const size_t E_index,
@@ -98,9 +93,9 @@ private:
   // majorant cross section
   const ContinuousMap<ContinuousEnergy, MicroscopicCrossSection> majorant;
   // total scattering cross section POD coefficients
-  const HDF5DataSet<2> scatter_xs_T;
-  const HDF5DataSet<1> scatter_xs_S;
-  const HDF5DataSet<2> scatter_xs_E;
+  const HDF5DataSet<2> scatter_xs_T_modes;
+  const HDF5DataSet<1> scatter_xs_singular_values;
+  const HDF5DataSet<2> scatter_xs_E_modes;
   // beta POD coefficients; expanded elements are log of offset from minimum
   // value at given energy and temperature
   const HDF5DataSet<2> beta_CDF_modes;
@@ -117,8 +112,16 @@ private:
   // the target Nuclide
   const Nuclide& target;
   // neutrons above the cutoff energy do not get thermal scattering treatment
-  const ContinuousEnergy cutoff_energy = scatter_xs_E.axes.at(0).back();
+  const ContinuousEnergy cutoff_energy = scatter_xs_E_modes.axes.at(0).back();
+  // total datset sizes
+  const size_t scatter_xs_size = scatter_xs_singular_values.size() +
+                                 scatter_xs_T_modes.size() +
+                                 scatter_xs_E_modes.size();
+  const size_t beta_size = beta_singular_values.size() + beta_CDF_modes.size() +
+                           beta_E_T_modes.size();
+  const size_t alpha_size = alpha_singular_values.size() +
+                            alpha_CDF_modes.size() + alpha_beta_T_modes.size();
   // each thread needs its own leaf nodes in expression trees
   thread_local static std::map<const ThermalScattering*, autodiff::VectorXvar>
-      beta_coeffs, alpha_coeffs;
+      beta_coeffs, alpha_coeffs, scatter_xs_coeffs;
 };
