@@ -21,7 +21,9 @@ if __name__ == "__main__":
             "DOS (std. dev.)",
         ],
         dtype=float,
-        index=pd.MultiIndex.from_product([["beta", "alpha"], ["S", "U", "V"]]),
+        index=pd.MultiIndex.from_product(
+            [["scatter_xs", "beta", "alpha"], ["S", "U", "V"]]
+        ),
     )
     dleak["index"] = dleak["index"].astype(int)
 
@@ -53,15 +55,16 @@ if __name__ == "__main__":
     tnsl: util.TNSLType = {}
     offsets = {}
     offset = 0
-    for dataset, dataset_prefix, V_matrix_name in [
-        ("beta", "log_offset_beta", "E_T"),
-        ("alpha", "log_alpha", "beta_T"),
+    for dataset, dataset_prefix, U_matrix_name, V_matrix_name in [
+        ("scatter_xs", "scatter_xs", "E", "T"),
+        ("beta", "log_offset_beta", "CDF", "E_T"),
+        ("alpha", "log_alpha", "CDF", "beta_T"),
     ]:
         tnsl[dataset] = {}
         offsets[dataset] = {}
         for matrix, matrix_filename in [
             ("S", "S"),
-            ("U", "CDF"),
+            ("U", U_matrix_name),
             ("V", V_matrix_name),
         ]:
             file_extension = ".hdf5"
